@@ -1,0 +1,432 @@
+/* ==========================================================================
+   Helm — visuals
+   The look of the boat lives here; index.html holds the game logic.
+   ========================================================================== */
+
+:root {
+  /* Varnished mahogany, as in the reference photo */
+  --wood-dark:  #3d1f0e;
+  --wood:       #6d3a1a;
+  --wood-lit:   #96552a;
+  --wood-edge:  #b5773f;
+
+  --bulkhead:   #e7dcc4;
+  --bulkhead-sh:#cfc2a6;
+
+  --brass:      #c2903f;
+  --brass-lit:  #e6bd6b;
+  --brass-deep: #7c5a24;
+
+  --face:       #17160f;   /* instrument glass */
+  --amber:      #f0b855;   /* lit digits */
+  --port:       #c4453a;
+  --starboard:  #3e9e6c;
+
+  --sky-high:   #9fbccb;
+  --sky-low:    #dce8e9;
+  --sea-far:    #4c7c86;
+  --sea-near:   #22454f;
+
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, "Roboto Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--wood-dark);
+}
+
+body {
+  font-family: var(--serif);
+  color: var(--bulkhead);
+  -webkit-font-smoothing: antialiased;
+}
+
+.pilothouse {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Overhead ------------------------------------------------------------- */
+
+.headliner {
+  flex: 0 0 auto;
+  height: clamp(26px, 6vh, 54px);
+  display: flex;
+  justify-content: space-evenly;
+  align-items: stretch;
+  background: linear-gradient(180deg, var(--wood-dark) 0%, var(--wood) 60%, #4a2612 100%);
+  border-bottom: 2px solid #2a1409;
+  box-shadow: inset 0 -6px 14px rgba(0, 0, 0, 0.5);
+}
+
+.beam {
+  width: clamp(10px, 1.4vw, 20px);
+  background: linear-gradient(90deg, #4a2612, var(--wood-lit) 45%, #4a2612);
+  opacity: 0.85;
+}
+
+/* --- Windshield ----------------------------------------------------------- */
+
+.windshield {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: clamp(8px, 1.6vh, 18px) solid var(--wood);
+  border-top-width: clamp(6px, 1.2vh, 14px);
+  border-image: linear-gradient(180deg, var(--wood-edge), var(--wood) 40%, #4a2612) 1;
+  background: #000;
+  overflow: hidden;
+}
+
+.view {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Everything outside the glass: pans with the heading, rolls with the swell */
+.horizon {
+  position: absolute;
+  inset: -12% -10%;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.sky {
+  position: absolute;
+  inset: 0 0 46% 0;
+  background: linear-gradient(180deg, var(--sky-high) 0%, #c3d6dd 62%, var(--sky-low) 100%);
+}
+
+.haze {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40%;
+  height: 16%;
+  background: linear-gradient(180deg, rgba(232, 240, 240, 0) 0%, rgba(232, 240, 240, 0.85) 55%, rgba(232, 240, 240, 0) 100%);
+}
+
+.sea {
+  position: absolute;
+  inset: 54% 0 0 0;
+  background: linear-gradient(180deg, var(--sea-far) 0%, #35636e 32%, var(--sea-near) 100%);
+}
+
+.swell {
+  position: absolute;
+  inset: 54% 0 0 0;
+  background-image:
+    repeating-linear-gradient(179deg, rgba(255, 255, 255, 0.15) 0 2px, rgba(255, 255, 255, 0) 2px 15px),
+    repeating-linear-gradient(181deg, rgba(0, 0, 0, 0.17) 0 2px, rgba(0, 0, 0, 0) 2px 34px);
+  background-size: 100% 55%, 100% 100%;
+  background-repeat: repeat;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, #000 20%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, #000 20%);
+}
+
+.world {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.mark {
+  position: absolute;
+  transform: translateX(-50%);
+  line-height: 0;
+}
+
+.mark .art {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* --- Things out there ----------------------------------------------------- */
+
+.art--land    path { fill: #3f5f6a; }
+.art--island  path { fill: #3a5762; }
+
+.art--lighthouse .art__tower   { fill: #f1ece0; }
+.art--lighthouse .art__band    { fill: var(--port); }
+.art--lighthouse .art__lantern { fill: #2b2b28; }
+.art--lighthouse .art__cap     { fill: #2b2b28; }
+.art--lighthouse .art__rock    { fill: #48565a; }
+
+.art--buoy .art__mast { fill: #3a3733; }
+.art--buoy .art__wash { fill: rgba(255, 255, 255, 0.55); }
+.art--port .art__body,
+.art--port .art__topmark      { fill: var(--port); }
+.art--starboard .art__body,
+.art--starboard .art__topmark { fill: var(--starboard); }
+
+.art--sloop .art__main,
+.art--sloop .art__jib  { fill: #f4f1e6; }
+.art--sloop .art__hull { fill: #2c4851; }
+
+.art--freighter .art__hull  { fill: #33454c; }
+.art--freighter .art__box   { fill: #6f6350; }
+.art--freighter .art__house { fill: #ded9c9; }
+.art--freighter .art__stack { fill: #2a3539; }
+
+/* --- Our own bow ---------------------------------------------------------- */
+
+.foredeck {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 42%;
+}
+
+.deck__hull   { fill: #efe7d3; }
+.deck__wake   { fill: rgba(255, 255, 255, 0.72); }
+.deck__rail   { fill: none; stroke: #b8ad92; stroke-width: 4; }
+.deck__seam   { fill: none; stroke: rgba(120, 110, 90, 0.35); stroke-width: 2; }
+.deck__hatch  { fill: #d5cbb2; stroke: #a89c80; stroke-width: 2; }
+.deck__mast   { stroke: #d8d2c0; stroke-width: 7; }
+.deck__pulpit { fill: none; stroke: #cdd3d2; stroke-width: 4; stroke-linecap: round; }
+
+/* Glass: a faint sheen plus the shadow of the frame */
+.glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(112deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 38%),
+    radial-gradient(120% 90% at 50% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.38) 100%);
+}
+
+.mullion {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: clamp(10px, 1.8vw, 22px);
+  background: linear-gradient(90deg, #3a1d0d, var(--wood-lit) 45%, #3a1d0d);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.55);
+}
+
+.mullion--left  { left: 27%; }
+.mullion--right { right: 27%; }
+
+/* --- Console -------------------------------------------------------------- */
+
+.console {
+  position: relative;
+  flex: 0 0 auto;
+  height: clamp(184px, 30vh, 268px);
+  padding: clamp(14px, 2.4vh, 26px) clamp(14px, 3vw, 40px) 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  background:
+    linear-gradient(180deg, #5d3116 0%, var(--wood) 22%, #52290f 100%);
+  box-shadow: inset 0 22px 34px rgba(0, 0, 0, 0.45);
+}
+
+/* The rounded varnished lip along the top of the console */
+.console__edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: clamp(7px, 1.2vh, 13px);
+  background: linear-gradient(180deg, var(--wood-edge), #7a431f 70%, #38190a);
+  border-bottom: 1px solid #2c1408;
+}
+
+/* Instrument, port side of the wheel */
+
+.gauge {
+  width: clamp(120px, 21vw, 190px);
+  padding: 0.55rem 0.7rem 0.6rem;
+  border-radius: 0.4rem;
+  background: var(--face);
+  border: 2px solid var(--brass-deep, #7c5a24);
+  box-shadow:
+    0 0 0 2px rgba(194, 144, 63, 0.55),
+    inset 0 2px 10px rgba(0, 0, 0, 0.9);
+  text-align: center;
+}
+
+.gauge__digits {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: clamp(1.6rem, 4.4vw, 2.5rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--amber);
+  text-shadow: 0 0 12px rgba(240, 184, 85, 0.45);
+}
+
+.gauge__deg { font-size: 0.55em; }
+
+.gauge__cardinal {
+  margin: 0.2rem 0 0.5rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.14em;
+  color: #cfd6cf;
+}
+
+.gauge__bar {
+  position: relative;
+  height: 0.5rem;
+  border-radius: 0.25rem;
+  background: #0a0a07;
+  border: 1px solid #2f2d22;
+  overflow: hidden;
+}
+
+.bar__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  background: var(--brass);
+}
+
+.bar__fill.is-port      { background: var(--port); }
+.bar__fill.is-starboard { background: var(--starboard); }
+
+.bar__mid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: rgba(226, 223, 205, 0.65);
+}
+
+.gauge__plate {
+  margin: 0.45rem 0 0;
+  font-size: 0.7rem;
+  font-style: italic;
+  color: #8d9187;
+}
+
+/* Breaker panel, starboard side */
+
+.placard {
+  width: clamp(130px, 24vw, 210px);
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.3rem;
+  background: linear-gradient(180deg, var(--bulkhead), var(--bulkhead-sh));
+  border: 1px solid #8e8367;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  color: #3a3527;
+}
+
+.placard__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0 0 0.3rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(110, 100, 76, 0.35);
+  padding-bottom: 0.25rem;
+}
+
+.placard__value {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: #2a261a;
+}
+
+.placard__note {
+  margin: 0.55rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  font-style: italic;
+  color: #5d5540;
+}
+
+/* --- The wheel ------------------------------------------------------------ */
+
+.wheel {
+  position: absolute;
+  left: 50%;
+  bottom: -12%;
+  width: min(35vh, 42vw);
+  height: auto;
+  transform: translateX(-50%);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.55));
+}
+
+.wheel.is-held { cursor: grabbing; }
+
+.wheel__hit {
+  fill: transparent;
+  pointer-events: all;
+}
+
+.wheel__rim {
+  fill: none;
+  stroke: #7a4320;
+  stroke-width: 15;
+}
+
+.wheel__rim--light {
+  stroke: #a2632f;
+  stroke-width: 5;
+  opacity: 0.85;
+}
+
+.wheel__spoke {
+  fill: #8b4f26;
+  stroke: #3d1f0d;
+  stroke-width: 1.5;
+}
+
+.wheel__collar {
+  fill: #a2632f;
+  stroke: #3d1f0d;
+  stroke-width: 1.5;
+}
+
+.wheel__grip {
+  fill: #96552a;
+  stroke: #3d1f0d;
+  stroke-width: 1.5;
+}
+
+.wheel__hub {
+  fill: var(--brass);
+  stroke: #6b4a17;
+  stroke-width: 3;
+}
+
+.wheel__nut { fill: #7c5a24; }
+
+.wheel__king {
+  fill: #d8b884;
+  stroke: #3d1f0d;
+  stroke-width: 1.5;
+}
+
+/* --- Narrow screens ------------------------------------------------------- */
+
+@media (max-width: 560px) {
+  .gauge    { width: 40%; padding: 0.4rem 0.5rem 0.5rem; }
+  .placard  { width: 44%; }
+  .wheel    { width: 54vw; bottom: -20%; }
+  .gauge__plate,
+  .placard__note { display: none; }
+}
