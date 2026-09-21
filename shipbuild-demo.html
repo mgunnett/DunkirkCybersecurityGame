@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ship Build Demo</title>
+<link rel="stylesheet" href="shipstyle.css">
+</head>
+<body>
+
+<div class="helm">
+
+  <div class="headliner" aria-hidden="true">
+    <span class="beam"></span><span class="beam"></span><span class="beam"></span><span class="beam"></span>
+  </div>
+
+  <div class="windshield">
+    <div class="view" id="view">
+
+      <div class="horizon" id="horizon">
+        <div class="sky"></div>
+        <div class="haze"></div>
+        <div class="sea"></div>
+        <div class="swell" id="swell"></div>
+        <div class="world" id="world"></div>
+      </div>
+
+      <svg class="foredeck" viewBox="0 0 1000 260" preserveAspectRatio="none" aria-hidden="true">
+        <path class="deck__wake" d="M404 112 C450 92 550 92 596 112 C540 100 460 100 404 112 Z"/>
+        <path class="deck__hull" d="M0 260 L0 218 C250 156 410 108 500 100 C590 108 750 156 1000 218 L1000 260 Z"/>
+        <path class="deck__rail" d="M0 218 C250 156 410 108 500 100 C590 108 750 156 1000 218"/>
+        <path class="deck__seam" d="M0 252 C260 196 420 152 500 146 C580 152 740 196 1000 252"/>
+        <rect class="deck__hatch" x="452" y="186" width="96" height="34" rx="4"/>
+        <line class="deck__mast" x1="500" y1="0" x2="500" y2="150"/>
+        <path class="deck__pulpit" d="M420 152 L432 112 M580 152 L568 112 M432 112 Q500 96 568 112"/>
+      </svg>
+
+      <div class="glare" aria-hidden="true"></div>
+    </div>
+
+    <div class="mullion mullion--left" aria-hidden="true"></div>
+    <div class="mullion mullion--right" aria-hidden="true"></div>
+  </div>
+
+  <div class="console">
+    <div class="console__edge" aria-hidden="true"></div>
+
+    <div class="gauge">
+      <p class="gauge__digits"><span id="headingValue">000</span><span class="gauge__deg">&#176;</span></p>
+      <p class="gauge__cardinal" id="headingCardinal">N</p>
+      <div class="gauge__bar">
+        <div class="bar__fill" id="rudderFill"></div>
+        <div class="bar__mid"></div>
+      </div>
+      <p class="gauge__plate">Heading and rudder</p>
+    </div>
+
+    <div class="placard">
+      <p class="placard__row"><span>Speed</span><span class="placard__value" id="speedValue">0.0 kn</span></p>
+      <p class="placard__row"><span>Log</span><span class="placard__value" id="logValue">0.00 nm</span></p>
+      <p class="placard__note">Under way. Drag the wheel to put the rudder over, centre it to steady up.</p>
+    </div>
+
+    <svg class="wheel" id="wheel" viewBox="-115 -115 230 230" role="img" aria-label="Ship's wheel, drag to steer">
+      <defs>
+        <g id="spoke">
+          <path class="wheel__spoke" d="M-5 -20 L-4 -74 L-7 -74 L-7 -96 L7 -96 L7 -74 L4 -74 L5 -20 Z"/>
+          <circle class="wheel__collar" cx="0" cy="-70" r="7"/>
+          <circle class="wheel__grip" cx="0" cy="-101" r="7.5"/>
+        </g>
+      </defs>
+      <circle class="wheel__hit" cx="0" cy="0" r="112"/>
+      <g id="rotor">
+        <use href="#spoke" transform="rotate(0)"/>
+        <use href="#spoke" transform="rotate(60)"/>
+        <use href="#spoke" transform="rotate(120)"/>
+        <use href="#spoke" transform="rotate(180)"/>
+        <use href="#spoke" transform="rotate(240)"/>
+        <use href="#spoke" transform="rotate(300)"/>
+        <circle class="wheel__rim" cx="0" cy="0" r="72"/>
+        <circle class="wheel__rim wheel__rim--light" cx="0" cy="0" r="69"/>
+        <circle class="wheel__hub" cx="0" cy="0" r="19"/>
+        <circle class="wheel__nut" cx="0" cy="0" r="6"/>
+        <circle class="wheel__king" cx="0" cy="-101" r="7.5"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<!-- Artwork for things outside the window. Shapes here, colours in the stylesheet. -->
+<template id="art-land">
+  <svg class="art art--land" viewBox="0 0 600 120" preserveAspectRatio="none">
+    <path d="M0 120 L0 117 L44 104 L96 72 L152 88 L214 46 L268 70 L330 38 L392 72 L448 56 L508 86 L556 106 L600 117 L600 120 Z"/>
+  </svg>
+</template>
+
+<template id="art-island">
+  <svg class="art art--island" viewBox="0 0 240 90" preserveAspectRatio="none">
+    <path d="M0 90 L0 87 L38 76 L92 28 L140 58 L188 46 L240 87 L240 90 Z"/>
+  </svg>
+</template>
+
+<template id="art-lighthouse">
+  <svg class="art art--lighthouse" viewBox="0 0 44 130" preserveAspectRatio="none">
+    <path class="art__rock" d="M0 130 L5 114 L39 114 L44 130 Z"/>
+    <path class="art__tower" d="M15 116 L17 38 L27 38 L29 116 Z"/>
+    <rect class="art__band" x="16" y="62" width="12" height="16"/>
+    <rect class="art__lantern" x="14" y="24" width="16" height="14" rx="2"/>
+    <path class="art__cap" d="M12 24 L22 12 L32 24 Z"/>
+  </svg>
+</template>
+
+<template id="art-buoy-port">
+  <svg class="art art--buoy art--port" viewBox="0 0 26 78" preserveAspectRatio="none">
+    <path class="art__body" d="M7 68 L6 34 L20 34 L19 68 Z"/>
+    <rect class="art__mast" x="12" y="12" width="2" height="24"/>
+    <rect class="art__topmark" x="6" y="4" width="14" height="10"/>
+    <path class="art__wash" d="M1 70 Q13 62 25 70 Q13 77 1 70 Z"/>
+  </svg>
+</template>
+
+<template id="art-buoy-starboard">
+  <svg class="art art--buoy art--starboard" viewBox="0 0 26 78" preserveAspectRatio="none">
+    <path class="art__body" d="M6 68 L7 36 L19 36 L20 68 Z"/>
+    <rect class="art__mast" x="12" y="14" width="2" height="24"/>
+    <path class="art__topmark" d="M13 2 L20 16 L6 16 Z"/>
+    <path class="art__wash" d="M1 70 Q13 62 25 70 Q13 77 1 70 Z"/>
+  </svg>
+</template>
+
+<template id="art-sloop">
+  <svg class="art art--sloop" viewBox="0 0 64 96" preserveAspectRatio="none">
+    <path class="art__main" d="M33 6 L33 70 L56 70 Z"/>
+    <path class="art__jib" d="M31 10 L31 70 L12 70 Z"/>
+    <path class="art__hull" d="M6 70 L60 70 L52 82 L14 82 Z"/>
+  </svg>
+</template>
+
+<template id="art-freighter">
+  <svg class="art art--freighter" viewBox="0 0 300 84" preserveAspectRatio="none">
+    <path class="art__hull" d="M6 54 L294 54 L276 76 L24 76 Z"/>
+    <rect class="art__box" x="54" y="36" width="42" height="18"/>
+    <rect class="art__box" x="104" y="30" width="46" height="24"/>
+    <rect class="art__box" x="158" y="38" width="38" height="16"/>
+    <rect class="art__house" x="212" y="18" width="46" height="36"/>
+    <rect class="art__stack" x="230" y="4" width="12" height="16"/>
+  </svg>
+</template>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---- Tuning -------------------------------------------------------------
+  const WHEEL_STOP = 540;    // wheel travel each way, degrees
+  const RUDDER_MAX = 35;     // rudder travel each way, degrees
+  const TURN_GAIN  = 0.62;   // heading deg/sec per degree of rudder, at cruise
+  const SPEED      = 7.7;    // metres per second, held constant (about 15 knots)
+  const EYE        = 3.6;    // height of your eye above the water, metres
+  const WORLD      = 4000;   // the sea repeats every 4 km, in both directions
+  const FOV        = 68;     // degrees of bearing across the horizon layer
+  const HAZE       = 4200;   // metres at which things fade out entirely
+  const WAKE_NEAR  = 3.2;    // px of wave scroll per metre run, near water
+  const WAKE_FAR   = 1.1;    // and for the slower, more distant band
+
+  // ---- The sea room, in metres. x is east, y is north. --------------------
+  // w and h are real sizes, so range alone decides how big a thing looks.
+  const SCENE = [
+    { art: 'buoy-port',      x:  -48, y:   210, w: 3.4, h:  11 },
+    { art: 'buoy-starboard', x:   52, y:   265, w: 3.4, h:  11 },
+    { art: 'buoy-port',      x:  -62, y:   760, w: 3.4, h:  11 },
+    { art: 'buoy-starboard', x:   68, y:   840, w: 3.4, h:  11 },
+    { art: 'sloop',          x:  250, y:   520, w:  12, h:  16 },
+    { art: 'sloop',          x: -880, y:  1600, w:  12, h:  16 },
+    { art: 'lighthouse',     x: -520, y:   900, w:  12, h:  42 },
+    { art: 'freighter',      x: 1400, y: -1500, w: 180, h:  40 },
+    { art: 'island',         x:  900, y:  1300, w: 700, h: 130 },
+    { art: 'island',         x:-1500, y:  -900, w: 600, h:  90 },
+    { art: 'land',           x:-1450, y:  1250, w:2000, h: 185 },
+    { art: 'land',           x:  500, y: -1750, w:2200, h: 175 }
+  ];
+  // ---- State --------------------------------------------------------------
+  let wheelAngle = 0;
+  let heading    = 0;        // degrees true
+  let boatX      = 0;        // metres east
+  let boatY      = -80;      // metres north, starting just short of the channel
+  let run        = 0;        // metres run through the water
+  let dragging   = false;
+  let lastGrab   = 0;
+  let ppd        = 12;       // pixels per degree, set by layout()
+  let horizonW   = 0;
+  let horizonH   = 0;
+  const marks    = [];
+
+  const el = {
+    wheel:    document.getElementById('wheel'),
+    rotor:    document.getElementById('rotor'),
+    horizon:  document.getElementById('horizon'),
+    world:    document.getElementById('world'),
+    swell:    document.getElementById('swell'),
+    value:    document.getElementById('headingValue'),
+    cardinal: document.getElementById('headingCardinal'),
+    fill:     document.getElementById('rudderFill'),
+    speed:    document.getElementById('speedValue'),
+    log:      document.getElementById('logValue')
+  };
+
+  const clamp  = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const norm   = d => ((d % 360) + 360) % 360;
+  const DEG    = 180 / Math.PI;
+
+  const arc = (a, b) => {                        // shortest signed way round
+    let d = norm(b) - norm(a);
+    if (d > 180) d -= 360;
+    if (d < -180) d += 360;
+    return d;
+  };
+
+  // Wrap a distance into the nearest copy of the repeating sea
+  const wrap = v => ((v + WORLD / 2) % WORLD + WORLD) % WORLD - WORLD / 2;
+
+  // How wide something stands in the eye, and how tall it rises from the water
+  const subtendW = (size, range) => 2 * Math.atan(size / (2 * range)) * DEG;
+  const subtendH = (size, range) => Math.atan(size / range) * DEG;
+
+  const POINTS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  const cardinal = deg => POINTS[Math.round(norm(deg) / 22.5) % 16];
+
+  // ---- Build the world ----------------------------------------------------
+  function buildWorld() {
+    SCENE.forEach(item => {
+      const source = document.getElementById('art-' + item.art);
+      const holder = document.createElement('div');
+      holder.className = 'mark';
+      holder.appendChild(source.content.firstElementChild.cloneNode(true));
+      el.world.appendChild(holder);
+      marks.push({ el: holder, x: item.x, y: item.y, w: item.w, h: item.h, shown: true });
+    });
+  }
+
+  function layout() {
+    horizonW = el.horizon.clientWidth;
+    horizonH = el.horizon.clientHeight;
+    ppd = horizonW / FOV;
+  }
+
+  // ---- Steering: pointer only ---------------------------------------------
+  function grabAngle(ev) {
+    const box = el.wheel.getBoundingClientRect();
+    const x = ev.clientX - (box.left + box.width / 2);
+    const y = ev.clientY - (box.top + box.height / 2);
+    return Math.atan2(y, x) * DEG;
+  }
+
+  el.wheel.addEventListener('pointerdown', ev => {
+    dragging = true;
+    lastGrab = grabAngle(ev);
+    el.wheel.setPointerCapture(ev.pointerId);
+    el.wheel.classList.add('is-held');
+  });
+
+  el.wheel.addEventListener('pointermove', ev => {
+    if (!dragging) return;
+    const now = grabAngle(ev);
+    let step = now - lastGrab;
+    if (step > 180) step -= 360;                 // unwrap across the +/-180 seam
+    if (step < -180) step += 360;
+    wheelAngle = clamp(wheelAngle + step, -WHEEL_STOP, WHEEL_STOP);
+    lastGrab = now;
+  });
+
+  const release = ev => {
+    if (!dragging) return;
+    dragging = false;
+    el.wheel.classList.remove('is-held');
+    if (ev.pointerId !== undefined && el.wheel.hasPointerCapture(ev.pointerId)) {
+      el.wheel.releasePointerCapture(ev.pointerId);
+    }
+  };
+  el.wheel.addEventListener('pointerup', release);
+  el.wheel.addEventListener('pointercancel', release);
+
+  // ---- Loop ---------------------------------------------------------------
+  const stillness = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let last = performance.now();
+  let clock = 0;
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    clock += dt;
+
+    const rudder = clamp(wheelAngle / (WHEEL_STOP / RUDDER_MAX), -RUDDER_MAX, RUDDER_MAX);
+    heading = norm(heading + rudder * TURN_GAIN * dt);
+
+    // She never stops: always a step forward along the current heading.
+    const rad = heading / DEG;
+    boatX += Math.sin(rad) * SPEED * dt;
+    boatY += Math.cos(rad) * SPEED * dt;
+    run   += SPEED * dt;
+
+    drawWorld();
+    drawConsole(rudder);
+    requestAnimationFrame(frame);
+  }
+
+  function drawWorld() {
+    const centre = horizonW / 2;
+    const waterline = horizonH * 0.46;
+    const edge = FOV / 2 + 4;
+
+    for (const m of marks) {
+      const dx = wrap(m.x - boatX);
+      const dy = wrap(m.y - boatY);
+      const range = Math.max(Math.hypot(dx, dy), 12);
+      const rel = arc(heading, Math.atan2(dx, dy) * DEG);
+      const angW = Math.min(subtendW(m.w, range), 150);
+
+      if (Math.abs(rel) > edge + angW / 2 || range > HAZE) {
+        if (m.shown) { m.el.style.display = 'none'; m.shown = false; }
+        continue;
+      }
+      if (!m.shown) { m.el.style.display = 'block'; m.shown = true; }
+
+      const angH = Math.min(subtendH(m.h, range), 70);
+      const dip  = subtendH(EYE, range);          // how far below the horizon it sits
+
+      m.el.style.left   = (centre + rel * ppd) + 'px';
+      m.el.style.width  = (angW * ppd) + 'px';
+      m.el.style.height = (angH * ppd) + 'px';
+      m.el.style.bottom = (waterline - dip * ppd) + 'px';
+      m.el.style.opacity = clamp(1.12 - range / HAZE, 0.08, 1);
+      m.el.style.zIndex = Math.round(clamp(HAZE - range, 0, HAZE) / 4);
+    }
+
+    // Water: slides sideways as you turn, and towards you as you make way.
+    const side = -norm(heading) * ppd;
+    el.swell.style.backgroundPosition =
+      (side * 0.35).toFixed(1) + 'px ' + ((run * WAKE_NEAR) % 4000).toFixed(1) + 'px, ' +
+      (side * 0.18).toFixed(1) + 'px ' + ((run * WAKE_FAR) % 4000).toFixed(1) + 'px';
+
+    if (stillness.matches) {
+      el.horizon.style.transform = 'none';
+    } else {
+      const roll  = Math.sin(clock * 0.62) * 0.75 + Math.sin(clock * 1.43) * 0.3;
+      const heave = Math.sin(clock * 0.47) * 5;
+      el.horizon.style.transform =
+        'translateY(' + heave.toFixed(1) + 'px) rotate(' + roll.toFixed(2) + 'deg)';
+    }
+  }
+
+  function drawConsole(rudder) {
+    el.rotor.setAttribute('transform', 'rotate(' + wheelAngle.toFixed(2) + ')');
+    el.value.textContent = String(Math.round(heading) % 360).padStart(3, '0');
+    el.cardinal.textContent = cardinal(heading);
+
+    const span = Math.abs(rudder) / RUDDER_MAX * 50;
+    el.fill.style.width = span + '%';
+    el.fill.style.left = rudder >= 0 ? '50%' : (50 - span) + '%';
+    el.fill.classList.toggle('is-port', rudder < -0.5);
+    el.fill.classList.toggle('is-starboard', rudder > 0.5);
+
+    el.speed.textContent = (SPEED * 1.94384).toFixed(1) + ' kn';
+    el.log.textContent = (run / 1852).toFixed(2) + ' nm';
+  }
+
+  buildWorld();
+  layout();
+  window.addEventListener('resize', layout);
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
