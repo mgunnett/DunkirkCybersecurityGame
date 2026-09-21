@@ -1,26 +1,23 @@
 /* ==========================================================================
    Helm — visuals
-   The look of the boat lives here; index.html holds the game logic.
+   A 1930s wheelhouse, seen from the helm seat. Logic lives in index.html.
    ========================================================================== */
 
 :root {
-  /* Varnished mahogany, as in the reference photo */
-  --wood-dark:  #3d1f0e;
-  --wood:       #6d3a1a;
-  --wood-lit:   #96552a;
-  --wood-edge:  #b5773f;
+  --wood-black: #24120a;
+  --wood-deep:  #3a1c0c;
+  --wood:       #5d2f14;
+  --wood-lit:   #83481f;
+  --wood-edge:  #a9682f;
 
-  --bulkhead:   #e7dcc4;
-  --bulkhead-sh:#cfc2a6;
+  --brass:      #c69a4a;
+  --brass-lit:  #e3c684;
+  --brass-deep: #8a6526;
 
-  --brass:      #c2903f;
-  --brass-lit:  #e6bd6b;
-  --brass-deep: #7c5a24;
-
-  --face:       #17160f;   /* instrument glass */
-  --amber:      #f0b855;   /* lit digits */
-  --port:       #c4453a;
-  --starboard:  #3e9e6c;
+  --ivory:      #f0e7d2;
+  --ink:        #2a2317;
+  --vermilion:  #b03a2e;
+  --starboard:  #3e8a5f;
 
   --sky-high:   #9fbccb;
   --sky-low:    #dce8e9;
@@ -37,51 +34,56 @@ html, body {
   height: 100%;
   margin: 0;
   overflow: hidden;
-  background: var(--wood-dark);
+  background: var(--wood-black);
 }
 
 body {
   font-family: var(--serif);
-  color: var(--bulkhead);
+  color: var(--ivory);
   -webkit-font-smoothing: antialiased;
 }
 
+/* Everything is placed against this one frame, front to back by z-index */
 .helm {
+  position: relative;
   height: 100dvh;
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
 }
 
-/* --- Overhead ------------------------------------------------------------- */
+/* --- Deckhead, just above the eye ----------------------------------------- */
 
-.headliner {
-  flex: 0 0 auto;
-  height: clamp(26px, 6vh, 54px);
+.deckhead {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6%;
   display: flex;
   justify-content: space-evenly;
-  align-items: stretch;
-  background: linear-gradient(180deg, var(--wood-dark) 0%, var(--wood) 60%, #4a2612 100%);
-  border-bottom: 2px solid #2a1409;
-  box-shadow: inset 0 -6px 14px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(180deg, var(--wood-black) 0%, var(--wood-deep) 55%, #2d1408 100%);
+  box-shadow: inset 0 -8px 16px rgba(0, 0, 0, 0.6);
+  z-index: 8;
 }
 
 .beam {
   width: clamp(10px, 1.4vw, 20px);
-  background: linear-gradient(90deg, #4a2612, var(--wood-lit) 45%, #4a2612);
-  opacity: 0.85;
+  background: linear-gradient(90deg, #2c1409, var(--wood-lit) 45%, #2c1409);
+  opacity: 0.8;
 }
 
-/* --- Windshield ----------------------------------------------------------- */
+/* --- Windscreen ----------------------------------------------------------- */
 
 .windshield {
-  position: relative;
-  flex: 1 1 auto;
-  min-height: 0;
-  border: clamp(8px, 1.6vh, 18px) solid var(--wood);
-  border-top-width: clamp(6px, 1.2vh, 14px);
-  border-image: linear-gradient(180deg, var(--wood-edge), var(--wood) 40%, #4a2612) 1;
+  position: absolute;
+  top: 6%;
+  left: 0;
+  right: 0;
+  height: 42%;
+  border: clamp(7px, 1.4vh, 15px) solid var(--wood-deep);
+  border-bottom-width: clamp(10px, 2vh, 22px);
   background: #000;
   overflow: hidden;
+  z-index: 1;
 }
 
 .view {
@@ -90,7 +92,6 @@ body {
   overflow: hidden;
 }
 
-/* Everything outside the glass: pans with the heading, rolls with the swell */
 .horizon {
   position: absolute;
   inset: -12% -10%;
@@ -126,7 +127,6 @@ body {
     repeating-linear-gradient(179deg, rgba(255, 255, 255, 0.15) 0 2px, rgba(255, 255, 255, 0) 2px 15px),
     repeating-linear-gradient(181deg, rgba(0, 0, 0, 0.17) 0 2px, rgba(0, 0, 0, 0) 2px 34px);
   background-size: 100% 55%, 100% 100%;
-  background-repeat: repeat;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, #000 20%);
   -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, #000 20%);
 }
@@ -134,7 +134,6 @@ body {
 .world {
   position: absolute;
   inset: 0;
-  will-change: transform;
 }
 
 .mark {
@@ -156,7 +155,7 @@ body {
 .art--island  path { fill: #3a5762; }
 
 .art--lighthouse .art__tower   { fill: #f1ece0; }
-.art--lighthouse .art__band    { fill: var(--port); }
+.art--lighthouse .art__band    { fill: var(--vermilion); }
 .art--lighthouse .art__lantern { fill: #2b2b28; }
 .art--lighthouse .art__cap     { fill: #2b2b28; }
 .art--lighthouse .art__rock    { fill: #48565a; }
@@ -164,7 +163,7 @@ body {
 .art--buoy .art__mast { fill: #3a3733; }
 .art--buoy .art__wash { fill: rgba(255, 255, 255, 0.55); }
 .art--port .art__body,
-.art--port .art__topmark      { fill: var(--port); }
+.art--port .art__topmark      { fill: var(--vermilion); }
 .art--starboard .art__body,
 .art--starboard .art__topmark { fill: var(--starboard); }
 
@@ -188,186 +187,239 @@ body {
   height: 42%;
 }
 
-.deck__hull   { fill: #efe7d3; }
+.deck__hull   { fill: #e5dcc6; }
 .deck__wake   { fill: rgba(255, 255, 255, 0.72); }
-.deck__rail   { fill: none; stroke: #b8ad92; stroke-width: 4; }
-.deck__seam   { fill: none; stroke: rgba(120, 110, 90, 0.35); stroke-width: 2; }
-.deck__hatch  { fill: #d5cbb2; stroke: #a89c80; stroke-width: 2; }
-.deck__mast   { stroke: #d8d2c0; stroke-width: 7; }
-.deck__pulpit { fill: none; stroke: #cdd3d2; stroke-width: 4; stroke-linecap: round; }
+.deck__rail   { fill: none; stroke: #ab9f84; stroke-width: 4; }
+.deck__seam   { fill: none; stroke: rgba(110, 100, 80, 0.35); stroke-width: 2; }
+.deck__hatch  { fill: #cdc3a9; stroke: #9e9277; stroke-width: 2; }
+.deck__mast   { stroke: #d2ccb9; stroke-width: 7; }
+.deck__pulpit { fill: none; stroke: #c6ccca; stroke-width: 4; stroke-linecap: round; }
 
-/* Glass: a faint sheen plus the shadow of the frame */
 .glare {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
     linear-gradient(112deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 38%),
-    radial-gradient(120% 90% at 50% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.38) 100%);
+    radial-gradient(120% 90% at 50% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.4) 100%);
 }
 
 .mullion {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: clamp(10px, 1.8vw, 22px);
-  background: linear-gradient(90deg, #3a1d0d, var(--wood-lit) 45%, #3a1d0d);
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.55);
+  width: clamp(9px, 1.6vw, 20px);
+  background: linear-gradient(90deg, #261107, var(--wood-lit) 45%, #261107);
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.6);
 }
 
 .mullion--left  { left: 27%; }
 .mullion--right { right: 27%; }
 
-/* --- Console -------------------------------------------------------------- */
+/* --- Cabin sides: they splay outwards as they come towards you ------------ */
 
-.console {
-  position: relative;
-  flex: 0 0 auto;
-  height: clamp(184px, 30vh, 268px);
-  padding: clamp(14px, 2.4vh, 26px) clamp(14px, 3vw, 40px) 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  background:
-    linear-gradient(180deg, #5d3116 0%, var(--wood) 22%, #52290f 100%);
-  box-shadow: inset 0 22px 34px rgba(0, 0, 0, 0.45);
+.cabinside {
+  position: absolute;
+  top: 6%;
+  height: 52%;
+  width: 13%;
+  z-index: 2;
+  background: linear-gradient(180deg, var(--wood-deep), var(--wood-black));
 }
 
-/* The rounded varnished lip along the top of the console */
-.console__edge {
+.cabinside--port {
+  left: 0;
+  clip-path: polygon(0 0, 52% 0, 100% 100%, 0 100%);
+  box-shadow: inset -8px 0 18px rgba(0, 0, 0, 0.5);
+}
+
+.cabinside--stbd {
+  right: 0;
+  clip-path: polygon(48% 0, 100% 0, 100% 100%, 0 100%);
+  box-shadow: inset 8px 0 18px rgba(0, 0, 0, 0.5);
+}
+
+/* --- Dash top: the varnished surface running away from you ---------------- */
+
+.dashtop {
+  position: absolute;
+  top: 46%;
+  left: 0;
+  right: 0;
+  height: 11%;
+  z-index: 3;
+  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 22%),
+    radial-gradient(90% 140% at 50% 120%, rgba(255, 225, 170, 0.14) 0%, rgba(255, 225, 170, 0) 60%),
+    linear-gradient(180deg,
+      #4b2411 0%,
+      var(--wood-lit) 18%,
+      var(--wood) 52%,
+      var(--wood-deep) 100%);
+}
+
+/* --- Binnacle ------------------------------------------------------------- */
+
+.binnacle {
+  position: absolute;
+  left: 50%;
+  bottom: 46%;
+  height: 35%;
+  width: auto;
+  transform: translateX(-50%);
+  z-index: 4;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.55));
+}
+
+.brass        { fill: var(--brass); }
+.brass--dark  { fill: var(--brass-deep); }
+
+.bin__shadow  { fill: rgba(0, 0, 0, 0.4); }
+.bin__rib     { fill: none; stroke: var(--brass-lit); stroke-width: 2.5; opacity: 0.55; }
+.bin__bowl    { fill: #241d12; }
+.bin__sheen   { fill: rgba(255, 255, 255, 0.16); }
+.bin__lubber     { stroke: var(--vermilion); stroke-width: 3; }
+.bin__lubberhead { fill: var(--vermilion); }
+
+.bin__plate {
+  fill: #2c2115;
+  stroke: var(--brass-deep);
+  stroke-width: 2;
+}
+
+.bin__reading {
+  fill: var(--brass-lit);
+  font-family: var(--serif);
+  font-size: 21px;
+  letter-spacing: 1px;
+  text-anchor: middle;
+}
+
+.card__face   { fill: var(--ivory); }
+.card__north  { fill: var(--vermilion); }
+.card__south  { fill: #46402f; }
+.card__tick   { fill: none; stroke: #5a5242; stroke-width: 3; stroke-linecap: round; }
+
+.card__letter {
+  fill: var(--ink);
+  font-family: var(--serif);
+  font-size: 19px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* --- Dash face ------------------------------------------------------------ */
+
+.dashface {
+  position: absolute;
+  top: 57%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  background:
+    repeating-linear-gradient(92deg, rgba(0, 0, 0, 0.07) 0 2px, rgba(0, 0, 0, 0) 2px 16px),
+    linear-gradient(180deg, var(--wood) 0%, var(--wood-deep) 55%, var(--wood-black) 100%);
+  box-shadow: inset 0 18px 26px rgba(0, 0, 0, 0.45);
+}
+
+.dashface__lip {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: clamp(7px, 1.2vh, 13px);
-  background: linear-gradient(180deg, var(--wood-edge), #7a431f 70%, #38190a);
-  border-bottom: 1px solid #2c1408;
+  height: clamp(6px, 1.1vh, 12px);
+  background: linear-gradient(180deg, var(--wood-edge), #6d3717 70%, #2c1408);
 }
 
-/* Instrument, port side of the wheel */
-
-.gauge {
-  width: clamp(120px, 21vw, 190px);
-  padding: 0.55rem 0.7rem 0.6rem;
-  border-radius: 0.4rem;
-  background: var(--face);
-  border: 2px solid var(--brass-deep, #7c5a24);
-  box-shadow:
-    0 0 0 2px rgba(194, 144, 63, 0.55),
-    inset 0 2px 10px rgba(0, 0, 0, 0.9);
-  text-align: center;
+.dial {
+  position: absolute;
+  top: 15%;
+  width: clamp(80px, 17vh, 140px);
+  height: auto;
+  filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.5));
 }
 
-.gauge__digits {
+.dial--port { left: 6%; }
+.dial--stbd { right: 6%; }
+
+.dial__bezel {
+  fill: none;
+  stroke: var(--brass);
+  stroke-width: 7;
+}
+
+.dial__face  { fill: var(--ivory); }
+.dial__arc   { fill: none; stroke: #8d8577; stroke-width: 2; }
+.dial__tick  { fill: none; stroke: #4a4335; stroke-width: 3; stroke-linecap: round; }
+
+.dial__needle {
+  fill: var(--vermilion);
+  stroke: #5e1f18;
+  stroke-width: 1;
+}
+
+.dial__cap {
+  fill: var(--brass);
+  stroke: var(--brass-deep);
+  stroke-width: 1.5;
+}
+
+.dial__label,
+.dial__side {
+  fill: #4a4335;
+  font-family: var(--serif);
+  font-size: 13px;
+  text-anchor: middle;
+}
+
+.dial__side--port { fill: var(--vermilion); }
+.dial__side--stbd { fill: var(--starboard); }
+
+.dial__window {
+  fill: #241d12;
+  stroke: var(--brass-deep);
+  stroke-width: 1.5;
+}
+
+.dial__counter {
+  fill: var(--ivory);
+  font-family: var(--mono);
+  font-size: 13px;
+  text-anchor: middle;
+}
+
+.speedplate {
+  position: absolute;
+  left: 5%;
+  bottom: 7%;
   margin: 0;
-  font-family: var(--mono);
-  font-size: clamp(1.6rem, 4.4vw, 2.5rem);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  color: var(--amber);
-  text-shadow: 0 0 12px rgba(240, 184, 85, 0.45);
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: #3a2c12;
+  background: linear-gradient(180deg, var(--brass-lit), var(--brass));
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 
-.gauge__deg { font-size: 0.55em; }
-
-.gauge__cardinal {
-  margin: 0.2rem 0 0.5rem;
-  font-size: 0.9rem;
-  letter-spacing: 0.14em;
-  color: #cfd6cf;
-}
-
-.gauge__bar {
-  position: relative;
-  height: 0.5rem;
-  border-radius: 0.25rem;
-  background: #0a0a07;
-  border: 1px solid #2f2d22;
-  overflow: hidden;
-}
-
-.bar__fill {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 0;
-  background: var(--brass);
-}
-
-.bar__fill.is-port      { background: var(--port); }
-.bar__fill.is-starboard { background: var(--starboard); }
-
-.bar__mid {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 2px;
-  margin-left: -1px;
-  background: rgba(226, 223, 205, 0.65);
-}
-
-.gauge__plate {
-  margin: 0.45rem 0 0;
-  font-size: 0.7rem;
-  font-style: italic;
-  color: #8d9187;
-}
-
-/* Breaker panel, starboard side */
-
-.placard {
-  width: clamp(130px, 24vw, 210px);
-  padding: 0.6rem 0.8rem;
-  border-radius: 0.3rem;
-  background: linear-gradient(180deg, var(--bulkhead), var(--bulkhead-sh));
-  border: 1px solid #8e8367;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-  color: #3a3527;
-}
-
-.placard__row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.6rem;
-  margin: 0 0 0.3rem;
-  font-size: 0.85rem;
-  border-bottom: 1px solid rgba(110, 100, 76, 0.35);
-  padding-bottom: 0.25rem;
-}
-
-.placard__value {
-  font-family: var(--mono);
-  font-variant-numeric: tabular-nums;
-  color: #2a261a;
-}
-
-.placard__note {
-  margin: 0.55rem 0 0;
-  font-size: 0.72rem;
-  line-height: 1.45;
-  font-style: italic;
-  color: #5d5540;
-}
-
-/* --- The wheel ------------------------------------------------------------ */
+/* --- The wheel, nearest thing to the eye ---------------------------------- */
 
 .wheel {
   position: absolute;
   left: 50%;
-  bottom: -12%;
-  width: min(35vh, 42vw);
+  bottom: -14%;
+  width: min(56vh, 62vw);
   height: auto;
   transform: translateX(-50%);
+  z-index: 6;
   cursor: grab;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
-  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.6));
 }
 
 .wheel.is-held { cursor: grabbing; }
@@ -379,54 +431,68 @@ body {
 
 .wheel__rim {
   fill: none;
-  stroke: #7a4320;
+  stroke: #6b3a1c;
   stroke-width: 15;
 }
 
 .wheel__rim--light {
-  stroke: #a2632f;
+  stroke: #90562a;
   stroke-width: 5;
-  opacity: 0.85;
+  opacity: 0.8;
 }
 
 .wheel__spoke {
-  fill: #8b4f26;
-  stroke: #3d1f0d;
+  fill: #7c4622;
+  stroke: #2f1609;
   stroke-width: 1.5;
 }
 
 .wheel__collar {
-  fill: #a2632f;
-  stroke: #3d1f0d;
+  fill: #90562a;
+  stroke: #2f1609;
   stroke-width: 1.5;
 }
 
 .wheel__grip {
-  fill: #96552a;
-  stroke: #3d1f0d;
+  fill: #854c26;
+  stroke: #2f1609;
   stroke-width: 1.5;
 }
 
 .wheel__hub {
   fill: var(--brass);
-  stroke: #6b4a17;
+  stroke: var(--brass-deep);
   stroke-width: 3;
 }
 
-.wheel__nut { fill: #7c5a24; }
+.wheel__nut { fill: var(--brass-deep); }
 
 .wheel__king {
-  fill: #d8b884;
-  stroke: #3d1f0d;
+  fill: #c9ab74;
+  stroke: #2f1609;
   stroke-width: 1.5;
+}
+
+/* --- Cabin gloom, over the lot -------------------------------------------- */
+
+.gloom {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  background: radial-gradient(112% 78% at 50% 40%,
+    rgba(0, 0, 0, 0) 45%,
+    rgba(0, 0, 0, 0.3) 78%,
+    rgba(0, 0, 0, 0.62) 100%);
 }
 
 /* --- Narrow screens ------------------------------------------------------- */
 
-@media (max-width: 560px) {
-  .gauge    { width: 40%; padding: 0.4rem 0.5rem 0.5rem; }
-  .placard  { width: 44%; }
-  .wheel    { width: 54vw; bottom: -20%; }
-  .gauge__plate,
-  .placard__note { display: none; }
+@media (max-width: 620px) {
+  .binnacle { height: 30%; bottom: 47%; }
+  .dial     { width: clamp(64px, 12vh, 96px); top: 7%; }
+  .dial--port { left: 3%; }
+  .dial--stbd { right: 3%; }
+  .wheel    { width: 80vw; bottom: -8%; }
+  .speedplate { display: none; }
 }
