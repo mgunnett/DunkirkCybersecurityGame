@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Helm — visuals
-   A 1930s wheelhouse, seen from the helm seat. Logic lives in index.html.
+   Visuals for the helm of the ship
+   - Will likely remove the things out in the water as development progresses
    ========================================================================== */
 
 :root {
@@ -149,7 +149,7 @@ body {
   overflow: visible;
 }
 
-/* --- Things out there ----------------------------------------------------- */
+/* --- Things out in the water ----------------------------------------------------- */
 
 .art--land    path { fill: #3f5f6a; }
 .art--island  path { fill: #3a5762; }
