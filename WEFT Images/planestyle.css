@@ -1,0 +1,288 @@
+/* ==========================================================================
+   Sky over the Channel, with one aircraft crossing it
+   - Shared by every aircraft frame. Only the plane artwork changes per page.
+   - Planes are drawn from below, the way a spotter sees them, so the
+     WEFT features (Wings, Engine, Fuselage, Tail) can be picked out.
+   ========================================================================== */
+
+:root {
+  --vermilion:  #b03a2e;
+
+  --brass:      #c69a4a;
+  --brass-lit:  #e3c684;
+  --brass-deep: #8a6526;
+
+  --sky-high:   #8ea7b4;
+  --sky-mid:    #b3c4cb;
+  --sky-low:    #d6dedd;
+  --sea-far:    #5f7f86;
+  --sea-near:   #2f4b53;
+
+  --crossing:   48s;      /* time for the plane to cross the whole sky */
+  --plane-w:    clamp(90px, 15vmin, 190px);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #080403;
+}
+
+/* --- The binocular eyepieces, as in the helm demo ------------------------- */
+
+.glasses {
+  /* Two overlapping eyepiece circles, sized to fit any screen */
+  --r:   min(45vh, 28.5vw);
+  --gap: calc(var(--r) * 0.72);
+
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  background: radial-gradient(120% 100% at 50% 50%, #1a0d06 0%, #080403 70%);
+}
+
+/* Each layer is the binocular outline, grown by --grow: leather, brass, then glass */
+.glasses__cup {
+  --grow: 0px;
+  --cup: calc(var(--r) + var(--grow));
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image:
+    radial-gradient(circle var(--cup) at calc(50% - var(--gap)) 50%, #000 calc(var(--cup) - 1px), transparent var(--cup)),
+    radial-gradient(circle var(--cup) at calc(50% + var(--gap)) 50%, #000 calc(var(--cup) - 1px), transparent var(--cup));
+  mask-image:
+    radial-gradient(circle var(--cup) at calc(50% - var(--gap)) 50%, #000 calc(var(--cup) - 1px), transparent var(--cup)),
+    radial-gradient(circle var(--cup) at calc(50% + var(--gap)) 50%, #000 calc(var(--cup) - 1px), transparent var(--cup));
+}
+
+.glasses__cup--leather {
+  --grow: calc(var(--r) * 0.1);
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.025) 0 2px, rgba(0, 0, 0, 0) 2px 5px),
+    radial-gradient(90% 90% at 50% 40%, #2b1c12 0%, #120b07 100%);
+}
+
+.glasses__cup--brass {
+  --grow: 8px;
+  background: linear-gradient(160deg, var(--brass-lit) 0%, var(--brass) 38%, var(--brass-deep) 100%);
+}
+
+.glasses__cup--gap {
+  --grow: 3px;
+  background: #0b0705;
+}
+
+/* The glass itself: the sky and plane are placed against this, front to back by source order */
+.glasses__field {
+  overflow: hidden;
+  background: #000;
+}
+
+/* Lens coating and fall-off towards the rims */
+.glasses__lens {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse calc(var(--gap) + var(--r)) var(--r) at 50% 50%,
+      rgba(0, 0, 0, 0) 78%, rgba(8, 12, 14, 0.35) 100%),
+    linear-gradient(112deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%),
+    rgba(255, 214, 150, 0.05);
+}
+
+.glasses__reticle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--r) * 1.3);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  fill: none;
+  stroke: rgba(20, 18, 14, 0.55);
+  stroke-width: 0.8;
+}
+
+.sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    var(--sky-high) 0%,
+    var(--sky-mid) 45%,
+    var(--sky-low) 82%,
+    #e2e6e1 88%);
+}
+
+/* --- Two banks of cloud, drifting on the wind at different rates ---------- */
+
+.clouds {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background-repeat: repeat-x;
+  pointer-events: none;
+}
+
+.clouds--far {
+  top: 44%;
+  height: 42%;
+  opacity: 0.7;
+  filter: blur(6px);
+  background-image:
+    radial-gradient(38% 26% at 30% 60%, rgba(236, 240, 240, 0.9), rgba(236, 240, 240, 0) 72%),
+    radial-gradient(26% 20% at 72% 70%, rgba(222, 228, 229, 0.85), rgba(222, 228, 229, 0) 72%);
+  background-size: 110vmin 100%, 80vmin 100%;
+  animation: drift-far 160s linear infinite;
+}
+
+.clouds--near {
+  top: 0;
+  height: 62%;
+  filter: blur(4px);
+  background-image:
+    radial-gradient(34% 24% at 24% 36%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(22% 15% at 36% 30%, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(28% 18% at 78% 64%, rgba(246, 248, 248, 0.75), rgba(246, 248, 248, 0) 70%);
+  background-size: 150vmin 100%, 150vmin 100%, 120vmin 100%;
+  animation: drift-near 100s linear infinite;
+}
+
+/* --- The oil tanks at Dunkirk burning on the horizon ---------------------- */
+
+.smoke {
+  position: absolute;
+  left: 8%;
+  bottom: 11%;
+  width: 20%;
+  height: 58%;
+  filter: blur(10px);
+  transform: skewX(-24deg);
+  transform-origin: 50% 100%;
+  background:
+    radial-gradient(28% 12% at 50% 94%, rgba(38, 36, 34, 0.95), rgba(38, 36, 34, 0) 100%),
+    radial-gradient(34% 22% at 56% 70%, rgba(48, 46, 44, 0.85), rgba(48, 46, 44, 0) 100%),
+    radial-gradient(44% 26% at 64% 42%, rgba(66, 64, 62, 0.6), rgba(66, 64, 62, 0) 100%),
+    radial-gradient(56% 24% at 74% 14%, rgba(92, 92, 90, 0.35), rgba(92, 92, 90, 0) 100%);
+}
+
+/* --- A sliver of the Channel along the bottom ----------------------------- */
+
+.sea {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 88%;
+  bottom: 0;
+  background:
+    repeating-linear-gradient(179deg, rgba(255, 255, 255, 0.1) 0 1px, rgba(255, 255, 255, 0) 1px 9px),
+    linear-gradient(180deg, var(--sea-far) 0%, #466871 30%, var(--sea-near) 100%);
+}
+
+.coast {
+  position: absolute;
+  left: 3%;
+  width: 40%;
+  top: -7px;
+  height: 8px;
+  background: #56666a;
+  clip-path: polygon(0 100%, 6% 40%, 22% 55%, 38% 20%, 52% 45%, 70% 30%, 88% 60%, 100% 100%);
+}
+
+/* --- The aircraft --------------------------------------------------------- */
+
+/* Crosses the sky left to right, then comes round again */
+.flightpath {
+  position: absolute;
+  left: 0;
+  top: 30%;
+  width: var(--plane-w);
+  aspect-ratio: 1;
+  margin-top: calc(var(--plane-w) / -2);
+  animation: cross var(--crossing) linear infinite;
+}
+
+/* Small rise and fall, and a lazy wobble in the wings */
+.plane {
+  width: 100%;
+  height: 100%;
+  perspective: 1200px;
+  animation: bob 9s ease-in-out infinite;
+}
+
+/* Seen from below and a little to one side, so the span foreshortens */
+.plane__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotateX(34deg) rotate(-6deg);
+  filter: saturate(0.85) drop-shadow(0 0 1px rgba(0, 0, 0, 0.25));
+}
+
+.prop {
+  fill: rgba(40, 40, 40, 0.3);
+  animation: prop-flicker 0.09s steps(2) infinite alternate;
+}
+
+.panel {
+  fill: none;
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+/* Junkers Ju 87 "Stuka": light blue underside, spatted legs, gull wing */
+.ju__skin     { fill: #8599a4; stroke: #56666e; stroke-width: 1; }
+.ju__panel    { stroke: rgba(40, 50, 56, 0.45); }
+.ju__radiator { fill: #3a4246; stroke: #2a3034; stroke-width: 1; }
+.ju__spat     { fill: #7a8e98; stroke: #4c5a61; stroke-width: 1; }
+.ju__leg      { stroke: #56666e; stroke-width: 4; stroke-linecap: round; }
+.ju__brake    { stroke: #3a4246; stroke-width: 3; stroke-linecap: round; }
+.ju__strut    { stroke: #56666e; stroke-width: 2; stroke-linecap: round; }
+.ju__bomb     { fill: #454a40; stroke: #2e322b; stroke-width: 1; }
+.ju__spinner  { fill: #3f4a4f; }
+
+.cross__edge  { fill: #f2f0ea; }
+.cross__bar   { fill: #141414; }
+
+/* Supermarine Spitfire Mk I: May 1940 black and white undersides */
+.spit__wing--stbd { fill: #e4e1d6; stroke: #8b8a84; stroke-width: 1; }
+.spit__wing--port { fill: #1d1d1d; stroke: #0c0c0c; stroke-width: 1; }
+.spit__skin       { fill: #b9bcb8; stroke: #6f7370; stroke-width: 1; }
+.spit__panel      { stroke: rgba(118, 118, 118, 0.6); }
+.spit__radiator   { fill: #55595a; stroke: #333; stroke-width: 1; }
+.spit__spinner    { fill: #262626; }
+
+.roundel__blue  { fill: #1f3a78; }
+.roundel__white { fill: #efece2; }
+.roundel__red   { fill: var(--vermilion); }
+
+/* --- Motion --------------------------------------------------------------- */
+
+@keyframes cross {
+  from { transform: translateX(calc(-1 * var(--plane-w))); }
+  to   { transform: translateX(100vw); }
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(-18%) rotate(2deg); }
+}
+
+@keyframes drift-far {
+  to { background-position: -110vmin 0, -80vmin 0; }
+}
+
+@keyframes drift-near {
+  to { background-position: -150vmin 0, -150vmin 0, -120vmin 0; }
+}
+
+@keyframes prop-flicker {
+  to { fill: rgba(40, 40, 40, 0.45); }
+}
+
+/* Plane still crosses (the game needs it), but everything else holds still */
+@media (prefers-reduced-motion: reduce) {
+  .clouds, .plane, .prop { animation: none; }
+}
