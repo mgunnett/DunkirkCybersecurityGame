@@ -85,6 +85,46 @@
     <rect class="brass" x="56" y="386" width="128" height="16" rx="3"/>
   </svg>
 
+  <!-- Binoculars, stood on the dash top to port of the binnacle. Click to raise them. -->
+  <button class="binoculars" id="binoculars" type="button"
+          aria-label="Binoculars: raise them to look out" data-label="Binoculars">
+    <svg viewBox="0 0 200 130" aria-hidden="true">
+      <defs>
+        <linearGradient id="binoLeather" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" stop-color="#110a06"/>
+          <stop offset="0.45" stop-color="#3b2819"/>
+          <stop offset="1" stop-color="#140c07"/>
+        </linearGradient>
+      </defs>
+      <ellipse class="bino__shadow" cx="100" cy="122" rx="94" ry="8"/>
+
+      <rect class="brass brass--dark" x="84" y="52" width="32" height="12" rx="3"/>
+      <rect class="brass brass--dark" x="84" y="92" width="32" height="12" rx="3"/>
+      <rect class="brass" x="93" y="30" width="14" height="74" rx="5"/>
+      <rect class="bino__knurl" x="89" y="36" width="22" height="15" rx="3"/>
+      <path class="bino__grip" d="M93 38 L93 49 M97 38 L97 49 M101 38 L101 49 M105 38 L105 49"/>
+
+      <path class="bino__body" d="M30 44 L84 44 L90 114 L22 114 Z"/>
+      <path class="bino__body" d="M116 44 L170 44 L178 114 L110 114 Z"/>
+      <path class="bino__band" d="M27 76 L87 76 L88 85 L26 85 Z"/>
+      <path class="bino__band" d="M113 76 L173 76 L174 85 L112 85 Z"/>
+      <path class="bino__sheen" d="M37 48 L44 48 L40 110 L32 110 Z"/>
+      <path class="bino__sheen" d="M123 48 L130 48 L126 110 L118 110 Z"/>
+
+      <rect class="brass" x="19" y="110" width="74" height="10" rx="3"/>
+      <rect class="brass" x="107" y="110" width="74" height="10" rx="3"/>
+
+      <rect class="brass" x="36" y="26" width="42" height="20" rx="4"/>
+      <rect class="brass" x="122" y="26" width="42" height="20" rx="4"/>
+      <ellipse class="bino__cup" cx="57" cy="26" rx="24" ry="7.5"/>
+      <ellipse class="bino__cup" cx="143" cy="26" rx="24" ry="7.5"/>
+      <ellipse class="bino__glass" cx="57" cy="26" rx="15" ry="4.5"/>
+      <ellipse class="bino__glass" cx="143" cy="26" rx="15" ry="4.5"/>
+      <path class="bino__glint" d="M47 25 Q52 22 60 22.5"/>
+      <path class="bino__glint" d="M133 25 Q138 22 146 22.5"/>
+    </svg>
+  </button>
+
   <!-- Dash face with the working instruments -->
   <div class="dashface">
     <div class="dashface__lip" aria-hidden="true"></div>
@@ -147,6 +187,37 @@
   <div class="gloom" aria-hidden="true"></div>
 </div>
 
+<!-- Looking through the binoculars. Same sea, same heading, much closer. -->
+<div class="glasses" id="glasses" role="dialog" aria-modal="true"
+     aria-label="Looking through the binoculars" aria-hidden="true">
+  <div class="glasses__optic">
+    <div class="glasses__cup glasses__cup--leather" aria-hidden="true"></div>
+    <div class="glasses__cup glasses__cup--brass" aria-hidden="true"></div>
+    <div class="glasses__cup glasses__cup--gap" aria-hidden="true"></div>
+
+    <div class="glasses__cup glasses__field" id="glassField">
+      <div class="glasses__scene" id="glassScene">
+        <div class="glasses__sky" id="glassSky"></div>
+        <div class="glasses__sun" id="glassSun"></div>
+        <div class="glasses__clouds" id="glassClouds"></div>
+        <div class="glasses__sea" id="glassSea"><div class="swell" id="glassSwell"></div></div>
+        <div class="glasses__haze" id="glassHaze"></div>
+        <div class="world" id="glassWorld"></div>
+        <div class="glasses__air" id="glassAir"></div>
+      </div>
+      <div class="glasses__lens" aria-hidden="true"></div>
+      <svg class="glasses__reticle" viewBox="-100 -40 200 80" aria-hidden="true">
+        <path d="M-90 0 L90 0 M0 -30 L0 30"/>
+        <path d="M-80 -4 L-80 4 M-60 -4 L-60 4 M-40 -6 L-40 6 M-20 -4 L-20 4 M20 -4 L20 4 M40 -6 L40 6 M60 -4 L60 4 M80 -4 L80 4"/>
+      </svg>
+    </div>
+  </div>
+
+  <p class="glasses__hint" id="glassHint">Drag to look about &middot; scroll to change power &middot; Esc to lower</p>
+  <p class="glasses__plate" id="glassPlate" aria-live="off">Bearing 000&#176; &middot; Elevation +0&#176; &middot; 7&#215;</p>
+  <button class="glasses__lower" id="glassLower" type="button">Lower glasses</button>
+</div>
+
 <!-- Artwork for things outside the window. Shapes here, colours in the stylesheet. -->
 <template id="art-land">
   <svg class="art art--land" viewBox="0 0 600 120" preserveAspectRatio="none">
@@ -207,6 +278,23 @@
   </svg>
 </template>
 
+<!-- Things up in the sky, only made out through the glasses -->
+<template id="art-gull">
+  <svg class="art art--gull" viewBox="0 0 40 16" preserveAspectRatio="none">
+    <path d="M2 10 Q10 1 20 9 Q30 1 38 10 Q30 5 20 12 Q10 5 2 10 Z"/>
+  </svg>
+</template>
+
+<template id="art-aircraft">
+  <svg class="art art--aircraft" viewBox="0 0 120 36" preserveAspectRatio="none">
+    <path d="M8 17 L4 3 L14 3 L24 15 Z"/>
+    <path d="M4 18 Q10 12 30 13 L96 14 Q112 15 116 18 Q112 21 96 22 L30 23 Q10 24 4 18 Z"/>
+    <path d="M6 18 L22 18 L16 24 L6 24 Z"/>
+    <path d="M50 18 L78 18 L70 31 L56 31 Z"/>
+    <rect x="116" y="8" width="2" height="20"/>
+  </svg>
+</template>
+
 <script>
 (() => {
   'use strict';
@@ -223,6 +311,27 @@
   const WAKE_NEAR  = 3.2;    // px of wave scroll per metre run, near water
   const WAKE_FAR   = 1.1;    // and for the slower, more distant band
   const NEEDLE     = 1.7;    // degrees of needle per degree of rudder
+
+  // ---- Binoculars ---------------------------------------------------------
+  const MAG_START  = 7;      // power when first raised, times the windscreen view
+  const MAG_MIN    = 3;
+  const MAG_MAX    = 12;
+  const PITCH_MIN  = -3;     // degrees below the horizon you can look
+  const PITCH_MAX  = 70;     // and above it
+  const PITCH_UP   = 1.2;     // where you're looking when you first raise them
+  const LOOK_KEYS  = 42;     // key panning, degrees/sec at 1x (slower at higher power)
+  const SHAKE      = 0.035;  // hand tremor, degrees
+  const WIND       = 0.05;   // cloud drift, degrees of bearing per second
+  const CLOUDS     = 120;
+  const SUN        = { bearing: 128, elev: 26, size: 10 };
+
+  // Sky colour by elevation, horizon to zenith
+  const SKY_STOPS = [
+    [0,  [220, 232, 233]],
+    [5,  [195, 214, 221]],
+    [22, [159, 188, 203]],
+    [70, [104, 146, 170]]
+  ];
 
   // ---- The sea room, in metres. x is east, y is north. --------------------
   // w and h are real sizes, so range alone decides how big a thing looks.
@@ -241,6 +350,20 @@
     { art: 'land',           x:  500, y: -1750, w:2200, h: 175 }
   ];
 
+  // ---- The sky, by true bearing and elevation in degrees ------------------
+  // Too far off to shift as the boat moves. w and h are angular sizes.
+  // Gulls wheel about their spot (loop, pace); aircraft cross (drift, deg/sec).
+  const SKY = [
+    { art: 'gull',     bearing:  10, elev:  5.0, w: 0.50, h: 0.20, loop: 2.2, pace: 0.35 },
+    { art: 'gull',     bearing:  14, elev:  6.4, w: 0.44, h: 0.18, loop: 1.8, pace: 0.42 },
+    { art: 'gull',     bearing:   7, elev:  7.1, w: 0.40, h: 0.16, loop: 2.6, pace: 0.30 },
+    { art: 'gull',     bearing: 335, elev:  9.0, w: 0.42, h: 0.17, loop: 3.0, pace: 0.28 },
+    { art: 'gull',     bearing: 205, elev:  4.0, w: 0.55, h: 0.22, loop: 1.6, pace: 0.50 },
+    { art: 'gull',     bearing:  92, elev: 12.0, w: 0.38, h: 0.15, loop: 2.4, pace: 0.33 },
+    { art: 'aircraft', bearing: 250, elev:  7.0, w: 0.90, h: 0.28, drift:  0.60 },
+    { art: 'aircraft', bearing:  60, elev: 15.0, w: 0.60, h: 0.19, drift: -0.35 }
+  ];
+
   // ---- State --------------------------------------------------------------
   let wheelAngle = 0;
   let heading    = 0;        // degrees true
@@ -252,7 +375,42 @@
   let ppd        = 12;       // pixels per degree, set by layout()
   let horizonW   = 0;
   let horizonH   = 0;
+  let roll       = 0;        // degrees, shared by the windscreen and the glasses
   const marks    = [];
+
+  let glassesUp  = false;
+  let lookRel    = 0;        // degrees off the bow you're looking
+  let pitch      = PITCH_UP; // degrees above the horizon
+  let mag        = MAG_START;
+  let peering    = false;    // dragging the view about
+  let peerX      = 0;
+  let peerY      = 0;
+  let sceneW     = 0;
+  let sceneH     = 0;
+  let hintTimer  = 0;
+  const held     = new Set();
+  const glassMarks = [];
+  const clouds   = [];
+  const flyers   = [];
+  let sun        = null;
+
+  const gl = {
+    root:   document.getElementById('glasses'),
+    open:   document.getElementById('binoculars'),
+    lower:  document.getElementById('glassLower'),
+    field:  document.getElementById('glassField'),
+    scene:  document.getElementById('glassScene'),
+    sky:    document.getElementById('glassSky'),
+    sun:    document.getElementById('glassSun'),
+    clouds: document.getElementById('glassClouds'),
+    sea:    document.getElementById('glassSea'),
+    swell:  document.getElementById('glassSwell'),
+    haze:   document.getElementById('glassHaze'),
+    world:  document.getElementById('glassWorld'),
+    air:    document.getElementById('glassAir'),
+    plate:  document.getElementById('glassPlate'),
+    hint:   document.getElementById('glassHint')
+  };
 
   const el = {
     wheel:   document.getElementById('wheel'),
@@ -286,21 +444,70 @@
   const subtendH = (size, range) => Math.atan(size / range) * DEG;
 
   // ---- Build the world ----------------------------------------------------
-  function buildWorld() {
+  const artwork = (name, className) => {
+    const holder = document.createElement('div');
+    holder.className = className;
+    holder.appendChild(document.getElementById('art-' + name).content.firstElementChild.cloneNode(true));
+    return holder;
+  };
+
+  // The same sea goes in the windscreen and in the glasses
+  function buildWorld(container, list) {
     SCENE.forEach(item => {
-      const source = document.getElementById('art-' + item.art);
-      const holder = document.createElement('div');
-      holder.className = 'mark';
-      holder.appendChild(source.content.firstElementChild.cloneNode(true));
-      el.world.appendChild(holder);
-      marks.push({ el: holder, x: item.x, y: item.y, w: item.w, h: item.h, shown: true });
+      const holder = artwork(item.art, 'mark');
+      container.appendChild(holder);
+      list.push({ el: holder, x: item.x, y: item.y, w: item.w, h: item.h, shown: true });
     });
+  }
+
+  // Cheap repeatable randomness, so the clouds are the same every visit
+  function seeded(seed) {
+    let s = seed;
+    return () => (s = (s * 16807) % 2147483647) / 2147483647;
+  }
+
+  function buildSky() {
+    const rnd = seeded(1940);
+    for (let i = 0; i < CLOUDS; i++) {
+      const node = document.createElement('div');
+      node.className = 'cloud';
+      const puffs = 5 + Math.floor(rnd() * 4);
+      for (let p = 0; p < puffs; p++) {
+        const puff = document.createElement('span');
+        puff.style.left   = (rnd() * 70).toFixed(1) + '%';
+        puff.style.top    = (rnd() * 34).toFixed(1) + '%';
+        puff.style.height = (58 + rnd() * 50).toFixed(1) + '%';
+        node.appendChild(puff);
+      }
+      gl.clouds.appendChild(node);
+
+      const e = 1 + Math.pow(rnd(), 2.2) * 36;   // most sit low
+      const far = clamp(0.3 + e / 15, 0.35, 1);  // low clouds are further off
+      const w = (3 + rnd() * 8) * far;
+      clouds.push({
+        el: node, shown: true,
+        b: rnd() * 360, e,
+        w, h: w * (0.26 + rnd() * 0.18) * clamp(e / 8, 0.45, 1)
+      });
+    }
+
+    SKY.forEach((item, i) => {
+      const holder = artwork(item.art, 'flyer');
+      if (item.drift < 0) holder.firstElementChild.style.transform = 'scaleX(-1)';
+      if (item.art === 'gull') holder.style.setProperty('--flap', (0.34 + (i % 3) * 0.07) + 's');
+      gl.air.appendChild(holder);
+      flyers.push({ el: holder, shown: true, item, b: item.bearing, phase: i * 1.7 });
+    });
+
+    sun = { el: gl.sun, shown: true };
   }
 
   function layout() {
     horizonW = el.horizon.clientWidth;
     horizonH = el.horizon.clientHeight;
     ppd = horizonW / FOV;
+    sceneW = gl.scene.clientWidth;
+    sceneH = gl.scene.clientHeight;
   }
 
   // ---- Steering: pointer only ---------------------------------------------
@@ -360,19 +567,18 @@
 
     drawWorld();
     drawStation(rudder);
+    if (glassesUp) drawGlasses(dt);
     requestAnimationFrame(frame);
   }
 
-  function drawWorld() {
-    const centre = horizonW / 2;
-    const waterline = horizonH * 0.46;
-    const edge = FOV / 2 + 4;
-
-    for (const m of marks) {
+  // Put each mark where it stands from the boat, looking along `look`.
+  // `scale` is pixels per degree; `edge` is how far off-centre is still in view.
+  function placeMarks(list, look, scale, centre, waterline, edge) {
+    for (const m of list) {
       const dx = wrap(m.x - boatX);
       const dy = wrap(m.y - boatY);
       const range = Math.max(Math.hypot(dx, dy), 12);
-      const rel = arc(heading, Math.atan2(dx, dy) * DEG);
+      const rel = arc(look, Math.atan2(dx, dy) * DEG);
       const angW = Math.min(subtendW(m.w, range), 150);
 
       if (Math.abs(rel) > edge + angW / 2 || range > HAZE) {
@@ -384,13 +590,17 @@
       const angH = Math.min(subtendH(m.h, range), 70);
       const dip  = subtendH(EYE, range);          // how far below the horizon it sits
 
-      m.el.style.left   = (centre + rel * ppd) + 'px';
-      m.el.style.width  = (angW * ppd) + 'px';
-      m.el.style.height = (angH * ppd) + 'px';
-      m.el.style.bottom = (waterline - dip * ppd) + 'px';
+      m.el.style.left   = (centre + rel * scale) + 'px';
+      m.el.style.width  = (angW * scale) + 'px';
+      m.el.style.height = (angH * scale) + 'px';
+      m.el.style.bottom = (waterline - dip * scale) + 'px';
       m.el.style.opacity = clamp(1.12 - range / HAZE, 0.08, 1);
       m.el.style.zIndex = Math.round(clamp(HAZE - range, 0, HAZE) / 4);
     }
+  }
+
+  function drawWorld() {
+    placeMarks(marks, heading, ppd, horizonW / 2, horizonH * 0.46, FOV / 2 + 4);
 
     // Water: slides sideways as you turn, and towards you as you make way.
     const side = -norm(heading) * ppd;
@@ -399,14 +609,187 @@
       (side * 0.18).toFixed(1) + 'px ' + ((run * WAKE_FAR) % 4000).toFixed(1) + 'px';
 
     if (stillness.matches) {
+      roll = 0;
       el.horizon.style.transform = 'none';
     } else {
-      const roll  = Math.sin(clock * 0.62) * 0.75 + Math.sin(clock * 1.43) * 0.3;
+      roll = Math.sin(clock * 0.62) * 0.75 + Math.sin(clock * 1.43) * 0.3;
       const heave = Math.sin(clock * 0.47) * 5;
       el.horizon.style.transform =
         'translateY(' + heave.toFixed(1) + 'px) rotate(' + roll.toFixed(2) + 'deg)';
     }
   }
+
+  // ---- Binoculars ---------------------------------------------------------
+  function skyAt(e) {
+    e = clamp(e, 0, SKY_STOPS[SKY_STOPS.length - 1][0]);
+    let i = 1;
+    while (i < SKY_STOPS.length - 1 && SKY_STOPS[i][0] < e) i++;
+    const [e0, c0] = SKY_STOPS[i - 1];
+    const [e1, c1] = SKY_STOPS[i];
+    const t = (e - e0) / (e1 - e0);
+    return 'rgb(' + c0.map((c, k) => Math.round(c + (c1[k] - c) * t)).join(',') + ')';
+  }
+
+  function drawGlasses(dt) {
+    const rate = LOOK_KEYS / mag * dt;
+    if (held.has('left'))  lookRel -= rate;
+    if (held.has('right')) lookRel += rate;
+    if (held.has('up'))    pitch   += rate;
+    if (held.has('down'))  pitch   -= rate;
+    lookRel = arc(0, lookRel);
+    pitch   = clamp(pitch, PITCH_MIN, PITCH_MAX);
+
+    const z = ppd * mag;                         // pixels per degree through the glass
+    const cx = sceneW / 2;
+    const cy = sceneH / 2;
+    const look = norm(heading + lookRel);
+    const horizonY = cy + pitch * z;             // from the top of the scene
+    const spanX = cx / z + 1;
+    const eTop = pitch + cy / z;
+    const eLow = Math.max(0, pitch - cy / z);
+    const skyline = clamp(horizonY, 0, sceneH);
+
+    gl.sky.style.height = skyline + 'px';
+    gl.sky.style.background = 'linear-gradient(180deg,' +
+      skyAt(eTop) + ',' + skyAt((eTop + eLow) / 2) + ',' + skyAt(eLow) + ')';
+    gl.sea.style.top = skyline + 'px';
+    gl.haze.style.top = horizonY + 'px';
+    gl.haze.style.height = (1.4 * z) + 'px';
+
+    const side = -look * z;
+    gl.swell.style.backgroundPosition =
+      (side * 0.35).toFixed(1) + 'px ' + ((run * WAKE_NEAR * mag) % 4000).toFixed(1) + 'px, ' +
+      (side * 0.18).toFixed(1) + 'px ' + ((run * WAKE_FAR * mag) % 4000).toFixed(1) + 'px';
+
+    // Anything hung on the sky by bearing and elevation
+    const place = (thing, b, e, w, h) => {
+      const rel = arc(look, b);
+      const y = horizonY - e * z;
+      if (Math.abs(rel) > spanX + w / 2 || y < -h * z || y > sceneH + h * z) {
+        if (thing.shown) { thing.el.style.display = 'none'; thing.shown = false; }
+        return;
+      }
+      if (!thing.shown) { thing.el.style.display = 'block'; thing.shown = true; }
+      thing.el.style.left   = (cx + rel * z) + 'px';
+      thing.el.style.top    = y + 'px';
+      thing.el.style.width  = (w * z) + 'px';
+      thing.el.style.height = (h * z) + 'px';
+    };
+
+    place(sun, SUN.bearing, SUN.elev, SUN.size, SUN.size);
+
+    for (const c of clouds) {
+      c.b = norm(c.b + WIND * dt);
+      place(c, c.b, c.e, c.w, c.h);
+    }
+
+    for (const f of flyers) {
+      const it = f.item;
+      if (it.drift) {
+        f.b = norm(f.b + it.drift * dt);
+        place(f, f.b, it.elev, it.w, it.h);
+      } else {
+        const t = clock * it.pace + f.phase;
+        place(f, it.bearing + Math.cos(t) * it.loop, it.elev + Math.sin(t) * it.loop * 0.3, it.w, it.h);
+      }
+    }
+
+    placeMarks(glassMarks, look, z, cx, sceneH - horizonY, spanX + 4);
+
+    // Held in the hand on a moving deck: a little tremor, and the boat's roll
+    if (stillness.matches) {
+      gl.scene.style.transform = 'none';
+    } else {
+      const sx = (Math.sin(clock * 1.7) * 0.6 + Math.sin(clock * 2.9) * 0.4) * SHAKE * z;
+      const sy = (Math.sin(clock * 1.3) * 0.6 + Math.sin(clock * 3.1) * 0.4) * SHAKE * z +
+                 Math.sin(clock * 0.47) * 0.15 * z;
+      gl.scene.style.transform =
+        'translate(' + sx.toFixed(1) + 'px,' + sy.toFixed(1) + 'px) rotate(' + roll.toFixed(2) + 'deg)';
+    }
+
+    const elev = Math.round(pitch);
+    gl.plate.textContent =
+      'Bearing ' + String(Math.round(look) % 360).padStart(3, '0') + '° · ' +
+      'Elevation ' + (elev >= 0 ? '+' : '−') + Math.abs(elev) + '° · ' +
+      mag.toFixed(mag < 10 ? 1 : 0).replace(/\.0$/, '') + '×';
+  }
+
+  function raiseGlasses() {
+    if (glassesUp) return;
+    glassesUp = true;
+    lookRel = 0;
+    pitch = PITCH_UP;
+    gl.root.classList.add('is-up');
+    gl.root.setAttribute('aria-hidden', 'false');
+    layout();
+    gl.hint.classList.add('is-shown');
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => gl.hint.classList.remove('is-shown'), 4500);
+    gl.lower.focus({ preventScroll: true });
+  }
+
+  function lowerGlasses() {
+    if (!glassesUp) return;
+    glassesUp = false;
+    peering = false;
+    held.clear();
+    gl.root.classList.remove('is-up', 'is-peering');
+    gl.root.setAttribute('aria-hidden', 'true');
+    gl.open.focus({ preventScroll: true });
+  }
+
+  gl.open.addEventListener('click', raiseGlasses);
+  gl.lower.addEventListener('click', lowerGlasses);
+
+  // Point and drag: grab the view and pull it about
+  gl.field.addEventListener('pointerdown', ev => {
+    peering = true;
+    peerX = ev.clientX;
+    peerY = ev.clientY;
+    gl.field.setPointerCapture(ev.pointerId);
+    gl.root.classList.add('is-peering');
+  });
+
+  gl.field.addEventListener('pointermove', ev => {
+    if (!peering) return;
+    const z = ppd * mag;
+    lookRel -= (ev.clientX - peerX) / z;
+    pitch   += (ev.clientY - peerY) / z;
+    peerX = ev.clientX;
+    peerY = ev.clientY;
+  });
+
+  const stopPeering = ev => {
+    if (!peering) return;
+    peering = false;
+    gl.root.classList.remove('is-peering');
+    if (gl.field.hasPointerCapture(ev.pointerId)) gl.field.releasePointerCapture(ev.pointerId);
+  };
+  gl.field.addEventListener('pointerup', stopPeering);
+  gl.field.addEventListener('pointercancel', stopPeering);
+
+  // Scroll to change power
+  gl.field.addEventListener('wheel', ev => {
+    ev.preventDefault();
+    mag = clamp(mag * (ev.deltaY < 0 ? 1.12 : 1 / 1.12), MAG_MIN, MAG_MAX);
+  }, { passive: false });
+
+  const KEYS = {
+    ArrowLeft: 'left', a: 'left', A: 'left',
+    ArrowRight: 'right', d: 'right', D: 'right',
+    ArrowUp: 'up', w: 'up', W: 'up',
+    ArrowDown: 'down', s: 'down', S: 'down'
+  };
+
+  window.addEventListener('keydown', ev => {
+    if (!glassesUp) return;
+    if (ev.key === 'Escape') { lowerGlasses(); return; }
+    if (ev.key === '+' || ev.key === '=') mag = clamp(mag * 1.12, MAG_MIN, MAG_MAX);
+    if (ev.key === '-' || ev.key === '_') mag = clamp(mag / 1.12, MAG_MIN, MAG_MAX);
+    if (KEYS[ev.key]) { held.add(KEYS[ev.key]); ev.preventDefault(); }
+  });
+  window.addEventListener('keyup', ev => { if (KEYS[ev.key]) held.delete(KEYS[ev.key]); });
+  window.addEventListener('blur', () => held.clear());
 
   function drawStation(rudder) {
     el.rotor.setAttribute('transform', 'rotate(' + wheelAngle.toFixed(2) + ')');
@@ -424,7 +807,9 @@
     el.logText.textContent = miles.toFixed(2);
   }
 
-  buildWorld();
+  buildWorld(el.world, marks);
+  buildWorld(gl.world, glassMarks);
+  buildSky();
   layout();
   window.addEventListener('resize', layout);
   requestAnimationFrame(frame);
