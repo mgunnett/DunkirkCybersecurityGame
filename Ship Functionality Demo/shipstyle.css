@@ -298,16 +298,24 @@ body {
 
 .card__face   { fill: var(--ivory); }
 .card__north  { fill: var(--vermilion); }
-.card__south  { fill: #46402f; }
-.card__tick   { fill: none; stroke: #5a5242; stroke-width: 3; stroke-linecap: round; }
+.card__rose   { fill: rgba(70, 64, 47, 0.28); }
+.card__pivot  { fill: var(--brass-deep); }
 
-.card__letter {
+.card__grad        { stroke: #4a4335; stroke-width: 0.8; }
+.card__grad--ten   { stroke-width: 1.3; }
+.card__grad--major { stroke: var(--ink); stroke-width: 2; }
+
+.card__letter,
+.card__num {
   fill: var(--ink);
   font-family: var(--serif);
-  font-size: 19px;
   text-anchor: middle;
   dominant-baseline: central;
 }
+
+.card__letter        { font-size: 15px; font-weight: bold; }
+.card__letter--north { fill: var(--vermilion); }
+.card__num           { font-size: 10px; }
 
 /* --- Dash face ------------------------------------------------------------ */
 

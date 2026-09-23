@@ -64,19 +64,18 @@
     <circle class="brass brass--dark" cx="120" cy="254" r="78"/>
     <circle class="bin__bowl" cx="120" cy="254" r="68"/>
 
+    <!-- A steering card: read your heading where it meets the lubber line at the top.
+         Graduations and figures are drawn onto #cardMarks by buildCard(). -->
     <g id="compassCard">
       <circle class="card__face" cx="120" cy="254" r="62"/>
-      <path class="card__tick" d="M161 213 L164 210 M79 213 L76 210 M161 295 L164 298 M79 295 L76 298"/>
-      <path class="card__north" d="M120 216 L127 254 L113 254 Z"/>
-      <path class="card__south" d="M113 254 L127 254 L120 292 Z"/>
-      <text class="card__letter" x="120" y="203">N</text>
-      <text class="card__letter" x="171" y="254">E</text>
-      <text class="card__letter" x="120" y="305">S</text>
-      <text class="card__letter" x="69" y="254">W</text>
+      <g id="cardMarks"></g>
+      <path class="card__rose" d="M120 226 L125 254 L120 282 L115 254 Z M92 254 L120 249 L148 254 L120 259 Z"/>
+      <path class="card__north" d="M120 222 L126 244 L120 240 L114 244 Z"/>
+      <circle class="card__pivot" cx="120" cy="254" r="3.5"/>
     </g>
 
     <path class="bin__sheen" d="M78 230 A62 62 0 0 1 132 194 A62 62 0 0 0 78 230 Z"/>
-    <path class="bin__lubber" d="M120 184 L120 202"/>
+    <path class="bin__lubber" d="M120 184 L120 205"/>
     <path class="bin__lubberhead" d="M113 180 L127 180 L120 192 Z"/>
 
     <path class="brass" d="M80 316 L160 316 L170 390 L70 390 Z"/>
@@ -416,6 +415,7 @@
   // ---- State --------------------------------------------------------------
   let wheelAngle = 0;
   let heading    = 0;        // degrees true
+  let swung      = 0;        // total degrees turned, never wrapped, for the water
   let boatX      = 0;        // metres east
   let boatY      = -80;      // metres north, starting just short of the channel
   let run        = 0;        // metres run through the water
@@ -551,6 +551,44 @@
     sun = { el: gl.sun, shown: true };
   }
 
+  // Graduate the compass card: a tick every 5 degrees, figures every 30
+  // (in tens, as steering cards do: 3 is 030), letters at the cardinals.
+  const CARD_CX = 120;
+  const CARD_CY = 254;
+  const SVG_NS  = 'http://www.w3.org/2000/svg';
+  const CARDINAL = { 0: 'N', 90: 'E', 180: 'S', 270: 'W' };
+
+  function buildCard() {
+    const marks = document.getElementById('cardMarks');
+    const svg = (tag, attrs) => {
+      const node = document.createElementNS(SVG_NS, tag);
+      for (const k in attrs) node.setAttribute(k, attrs[k]);
+      return node;
+    };
+
+    for (let deg = 0; deg < 360; deg += 5) {
+      const major = deg % 90 === 0;
+      const ten   = deg % 10 === 0;
+      const inner = major ? 50 : ten ? 54 : 57;
+      const cls = 'card__grad' + (major ? ' card__grad--major' : ten ? ' card__grad--ten' : '');
+      marks.appendChild(svg('line', {
+        class: cls,
+        x1: CARD_CX, y1: CARD_CY - 62, x2: CARD_CX, y2: CARD_CY - inner,
+        transform: 'rotate(' + deg + ' ' + CARD_CX + ' ' + CARD_CY + ')'
+      }));
+
+      if (deg % 30 !== 0) continue;
+      const letter = CARDINAL[deg];
+      const label = svg('text', {
+        class: letter ? 'card__letter' + (deg === 0 ? ' card__letter--north' : '') : 'card__num',
+        x: CARD_CX, y: CARD_CY - (letter ? 40 : 45),
+        transform: 'rotate(' + deg + ' ' + CARD_CX + ' ' + CARD_CY + ')'
+      });
+      label.textContent = letter || String(deg / 10);
+      marks.appendChild(label);
+    }
+  }
+
   function layout() {
     horizonW = el.horizon.clientWidth;
     horizonH = el.horizon.clientHeight;
@@ -606,7 +644,9 @@
     clock += dt;
 
     const rudder = clamp(wheelAngle / (WHEEL_STOP / RUDDER_MAX), -RUDDER_MAX, RUDDER_MAX);
-    heading = norm(heading + rudder * TURN_GAIN * dt);
+    const turn = rudder * TURN_GAIN * dt;
+    heading = norm(heading + turn);
+    swung  += turn;
 
     // She never stops: always a step forward along the current heading.
     const rad = heading / DEG;
@@ -652,7 +692,8 @@
     placeMarks(marks, heading, ppd, horizonW / 2, horizonH * 0.46, FOV / 2 + 4);
 
     // Water: slides sideways as you turn, and towards you as you make way.
-    const side = -norm(heading) * ppd;
+    // Unwrapped, so the pattern doesn't jump when you cross north.
+    const side = -swung * ppd;
     el.swell.style.backgroundPosition =
       (side * 0.35).toFixed(1) + 'px ' + ((run * WAKE_NEAR) % 4000).toFixed(1) + 'px, ' +
       (side * 0.18).toFixed(1) + 'px ' + ((run * WAKE_FAR) % 4000).toFixed(1) + 'px';
@@ -705,7 +746,7 @@
     gl.haze.style.top = horizonY + 'px';
     gl.haze.style.height = (1.4 * z) + 'px';
 
-    const side = -look * z;
+    const side = -(swung + lookRel) * z;
     gl.swell.style.backgroundPosition =
       (side * 0.35).toFixed(1) + 'px ' + ((run * WAKE_NEAR * mag) % 4000).toFixed(1) + 'px, ' +
       (side * 0.18).toFixed(1) + 'px ' + ((run * WAKE_FAR * mag) % 4000).toFixed(1) + 'px';
@@ -895,6 +936,7 @@
   buildWorld(el.world, marks);
   buildWorld(gl.world, glassMarks);
   buildSky();
+  buildCard();
   layout();
   window.addEventListener('resize', layout);
   requestAnimationFrame(frame);
