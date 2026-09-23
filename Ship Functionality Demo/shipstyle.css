@@ -131,6 +131,22 @@ body {
   -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, #000 20%);
 }
 
+/* Low cloud over the windscreen's horizon, placed by bearing like the marks */
+.horizon__clouds {
+  position: absolute;
+  inset: 0;
+  opacity: 0.9;
+}
+
+/* Wavelets and the coast, drawn each frame */
+.surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 .world {
   position: absolute;
   inset: 0;
@@ -151,7 +167,6 @@ body {
 
 /* --- Things out in the water ----------------------------------------------------- */
 
-.art--land    path { fill: #3f5f6a; }
 .art--island  path { fill: #3a5762; }
 
 .art--lighthouse .art__tower   { fill: #f1ece0; }
@@ -411,6 +426,31 @@ body {
   border: 1px solid var(--brass-deep);
   border-radius: 2px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Lights up when the shoals off the coast won't let you any closer */
+.shoalplate {
+  position: absolute;
+  right: 5%;
+  bottom: 7%;
+  margin: 0;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: #fbe9dc;
+  background: linear-gradient(180deg, #c4503f, var(--vermilion));
+  border: 1px solid #6e2019;
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5), 0 0 12px rgba(176, 58, 46, 0.45);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+}
+
+.shoalplate.is-shown {
+  opacity: 1;
+  transform: none;
 }
 
 /* --- The wheel, nearest thing to the eye ---------------------------------- */
