@@ -86,7 +86,7 @@
   </svg>
 
   <!-- Binoculars, stood on the dash top to port of the binnacle. Click to raise them. -->
-  <button class="binoculars" id="binoculars" type="button"
+  <button class="prop binoculars" id="binoculars" type="button"
           aria-label="Binoculars: raise them to look out" data-label="Binoculars">
     <svg viewBox="0 0 200 130" aria-hidden="true">
       <defs>
@@ -122,6 +122,46 @@
       <ellipse class="bino__glass" cx="143" cy="26" rx="15" ry="4.5"/>
       <path class="bino__glint" d="M47 25 Q52 22 60 22.5"/>
       <path class="bino__glint" d="M133 25 Q138 22 146 22.5"/>
+    </svg>
+  </button>
+
+  <!-- Teleprinter, stood on the dash top to starboard. Click to go to it.
+       The machine itself lives in ../Telex Machine Demo and opens over the helm. -->
+  <button class="prop telex" id="telex" type="button"
+          aria-label="Teleprinter: go to it to read signals" data-label="Teleprinter">
+    <svg viewBox="0 0 200 150" aria-hidden="true">
+      <defs>
+        <linearGradient id="txEnamel" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#4a5142"/>
+          <stop offset="0.4" stop-color="#33382f"/>
+          <stop offset="1" stop-color="#1e211c"/>
+        </linearGradient>
+      </defs>
+      <ellipse class="tx__shadow" cx="100" cy="142" rx="96" ry="8"/>
+
+      <path class="tx__paper" d="M72 4 L128 4 L130 52 L70 52 Z"/>
+      <path class="tx__type" d="M78 13 L118 13 M78 20 L122 20 M78 27 L110 27 M78 34 L120 34 M78 41 L104 41"/>
+
+      <path class="tx__lid" d="M34 46 L166 46 L172 64 L28 64 Z"/>
+      <rect class="tx__platen" x="52" y="48" width="96" height="10" rx="5"/>
+      <path class="tx__ribs" d="M54 51 L146 51 M54 54 L146 54"/>
+      <circle class="tx__bezel" cx="52" cy="53" r="4"/>
+      <circle class="tx__bezel" cx="148" cy="53" r="4"/>
+
+      <path class="tx__shell" d="M22 62 L178 62 L192 132 L8 132 Z"/>
+      <path class="tx__edge" d="M25 65 L175 65"/>
+
+      <rect class="tx__plate" x="72" y="82" width="56" height="15" rx="2"/>
+      <text class="tx__letter" x="100" y="93">TELEX</text>
+
+      <circle class="tx__bezel" cx="42" cy="102" r="11"/>
+      <circle class="tx__lamp" cx="42" cy="102" r="7"/>
+      <circle class="tx__glint" cx="39.5" cy="99.5" r="2"/>
+
+      <rect class="tx__button" x="143" y="93" width="36" height="18" rx="4"/>
+
+      <rect class="tx__foot" x="14" y="130" width="26" height="8" rx="2"/>
+      <rect class="tx__foot" x="160" y="130" width="26" height="8" rx="2"/>
     </svg>
   </button>
 
@@ -216,6 +256,15 @@
   <p class="glasses__hint" id="glassHint">Drag to look about &middot; scroll to change power &middot; Esc to lower</p>
   <p class="glasses__plate" id="glassPlate" aria-live="off">Bearing 000&#176; &middot; Elevation +0&#176; &middot; 7&#215;</p>
   <button class="glasses__lower" id="glassLower" type="button">Lower glasses</button>
+</div>
+
+<!-- At the teleprinter. The machine stays in its own folder and is loaded here
+     as it stands, the first time you go to it, then kept so slips aren't lost. -->
+<div class="telexroom" id="telexroom" role="dialog" aria-modal="true"
+     aria-label="At the teleprinter" aria-hidden="true">
+  <iframe class="telexroom__frame" id="telexFrame" title="Teleprinter"
+          data-src="../Telex Machine Demo/index.html"></iframe>
+  <button class="telexroom__back" id="telexBack" type="button">Back to the helm</button>
 </div>
 
 <!-- Artwork for things outside the window. Shapes here, colours in the stylesheet. -->
@@ -806,6 +855,42 @@
       'rotate(' + ((miles % 1) * 360).toFixed(1) + ' 65 65)');
     el.logText.textContent = miles.toFixed(2);
   }
+
+  // ---- Teleprinter --------------------------------------------------------
+  // The machine is its own page (../Telex Machine Demo), shown in a frame.
+  const tx = {
+    open:  document.getElementById('telex'),
+    room:  document.getElementById('telexroom'),
+    frame: document.getElementById('telexFrame'),
+    back:  document.getElementById('telexBack')
+  };
+  let atTelex = false;
+
+  function goToTelex() {
+    if (atTelex) return;
+    atTelex = true;
+    if (!tx.frame.getAttribute('src')) tx.frame.src = tx.frame.dataset.src;
+    tx.room.classList.add('is-open');
+    tx.room.setAttribute('aria-hidden', 'false');
+    tx.back.focus({ preventScroll: true });
+  }
+
+  function leaveTelex() {
+    if (!atTelex) return;
+    atTelex = false;
+    tx.room.classList.remove('is-open');
+    tx.room.setAttribute('aria-hidden', 'true');
+    tx.open.focus({ preventScroll: true });
+  }
+
+  tx.open.addEventListener('click', goToTelex);
+  tx.back.addEventListener('click', leaveTelex);
+
+  // Escape inside the frame belongs to the telex (it closes an enlarged slip),
+  // so this only fires while focus is out here on the helm page.
+  window.addEventListener('keydown', ev => {
+    if (atTelex && ev.key === 'Escape') leaveTelex();
+  });
 
   buildWorld(el.world, marks);
   buildWorld(gl.world, glassMarks);
