@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Teleprinter</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="telex.css">
+</head>
+<body>
+
+<div class="deck">
+
+  <!-- ==============================================================
+       THE PROP. Everything from here to the end of .machine is what
+       you drop into the ship. It sizes itself from two custom
+       properties, so to fit it into the helm set them on a wrapper:
+
+           .my-helm-panel { --telex-width: 300px;
+                            --telex-height: 380px; }
+
+       or give .machine width and height directly.
+       ============================================================== -->
+  <div class="machine" id="machine">
+
+    <div class="bay" id="bay">
+      <p class="idle" id="idlenote">No traffic</p>
+    </div>
+
+    <div class="platen" id="platen" title="Tear off"></div>
+
+    <div class="console">
+      <div class="lampwrap" id="lampwrap" title="Message waiting">
+        <div class="bezel"><div class="lens"></div></div>
+      </div>
+
+      <div class="plate">Teleprinter</div>
+
+      <button class="push" id="receive" disabled>
+        <span class="cap">Receive</span>
+      </button>
+    </div>
+  </div>
+  <!-- ============================ end of prop ==================== -->
+
+  <details class="gm" id="gm" open>
+    <summary><span>Operator panel</span><span>signals from Dover</span></summary>
+    <div class="gmbody" id="gmbody"></div>
+  </details>
+</div>
+
+<!-- The enlarged sheet. Lives outside .machine so it can cover the
+     whole screen regardless of how small the prop is. -->
+<div class="viewer" id="viewer">
+  <div class="viewerwrap" role="dialog" aria-modal="true" aria-label="Signal">
+    <button class="close" id="closeview" aria-label="Put the paper back"></button>
+    <div class="viewerpaper" id="viewerpaper"></div>
+  </div>
+</div>
+
+<script src="config.js" defer></script>
+<script src="telex.js" defer></script>
+<script src="signals/manifest.js" defer></script>
+</body>
+</html>
