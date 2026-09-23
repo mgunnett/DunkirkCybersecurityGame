@@ -65,19 +65,18 @@
     <circle class="brass brass--dark" cx="120" cy="254" r="78"/>
     <circle class="bin__bowl" cx="120" cy="254" r="68"/>
 
+    <!-- A steering card: read your heading where it meets the lubber line at the top.
+         Graduations and figures are drawn onto #cardMarks by buildCard(). -->
     <g id="compassCard">
       <circle class="card__face" cx="120" cy="254" r="62"/>
-      <path class="card__tick" d="M161 213 L164 210 M79 213 L76 210 M161 295 L164 298 M79 295 L76 298"/>
-      <path class="card__north" d="M120 216 L127 254 L113 254 Z"/>
-      <path class="card__south" d="M113 254 L127 254 L120 292 Z"/>
-      <text class="card__letter" x="120" y="203">N</text>
-      <text class="card__letter" x="171" y="254">E</text>
-      <text class="card__letter" x="120" y="305">S</text>
-      <text class="card__letter" x="69" y="254">W</text>
+      <g id="cardMarks"></g>
+      <path class="card__rose" d="M120 226 L125 254 L120 282 L115 254 Z M92 254 L120 249 L148 254 L120 259 Z"/>
+      <path class="card__north" d="M120 222 L126 244 L120 240 L114 244 Z"/>
+      <circle class="card__pivot" cx="120" cy="254" r="3.5"/>
     </g>
 
     <path class="bin__sheen" d="M78 230 A62 62 0 0 1 132 194 A62 62 0 0 0 78 230 Z"/>
-    <path class="bin__lubber" d="M120 184 L120 202"/>
+    <path class="bin__lubber" d="M120 184 L120 205"/>
     <path class="bin__lubberhead" d="M113 180 L127 180 L120 192 Z"/>
 
     <path class="brass" d="M80 316 L160 316 L170 390 L70 390 Z"/>
@@ -87,7 +86,7 @@
   </svg>
 
   <!-- Binoculars, stood on the dash top to port of the binnacle. Click to raise them. -->
-  <button class="binoculars" id="binoculars" type="button"
+  <button class="prop binoculars" id="binoculars" type="button"
           aria-label="Binoculars: raise them to look out" data-label="Binoculars">
     <svg viewBox="0 0 200 130" aria-hidden="true">
       <defs>
@@ -123,6 +122,46 @@
       <ellipse class="bino__glass" cx="143" cy="26" rx="15" ry="4.5"/>
       <path class="bino__glint" d="M47 25 Q52 22 60 22.5"/>
       <path class="bino__glint" d="M133 25 Q138 22 146 22.5"/>
+    </svg>
+  </button>
+
+  <!-- Teleprinter, stood on the dash top to starboard. Click to go to it.
+       The machine itself lives in ../Telex Machine Demo and opens over the helm. -->
+  <button class="prop telex" id="telex" type="button"
+          aria-label="Teleprinter: go to it to read signals" data-label="Teleprinter">
+    <svg viewBox="0 0 200 150" aria-hidden="true">
+      <defs>
+        <linearGradient id="txEnamel" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#4a5142"/>
+          <stop offset="0.4" stop-color="#33382f"/>
+          <stop offset="1" stop-color="#1e211c"/>
+        </linearGradient>
+      </defs>
+      <ellipse class="tx__shadow" cx="100" cy="142" rx="96" ry="8"/>
+
+      <path class="tx__paper" d="M72 4 L128 4 L130 52 L70 52 Z"/>
+      <path class="tx__type" d="M78 13 L118 13 M78 20 L122 20 M78 27 L110 27 M78 34 L120 34 M78 41 L104 41"/>
+
+      <path class="tx__lid" d="M34 46 L166 46 L172 64 L28 64 Z"/>
+      <rect class="tx__platen" x="52" y="48" width="96" height="10" rx="5"/>
+      <path class="tx__ribs" d="M54 51 L146 51 M54 54 L146 54"/>
+      <circle class="tx__bezel" cx="52" cy="53" r="4"/>
+      <circle class="tx__bezel" cx="148" cy="53" r="4"/>
+
+      <path class="tx__shell" d="M22 62 L178 62 L192 132 L8 132 Z"/>
+      <path class="tx__edge" d="M25 65 L175 65"/>
+
+      <rect class="tx__plate" x="72" y="82" width="56" height="15" rx="2"/>
+      <text class="tx__letter" x="100" y="93">TELEX</text>
+
+      <circle class="tx__bezel" cx="42" cy="102" r="11"/>
+      <circle class="tx__lamp" cx="42" cy="102" r="7"/>
+      <circle class="tx__glint" cx="39.5" cy="99.5" r="2"/>
+
+      <rect class="tx__button" x="143" y="93" width="36" height="18" rx="4"/>
+
+      <rect class="tx__foot" x="14" y="130" width="26" height="8" rx="2"/>
+      <rect class="tx__foot" x="160" y="130" width="26" height="8" rx="2"/>
     </svg>
   </button>
 
@@ -217,6 +256,15 @@
   <p class="glasses__hint" id="glassHint">Drag to look about &middot; scroll to change power &middot; Esc to lower</p>
   <p class="glasses__plate" id="glassPlate" aria-live="off">Bearing 000&#176; &middot; Elevation +0&#176; &middot; 7&#215;</p>
   <button class="glasses__lower" id="glassLower" type="button">Lower glasses</button>
+</div>
+
+<!-- At the teleprinter. The machine stays in its own folder and is loaded here
+     as it stands, the first time you go to it, then kept so slips aren't lost. -->
+<div class="telexroom" id="telexroom" role="dialog" aria-modal="true"
+     aria-label="At the teleprinter" aria-hidden="true">
+  <iframe class="telexroom__frame" id="telexFrame" title="Teleprinter"
+          data-src="../Telex Machine Demo/index.html"></iframe>
+  <button class="telexroom__back" id="telexBack" type="button">Back to the helm</button>
 </div>
 
 <!-- Artwork for things outside the window. Shapes here, colours in the stylesheet. -->
@@ -326,7 +374,7 @@
       <path class="ju__bomb" d="M-7 12 L7 12 L4 4 L-4 4 Z"/>
 
       <ellipse class="ju__spinner" cx="0" cy="-108" rx="6" ry="5"/>
-      <ellipse class="prop" cx="0" cy="-112" rx="34" ry="2.5"/>
+      <ellipse class="airscrew" cx="0" cy="-112" rx="34" ry="2.5"/>
     </g>
   </svg>
 </template>
@@ -367,7 +415,7 @@
       <path class="panel spit__panel" d="M-11 -60 L11 -60 M0 20 L0 88"/>
 
       <path class="spit__spinner" d="M0 -100 C4 -96 6 -90 6 -86 L-6 -86 C-6 -90 -4 -96 0 -100 Z"/>
-      <ellipse class="prop" cx="0" cy="-88" rx="33" ry="2.4"/>
+      <ellipse class="airscrew" cx="0" cy="-88" rx="33" ry="2.4"/>
     </g>
   </svg>
 </template>
@@ -455,6 +503,7 @@
   // ---- State --------------------------------------------------------------
   let wheelAngle = 0;
   let heading    = 0;        // degrees true
+  let swung      = 0;        // total degrees turned, never wrapped, for the water
   let boatX      = 0;        // metres east
   let boatY      = -80;      // metres north, starting just short of the channel
   let run        = 0;        // metres run through the water
@@ -616,6 +665,44 @@
     }
   }
 
+  // Graduate the compass card: a tick every 5 degrees, figures every 30
+  // (in tens, as steering cards do: 3 is 030), letters at the cardinals.
+  const CARD_CX = 120;
+  const CARD_CY = 254;
+  const SVG_NS  = 'http://www.w3.org/2000/svg';
+  const CARDINAL = { 0: 'N', 90: 'E', 180: 'S', 270: 'W' };
+
+  function buildCard() {
+    const marks = document.getElementById('cardMarks');
+    const svg = (tag, attrs) => {
+      const node = document.createElementNS(SVG_NS, tag);
+      for (const k in attrs) node.setAttribute(k, attrs[k]);
+      return node;
+    };
+
+    for (let deg = 0; deg < 360; deg += 5) {
+      const major = deg % 90 === 0;
+      const ten   = deg % 10 === 0;
+      const inner = major ? 50 : ten ? 54 : 57;
+      const cls = 'card__grad' + (major ? ' card__grad--major' : ten ? ' card__grad--ten' : '');
+      marks.appendChild(svg('line', {
+        class: cls,
+        x1: CARD_CX, y1: CARD_CY - 62, x2: CARD_CX, y2: CARD_CY - inner,
+        transform: 'rotate(' + deg + ' ' + CARD_CX + ' ' + CARD_CY + ')'
+      }));
+
+      if (deg % 30 !== 0) continue;
+      const letter = CARDINAL[deg];
+      const label = svg('text', {
+        class: letter ? 'card__letter' + (deg === 0 ? ' card__letter--north' : '') : 'card__num',
+        x: CARD_CX, y: CARD_CY - (letter ? 40 : 45),
+        transform: 'rotate(' + deg + ' ' + CARD_CX + ' ' + CARD_CY + ')'
+      });
+      label.textContent = letter || String(deg / 10);
+      marks.appendChild(label);
+    }
+  }
+
   function layout() {
     horizonW = el.horizon.clientWidth;
     horizonH = el.horizon.clientHeight;
@@ -671,7 +758,9 @@
     clock += dt;
 
     const rudder = clamp(wheelAngle / (WHEEL_STOP / RUDDER_MAX), -RUDDER_MAX, RUDDER_MAX);
-    heading = norm(heading + rudder * TURN_GAIN * dt);
+    const turn = rudder * TURN_GAIN * dt;
+    heading = norm(heading + turn);
+    swung  += turn;
 
     // She never stops: always a step forward along the current heading.
     const rad = heading / DEG;
@@ -739,7 +828,8 @@
     }
 
     // Water: slides sideways as you turn, and towards you as you make way.
-    const side = -norm(heading) * ppd;
+    // Unwrapped, so the pattern doesn't jump when you cross north.
+    const side = -swung * ppd;
     el.swell.style.backgroundPosition =
       (side * 0.35).toFixed(1) + 'px ' + ((run * WAKE_NEAR) % 4000).toFixed(1) + 'px, ' +
       (side * 0.18).toFixed(1) + 'px ' + ((run * WAKE_FAR) % 4000).toFixed(1) + 'px';
@@ -792,7 +882,7 @@
     gl.haze.style.top = horizonY + 'px';
     gl.haze.style.height = (1.4 * z) + 'px';
 
-    const side = -look * z;
+    const side = -(swung + lookRel) * z;
     gl.swell.style.backgroundPosition =
       (side * 0.35).toFixed(1) + 'px ' + ((run * WAKE_NEAR * mag) % 4000).toFixed(1) + 'px, ' +
       (side * 0.18).toFixed(1) + 'px ' + ((run * WAKE_FAR * mag) % 4000).toFixed(1) + 'px';
@@ -967,10 +1057,47 @@
     el.logText.textContent = miles.toFixed(2);
   }
 
+  // ---- Teleprinter --------------------------------------------------------
+  // The machine is its own page (../Telex Machine Demo), shown in a frame.
+  const tx = {
+    open:  document.getElementById('telex'),
+    room:  document.getElementById('telexroom'),
+    frame: document.getElementById('telexFrame'),
+    back:  document.getElementById('telexBack')
+  };
+  let atTelex = false;
+
+  function goToTelex() {
+    if (atTelex) return;
+    atTelex = true;
+    if (!tx.frame.getAttribute('src')) tx.frame.src = tx.frame.dataset.src;
+    tx.room.classList.add('is-open');
+    tx.room.setAttribute('aria-hidden', 'false');
+    tx.back.focus({ preventScroll: true });
+  }
+
+  function leaveTelex() {
+    if (!atTelex) return;
+    atTelex = false;
+    tx.room.classList.remove('is-open');
+    tx.room.setAttribute('aria-hidden', 'true');
+    tx.open.focus({ preventScroll: true });
+  }
+
+  tx.open.addEventListener('click', goToTelex);
+  tx.back.addEventListener('click', leaveTelex);
+
+  // Escape inside the frame belongs to the telex (it closes an enlarged slip),
+  // so this only fires while focus is out here on the helm page.
+  window.addEventListener('keydown', ev => {
+    if (atTelex && ev.key === 'Escape') leaveTelex();
+  });
+
   buildWorld(el.world, marks);
   buildWorld(gl.world, glassMarks);
   buildSky();
   buildAircraft();
+  buildCard();
   layout();
   window.addEventListener('resize', layout);
   requestAnimationFrame(frame);
