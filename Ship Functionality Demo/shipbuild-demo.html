@@ -124,10 +124,15 @@
     </svg>
   </button>
 
-  <!-- Teleprinter, stood on the dash top to starboard. Click to go to it.
-       The machine itself lives in ../Telex Machine Demo and opens over the helm. -->
-  <button class="prop telex" id="telex" type="button"
-          aria-label="Teleprinter: go to it to read signals" data-label="Teleprinter">
+  <!-- Teleprinter, stood on the dash top to starboard. It stays put: when a signal
+       comes in the lamp flashes and it prints a slip. Click the slip to read it. -->
+  <div class="telex" id="telex">
+    <div class="telex__feed">
+      <button class="telex__slip" id="telexSlip" type="button" hidden disabled
+              aria-label="Signal slip: pick it up to read it">
+        <span class="telex__type" id="telexType"></span>
+      </button>
+    </div>
     <svg viewBox="0 0 200 150" aria-hidden="true">
       <defs>
         <linearGradient id="txEnamel" x1="0" x2="0" y1="0" y2="1">
@@ -137,9 +142,6 @@
         </linearGradient>
       </defs>
       <ellipse class="tx__shadow" cx="100" cy="142" rx="96" ry="8"/>
-
-      <path class="tx__paper" d="M72 4 L128 4 L130 52 L70 52 Z"/>
-      <path class="tx__type" d="M78 13 L118 13 M78 20 L122 20 M78 27 L110 27 M78 34 L120 34 M78 41 L104 41"/>
 
       <path class="tx__lid" d="M34 46 L166 46 L172 64 L28 64 Z"/>
       <rect class="tx__platen" x="52" y="48" width="96" height="10" rx="5"/>
@@ -162,7 +164,7 @@
       <rect class="tx__foot" x="14" y="130" width="26" height="8" rx="2"/>
       <rect class="tx__foot" x="160" y="130" width="26" height="8" rx="2"/>
     </svg>
-  </button>
+  </div>
 
   <!-- Dash face with the working instruments -->
   <div class="dashface">
@@ -257,13 +259,11 @@
   <button class="glasses__lower" id="glassLower" type="button">Lower glasses</button>
 </div>
 
-<!-- At the teleprinter. The machine stays in its own folder and is loaded here
-     as it stands, the first time you go to it, then kept so slips aren't lost. -->
-<div class="telexroom" id="telexroom" role="dialog" aria-modal="true"
-     aria-label="At the teleprinter" aria-hidden="true">
-  <iframe class="telexroom__frame" id="telexFrame" title="Teleprinter"
-          data-src="../Telex Machine Demo/index.html"></iframe>
-  <button class="telexroom__back" id="telexBack" type="button">Back to the helm</button>
+<!-- The slip off the teleprinter, picked up and held close enough to read -->
+<div class="signal" id="signal" role="dialog" aria-modal="true"
+     aria-label="Signal" aria-hidden="true">
+  <pre class="signal__sheet" id="signalSheet"></pre>
+  <button class="signal__back" id="signalBack" type="button">Put it down</button>
 </div>
 
 <!-- Artwork for things outside the window. Shapes here, colours in the stylesheet. -->
@@ -372,6 +372,12 @@
   const WIND       = 0.05;   // cloud drift, degrees of bearing per second
   const CLOUDS     = 120;
   const SUN        = { bearing: 128, elev: 26, size: 10 };
+
+  // ---- Teleprinter --------------------------------------------------------
+  const TELEX_DIR    = '../Telex Machine Demo/';  // signal files and config.js
+  const SIGNAL_FIRST = [8, 20];    // seconds before the first signal comes in
+  const SIGNAL_GAP   = [40, 120];  // seconds after one is put down before the next
+  const LINE_FEED    = 0.16;       // seconds per line as the slip feeds out
 
   // Sky colour by elevation, horizon to zenith
   const SKY_STOPS = [
@@ -898,40 +904,206 @@
   }
 
   // ---- Teleprinter --------------------------------------------------------
-  // The machine is its own page (../Telex Machine Demo), shown in a frame.
+  // The machine never moves. Every so often a signal comes in: the lamp
+  // flashes and a slip feeds out, too small to read from the wheel. Click
+  // the slip to pick it up; it grows out of the machine to reading size.
+  // Signals are the files in ../Telex Machine Demo/signals, read the same way.
   const tx = {
-    open:  document.getElementById('telex'),
-    room:  document.getElementById('telexroom'),
-    frame: document.getElementById('telexFrame'),
-    back:  document.getElementById('telexBack')
+    root:  document.getElementById('telex'),
+    slip:  document.getElementById('telexSlip'),
+    type:  document.getElementById('telexType'),
+    view:  document.getElementById('signal'),
+    sheet: document.getElementById('signalSheet'),
+    back:  document.getElementById('signalBack')
   };
-  let atTelex = false;
+  const signals   = [];
+  let lastSignal  = null;      // so the random pick doesn't repeat itself
+  let printed     = '';        // the text on the slip in the machine
+  let unread      = false;     // lamp stays on until it's picked up
+  let reading     = false;
+  let signalTimer = 0;
 
-  function goToTelex() {
-    if (atTelex) return;
-    atTelex = true;
-    if (!tx.frame.getAttribute('src')) tx.frame.src = tx.frame.dataset.src;
-    tx.room.classList.add('is-open');
-    tx.room.setAttribute('aria-hidden', 'false');
+  // A signal file is a header block, a --- rule, then the message.
+  // Unknown headers are kept under lower_snake_case keys, as in telex.js.
+  function parseSignal(text) {
+    const lines = String(text).replace(/\r\n?/g, '\n').split('\n');
+    const sig = {};
+    const body = [];
+    let inHeader = true;
+    for (const line of lines) {
+      if (inHeader) {
+        if (/^-{3,}\s*$/.test(line.trim())) { inHeader = false; continue; }
+        const m = line.match(/^([A-Za-z][A-Za-z0-9 _-]*):[ \t]*(.*)$/);
+        if (m) { sig[m[1].trim().toLowerCase().replace(/[ -]+/g, '_')] = m[2].trim(); continue; }
+        if (!line.trim()) continue;
+        inHeader = false;                        // no rule given; the body starts here
+      }
+      body.push(line);
+    }
+    sig.body = body.join('\n').trim();
+    return sig;
+  }
+
+  function wrapText(text, width) {
+    const out = [];
+    text.split(/\n{2,}/).forEach((para, n) => {
+      if (n) out.push('');
+      let line = '';
+      para.replace(/\s+/g, ' ').trim().split(' ').forEach(word => {
+        if (!line) line = word;
+        else if ((line + ' ' + word).length <= width) line += ' ' + word;
+        else { out.push(line); line = word; }
+      });
+      if (line) out.push(line);
+    });
+    return out;
+  }
+
+  // Set a signal in teleprinter form, with the defaults from config.js
+  function compose(sig) {
+    const cfg = Object.assign({
+      ship: 'M.Y. KESTREL', callsign: 'GBKW', station: 'V.A. DOVER (DYNAMO)',
+      sign: 'ACKNOWLEDGE BY LAMP ON SIGHT.', columns: 38
+    }, window.TELEX_CONFIG || {});
+    const bar = '='.repeat(cfg.columns);
+    const head = [
+      ('ZCZC ' + cfg.callsign + ' ' + (sig.serial || '')).trim(),
+      'FM  ' + (sig.from || cfg.station),
+      'TO  ' + (sig.to || cfg.ship),
+      'PRI ' + (sig.priority || 'ROUTINE')
+    ];
+    if (sig.time) head.push('TOO ' + sig.time);
+    head.push(bar);
+    const sign = sig.sign !== undefined ? sig.sign : cfg.sign;
+    const foot = sign ? [bar, sign, 'NNNN'] : [bar, 'NNNN'];
+    const out = head.concat(wrapText(sig.body || '', cfg.columns), foot).join('\n');
+    const raw = typeof sig.raw === 'string' ? !/^(no|false|off|0|)$/i.test(sig.raw.trim()) : !!sig.raw;
+    return raw ? out : out.toUpperCase();
+  }
+
+  function pickSignal() {
+    if (!signals.length) return null;
+    let sig, guard = 0;
+    do sig = signals[Math.floor(Math.random() * signals.length)];
+    while (signals.length > 1 && sig === lastSignal && ++guard < 25);
+    lastSignal = sig;
+    return sig;
+  }
+
+  const between = ([lo, hi]) => (lo + Math.random() * (hi - lo)) * 1000;
+
+  function expectSignal(range) {
+    clearTimeout(signalTimer);
+    signalTimer = setTimeout(incoming, between(range));
+  }
+
+  // A signal comes in: the last slip is torn off and a fresh one feeds out.
+  // From the helm it's only rows of type, one bar per printed line.
+  function incoming() {
+    const sig = pickSignal();
+    if (!sig) return;
+    printed = compose(sig);
+    const lines = printed.split('\n');
+    const cols = Math.max(...lines.map(l => l.length));
+
+    tx.type.textContent = '';
+    for (const line of lines) {
+      const row = document.createElement('i');
+      row.style.width = (line.trimEnd().length / cols * 100).toFixed(1) + '%';
+      tx.type.appendChild(row);
+    }
+
+    unread = true;
+    tx.root.classList.add('is-calling');
+    tx.slip.hidden = false;
+    tx.slip.disabled = true;
+    tx.slip.style.setProperty('--lines', lines.length);
+    tx.slip.style.setProperty('--feed-time', (lines.length * LINE_FEED).toFixed(2) + 's');
+    tx.slip.classList.remove('is-feeding');
+    void tx.slip.offsetWidth;                    // restart the feed
+    tx.slip.classList.add('is-feeding');
+    if (stillness.matches) slipFed();
+  }
+
+  function slipFed() {
+    tx.slip.classList.remove('is-feeding');
+    tx.slip.disabled = false;
+  }
+
+  tx.slip.addEventListener('animationend', slipFed);
+
+  // Transform that lays the reading sheet over the slip on the desk
+  function overSlip(to) {
+    const from = tx.slip.getBoundingClientRect();
+    return 'translate(' + (from.left - to.left) + 'px,' + (from.top - to.top) + 'px) ' +
+           'scale(' + (from.width / to.width) + ',' + (from.height / to.height) + ')';
+  }
+
+  function pickUpSlip() {
+    if (reading || tx.slip.disabled) return;
+    reading = true;
+    if (unread) {
+      unread = false;
+      tx.root.classList.remove('is-calling');
+    }
+    tx.sheet.textContent = printed;
+    tx.sheet.scrollTop = 0;
+    tx.view.classList.add('is-open');
+    tx.view.setAttribute('aria-hidden', 'false');
+
+    if (!stillness.matches) {
+      tx.sheet.style.transition = 'none';
+      tx.sheet.style.transform = '';
+      tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
+      void tx.sheet.offsetWidth;
+      tx.sheet.style.transition = '';
+      tx.sheet.style.transform = '';
+    }
     tx.back.focus({ preventScroll: true });
   }
 
-  function leaveTelex() {
-    if (!atTelex) return;
-    atTelex = false;
-    tx.room.classList.remove('is-open');
-    tx.room.setAttribute('aria-hidden', 'true');
-    tx.open.focus({ preventScroll: true });
+  function putSlipDown() {
+    if (!reading) return;
+    reading = false;
+    if (!stillness.matches) tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
+    tx.view.classList.remove('is-open');
+    tx.view.setAttribute('aria-hidden', 'true');
+    tx.slip.focus({ preventScroll: true });
+    expectSignal(SIGNAL_GAP);
   }
 
-  tx.open.addEventListener('click', goToTelex);
-  tx.back.addEventListener('click', leaveTelex);
-
-  // Escape inside the frame belongs to the telex (it closes an enlarged slip),
-  // so this only fires while focus is out here on the helm page.
+  tx.slip.addEventListener('click', pickUpSlip);
+  tx.back.addEventListener('click', putSlipDown);
+  tx.view.addEventListener('click', ev => { if (ev.target === tx.view) putSlipDown(); });
   window.addEventListener('keydown', ev => {
-    if (atTelex && ev.key === 'Escape') leaveTelex();
+    if (reading && ev.key === 'Escape') putSlipDown();
   });
+
+  // The signal files call TELEX.signal(text); the manifest calls TELEX.load(names).
+  const loadScript = src => new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error(src));
+    document.head.appendChild(s);
+  });
+
+  window.TELEX = {
+    signal: text => { const sig = parseSignal(text); signals.push(sig); return sig; },
+    load: async names => {
+      for (const name of names) {
+        try { await loadScript(TELEX_DIR + 'signals/' + name); }
+        catch (e) { console.error('[telex] could not load ' + e.message); }
+      }
+      expectSignal(SIGNAL_FIRST);
+    },
+    incoming                                     // bring a signal in now, from code
+  };
+
+  loadScript(TELEX_DIR + 'config.js')
+    .catch(() => {})
+    .then(() => loadScript(TELEX_DIR + 'signals/manifest.js'))
+    .catch(e => console.error('[telex] could not load ' + e.message));
 
   buildWorld(el.world, marks);
   buildWorld(gl.world, glassMarks);
