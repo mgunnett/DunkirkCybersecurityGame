@@ -136,6 +136,18 @@ body {
   inset: 0;
 }
 
+/* Aircraft over the horizon: from the helm, only a dark speck against the sky */
+.air {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.air .art--plane {
+  filter: brightness(0.55) saturate(0.3);
+  opacity: 0.85;
+}
+
 .mark {
   position: absolute;
   transform: translateX(-50%);
@@ -717,7 +729,50 @@ body {
 }
 
 .art--gull     { fill: #3b4347; animation: flap var(--flap, 0.4s) ease-in-out infinite alternate; }
-.art--aircraft { fill: #4d5559; opacity: 0.85; }
+/* --- Aircraft for WEFT spotting, seen from below -------------------------- */
+
+.art--plane { filter: saturate(0.85) drop-shadow(0 0 1px rgba(0, 0, 0, 0.25)); }
+
+.art--plane .prop {
+  fill: rgba(40, 40, 40, 0.3);
+  animation: prop-flicker 0.09s steps(2) infinite alternate;
+}
+
+.art--plane .panel {
+  fill: none;
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+/* Junkers Ju 87 "Stuka": light blue underside, spatted legs, gull wing */
+.ju__skin     { fill: #8599a4; stroke: #56666e; stroke-width: 1; }
+.ju__panel    { stroke: rgba(40, 50, 56, 0.45); }
+.ju__radiator { fill: #3a4246; stroke: #2a3034; stroke-width: 1; }
+.ju__spat     { fill: #7a8e98; stroke: #4c5a61; stroke-width: 1; }
+.ju__leg      { stroke: #56666e; stroke-width: 4; stroke-linecap: round; }
+.ju__brake    { stroke: #3a4246; stroke-width: 3; stroke-linecap: round; }
+.ju__strut    { stroke: #56666e; stroke-width: 2; stroke-linecap: round; }
+.ju__bomb     { fill: #454a40; stroke: #2e322b; stroke-width: 1; }
+.ju__spinner  { fill: #3f4a4f; }
+
+.cross__edge  { fill: #f2f0ea; }
+.cross__bar   { fill: #141414; }
+
+/* Supermarine Spitfire Mk I: May 1940 black and white undersides */
+.spit__wing--stbd { fill: #e4e1d6; stroke: #8b8a84; stroke-width: 1; }
+.spit__wing--port { fill: #1d1d1d; stroke: #0c0c0c; stroke-width: 1; }
+.spit__skin       { fill: #b9bcb8; stroke: #6f7370; stroke-width: 1; }
+.spit__panel      { stroke: rgba(118, 118, 118, 0.6); }
+.spit__radiator   { fill: #55595a; stroke: #333; stroke-width: 1; }
+.spit__spinner    { fill: #262626; }
+
+.roundel__blue  { fill: #1f3a78; }
+.roundel__white { fill: #efece2; }
+.roundel__red   { fill: var(--vermilion); }
+
+@keyframes prop-flicker {
+  to { fill: rgba(40, 40, 40, 0.45); }
+}
 
 @keyframes flap {
   from { transform: scaleY(1); }
@@ -807,7 +862,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .art--gull { animation: none; }
+  .art--gull,
+  .art--plane .prop { animation: none; }
   .glasses__optic { transition: none; filter: none; }
 }
 
