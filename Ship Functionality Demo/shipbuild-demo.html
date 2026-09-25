@@ -22,6 +22,7 @@
       <div class="horizon" id="horizon">
         <div class="sky"></div>
         <div class="horizon__clouds" id="clouds"></div>
+        <div class="air" id="air"></div>
         <div class="haze"></div>
         <div class="sea"></div>
         <div class="swell" id="swell"></div>
@@ -295,8 +296,19 @@
     </div>
   </div>
 
-  <p class="glasses__hint" id="glassHint">Drag to look about &middot; scroll to change power &middot; Esc to lower</p>
+  <p class="glasses__hint" id="glassHint">Drag to look about &middot; scroll to change power &middot; click an aircraft to identify it &middot; Esc to lower</p>
   <p class="glasses__plate" id="glassPlate" aria-live="off">Bearing 000&#176; &middot; Elevation +0&#176; &middot; 7&#215;</p>
+
+  <!-- Asked when you click an aircraft. It holds still until you answer. -->
+  <div class="glasses__ask" id="glassAsk" role="group" aria-labelledby="glassQuestion" aria-hidden="true" tabindex="-1">
+    <p class="glasses__question" id="glassQuestion">Is this aircraft German or Allied?</p>
+    <div class="glasses__answers">
+      <button class="glasses__answer" type="button" data-side="german">German</button>
+      <button class="glasses__answer" type="button" data-side="allied">Allied</button>
+    </div>
+    <p class="glasses__verdict" id="glassVerdict" aria-live="polite"></p>
+  </div>
+
   <button class="glasses__lower" id="glassLower" type="button">Lower glasses</button>
 </div>
 
@@ -377,13 +389,99 @@
   </svg>
 </template>
 
-<template id="art-aircraft">
-  <svg class="art art--aircraft" viewBox="0 0 120 36" preserveAspectRatio="none">
-    <path d="M8 17 L4 3 L14 3 L24 15 Z"/>
-    <path d="M4 18 Q10 12 30 13 L96 14 Q112 15 116 18 Q112 21 96 22 L30 23 Q10 24 4 18 Z"/>
-    <path d="M6 18 L22 18 L16 24 L6 24 Z"/>
-    <path d="M50 18 L78 18 L70 31 L56 31 Z"/>
-    <rect x="116" y="8" width="2" height="20"/>
+<!-- What an aircraft looks like from the helm: no markings, no type, just a dark shape.
+     Drawn nose-up, then turned to fly right, like the sprites below. -->
+<template id="art-silhouette">
+  <svg class="art art--silhouette" viewBox="-150 -150 300 300" preserveAspectRatio="none">
+    <g transform="rotate(90)">
+      <path d="M0 -100 C7 -100 11 -92 11 -80 L11 -40 L120 -26 Q128 -24 128 -16 L128 -6 Q128 0 120 0 L11 8 L7 70 L44 78 Q50 80 50 86 L50 92 L4 96 L0 104 L-4 96 L-50 92 L-50 86 Q-50 80 -44 78 L-7 70 L-11 8 L-120 0 Q-128 0 -128 -6 L-128 -16 Q-128 -24 -120 -26 L-11 -40 L-11 -80 C-11 -92 -7 -100 0 -100 Z"/>
+    </g>
+  </svg>
+</template>
+
+<!-- Aircraft for WEFT spotting, seen from below. Drawn nose-up, then turned to fly right.
+     Squashed a little by the <svg> box so the span foreshortens, as if seen at an angle. -->
+
+<!-- Junkers Ju 87 "Stuka": gull wing with a kink, fixed spatted legs, chin radiator, square tail -->
+<template id="art-stuka">
+  <svg class="art art--plane" viewBox="-150 -150 300 300" preserveAspectRatio="none">
+    <defs>
+      <g id="balken">
+        <path class="cross__edge" d="M-6 -15 H6 V-6 H15 V6 H6 V15 H-6 V6 H-15 V-6 H-6 Z"/>
+        <path class="cross__bar"  d="M-2.5 -15 H2.5 V-2.5 H15 V2.5 H2.5 V15 H-2.5 V2.5 H-15 V-2.5 H-2.5 Z"/>
+      </g>
+
+      <!-- One half of the aircraft; mirrored for the other side -->
+      <g id="ju-half">
+        <path class="ju__skin" d="M12 -38 L62 -37 L130 -27 Q140 -25 140 -14 L139 2 Q138 8 131 8 L62 18 L12 20 Z"/>
+        <path class="panel ju__panel" d="M62 -37 L62 18 M66 12 L134 3"/>
+        <path class="ju__brake" d="M72 -31 L120 -25"/>
+        <use href="#balken" x="100" y="-6"/>
+
+        <path class="ju__skin" d="M5 84 L46 86 Q54 88 54 95 Q54 104 46 105 L5 106 Z"/>
+        <path class="panel ju__panel" d="M8 98 L50 98"/>
+        <path class="ju__strut" d="M7 76 L30 90"/>
+
+        <path class="ju__leg" d="M62 -30 L62 -14"/>
+        <path class="ju__spat" d="M62 -66 C68 -66 70 -52 69 -40 C68 -30 66 -24 62 -24 C58 -24 56 -30 55 -40 C54 -52 56 -66 62 -66 Z"/>
+      </g>
+    </defs>
+
+    <g transform="rotate(90)">
+      <use href="#ju-half"/>
+      <use href="#ju-half" transform="scale(-1 1)"/>
+
+      <path class="ju__skin" d="M0 -106 C8 -106 13 -100 14 -90 L15 -40 C15 -10 13 20 9 60 L5 108 C4 114 -4 114 -5 108 L-9 60 C-13 20 -15 -10 -15 -40 L-14 -90 C-13 -100 -8 -106 0 -106 Z"/>
+      <path class="panel ju__panel" d="M-14 -62 L14 -62 M0 30 L0 104"/>
+      <rect class="ju__radiator" x="-8" y="-92" width="16" height="20" rx="3"/>
+
+      <ellipse class="ju__bomb" cx="0" cy="-18" rx="5" ry="24"/>
+      <path class="ju__bomb" d="M-7 12 L7 12 L4 4 L-4 4 Z"/>
+
+      <ellipse class="ju__spinner" cx="0" cy="-108" rx="6" ry="5"/>
+      <ellipse class="airscrew" cx="0" cy="-112" rx="34" ry="2.5"/>
+    </g>
+  </svg>
+</template>
+
+<!-- Supermarine Spitfire Mk I: elliptical wing, gear tucked away, one radiator under the
+     starboard wing, slim fuselage, rounded tail. From below, starboard is on the left (-x). -->
+<template id="art-spitfire">
+  <svg class="art art--plane" viewBox="-150 -150 300 300" preserveAspectRatio="none">
+    <defs>
+      <!-- Wing outline, no colour of its own: each side takes its paint from the <use> -->
+      <path id="spit-wing" d="M10 -30 C44 -31 84 -26 104 -14 C114 -8 116 0 110 5 C96 12 60 18 10 22 Z"/>
+
+      <g id="roundel">
+        <circle class="roundel__blue"  r="11"/>
+        <circle class="roundel__white" r="7"/>
+        <circle class="roundel__red"   r="3.5"/>
+      </g>
+
+      <!-- Markings and panel lines for one wing; mirrored for the other -->
+      <g id="spit-marks">
+        <path class="panel spit__panel" d="M12 19 L56 15 M62 14 C84 10 100 4 108 -6"/>
+        <ellipse class="panel spit__panel" cx="30" cy="-6" rx="11" ry="8"/>
+        <use href="#roundel" x="76" y="-4"/>
+        <path class="spit__skin" d="M4 72 C22 70 34 74 36 80 C37 86 30 90 4 90 Z"/>
+      </g>
+    </defs>
+
+    <g transform="rotate(90)">
+      <use href="#spit-wing" class="spit__wing--port"/>
+      <use href="#spit-wing" class="spit__wing--stbd" transform="scale(-1 1)"/>
+      <use href="#spit-marks"/>
+      <use href="#spit-marks" transform="scale(-1 1)"/>
+
+      <rect class="spit__radiator" x="-52" y="-6" width="16" height="22" rx="3"/>
+      <rect class="spit__radiator" x="36" y="-8" width="10" height="14" rx="5"/>
+
+      <path class="spit__skin" d="M0 -88 C6 -88 10 -82 11 -72 L11 -20 C11 10 9 40 6 70 L3 92 C2 96 -2 96 -3 92 L-6 70 C-9 40 -11 10 -11 -20 L-11 -72 C-10 -82 -6 -88 0 -88 Z"/>
+      <path class="panel spit__panel" d="M-11 -60 L11 -60 M0 20 L0 88"/>
+
+      <path class="spit__spinner" d="M0 -100 C4 -96 6 -90 6 -86 L-6 -86 C-6 -90 -4 -96 0 -100 Z"/>
+      <ellipse class="airscrew" cx="0" cy="-88" rx="33" ry="2.4"/>
+    </g>
   </svg>
 </template>
 
@@ -482,17 +580,32 @@
 
   // ---- The sky, by true bearing and elevation in degrees ------------------
   // Too far off to shift as the boat moves. w and h are angular sizes.
-  // Gulls wheel about their spot (loop, pace); aircraft cross (drift, deg/sec).
+  // Gulls wheel about their spot (loop, pace).
   const SKY = [
     { art: 'gull',     bearing:  10, elev:  5.0, w: 0.50, h: 0.20, loop: 2.2, pace: 0.35 },
     { art: 'gull',     bearing:  14, elev:  6.4, w: 0.44, h: 0.18, loop: 1.8, pace: 0.42 },
     { art: 'gull',     bearing:   7, elev:  7.1, w: 0.40, h: 0.16, loop: 2.6, pace: 0.30 },
     { art: 'gull',     bearing: 335, elev:  9.0, w: 0.42, h: 0.17, loop: 3.0, pace: 0.28 },
     { art: 'gull',     bearing: 205, elev:  4.0, w: 0.55, h: 0.22, loop: 1.6, pace: 0.50 },
-    { art: 'gull',     bearing:  92, elev: 12.0, w: 0.38, h: 0.15, loop: 2.4, pace: 0.33 },
-    { art: 'aircraft', bearing: 250, elev:  7.0, w: 0.90, h: 0.28, drift:  0.60 },
-    { art: 'aircraft', bearing:  60, elev: 15.0, w: 0.60, h: 0.19, drift: -0.35 }
+    { art: 'gull',     bearing:  92, elev: 12.0, w: 0.38, h: 0.15, loop: 2.4, pace: 0.33 }
   ];
+
+  // ---- Aircraft for WEFT spotting -----------------------------------------
+  // Now and then one crosses low over the horizon. From the helm it's only a silhouette;
+  // through the glasses it's a German or British aircraft. Clicking it spots it, and
+  // you're asked whose it is. w and h are angular sizes.
+  const AIRCRAFT = {
+    stuka:    { w: 0.66, h: 0.50, side: 'german', name: 'Junkers Ju 87 “Stuka”' },
+    spitfire: { w: 0.56, h: 0.43, side: 'allied', name: 'Supermarine Spitfire' }
+  };
+  const SIDES = { german: 'German', allied: 'Allied' };
+  const PLANE_DRIFT = 0.8;         // degrees of bearing per second
+  const PLANE_ELEV  = [1.8, 4.5];  // degrees above the horizon
+  const PLANE_ENTER = 36;          // comes in from this far off the bow, just out of sight
+  const PLANE_PASS  = 80;          // degrees it flies before it's gone
+  const PLANE_GAP   = [8, 25];     // seconds of empty sky between one and the next
+  const SPOT_HOLD   = 5;           // seconds it holds still once answered, to be looked at
+  const SPOT_FADE   = 1.2;         // then seconds to fade; matches .is-spotted
 
   // ---- State --------------------------------------------------------------
   let wheelAngle = 0;
@@ -528,6 +641,10 @@
   const clouds   = [];
   const flyers   = [];
   let sun        = null;
+  const sprites  = [];       // one of each aircraft type, seen through the glasses
+  let silhouette = null;     // what any of them looks like from the helm
+  let plane      = null;     // the flight up there now, if any
+  let planeWait  = 3;        // seconds until the next one comes over
 
   const gl = {
     root:   document.getElementById('glasses'),
@@ -545,7 +662,10 @@
     air:    document.getElementById('glassAir'),
     surface: surface(document.getElementById('glassSurface')),
     plate:  document.getElementById('glassPlate'),
-    hint:   document.getElementById('glassHint')
+    hint:   document.getElementById('glassHint'),
+    ask:    document.getElementById('glassAsk'),
+    verdict: document.getElementById('glassVerdict'),
+    answers: [...document.querySelectorAll('.glasses__answer')]
   };
 
   const el = {
@@ -553,6 +673,7 @@
     rotor:   document.getElementById('rotor'),
     horizon: document.getElementById('horizon'),
     world:   document.getElementById('world'),
+    air:     document.getElementById('air'),
     swell:   document.getElementById('swell'),
     clouds:  document.getElementById('clouds'),
     surface: surface(document.getElementById('surface')),
@@ -567,6 +688,11 @@
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const norm  = d => ((d % 360) + 360) % 360;
   const DEG   = 180 / Math.PI;
+  const between = ([lo, hi]) => lo + Math.random() * (hi - lo);
+
+  const hide = thing => {
+    if (thing.shown) { thing.el.style.display = 'none'; thing.shown = false; }
+  };
 
   const arc = (a, b) => {                        // shortest signed way round
     let d = norm(b) - norm(a);
@@ -583,10 +709,16 @@
   const subtendH = (size, range) => Math.atan(size / range) * DEG;
 
   // ---- Build the world ----------------------------------------------------
+  // Each copy gets its own ids, so two copies of the same aircraft never share <defs>
+  let copies = 0;
   const artwork = (name, className) => {
     const holder = document.createElement('div');
     holder.className = className;
-    holder.appendChild(document.getElementById('art-' + name).content.firstElementChild.cloneNode(true));
+    const art = document.getElementById('art-' + name).content.firstElementChild.cloneNode(true);
+    const tag = '-' + (++copies);
+    art.querySelectorAll('[id]').forEach(n => { n.id += tag; });
+    art.querySelectorAll('use').forEach(u => u.setAttribute('href', u.getAttribute('href') + tag));
+    holder.appendChild(art);
     return holder;
   };
 
@@ -640,13 +772,27 @@
 
     SKY.forEach((item, i) => {
       const holder = artwork(item.art, 'flyer');
-      if (item.drift < 0) holder.firstElementChild.style.transform = 'scaleX(-1)';
-      if (item.art === 'gull') holder.style.setProperty('--flap', (0.34 + (i % 3) * 0.07) + 's');
+      holder.style.setProperty('--flap', (0.34 + (i % 3) * 0.07) + 's');
       gl.air.appendChild(holder);
-      flyers.push({ el: holder, shown: true, item, b: item.bearing, phase: i * 1.7 });
+      flyers.push({ el: holder, shown: true, item, phase: i * 1.7 });
     });
 
     sun = { el: gl.sun, shown: true };
+  }
+
+  // From the helm every aircraft is the same dark shape; only the glasses show which it is
+  function buildAircraft() {
+    const far = artwork('silhouette', 'flyer');
+    far.style.display = 'none';
+    el.air.appendChild(far);
+    silhouette = { el: far, shown: false };
+
+    for (const [art, size] of Object.entries(AIRCRAFT)) {
+      const near = artwork(art, 'flyer');
+      near.style.display = 'none';
+      gl.air.appendChild(near);
+      sprites.push({ art, ...size, el: near, shown: false });
+    }
   }
 
   // Graduate the compass card: a tick every 5 degrees, figures every 30
@@ -1077,6 +1223,7 @@
 
     for (const c of clouds) c.b = norm(c.b + WIND * dt);
 
+    flyAircraft(dt);
     drawWorld();
     drawStation(rudder);
     if (glassesUp) drawGlasses(dt);
@@ -1112,6 +1259,22 @@
     }
   }
 
+  // Hang something on the sky by true bearing and elevation, seen along `look`.
+  // `scale` is pixels per degree; `horizonY` is the horizon, down from the top.
+  function hang(thing, look, b, e, w, h, scale, cx, horizonY, span, height) {
+    const rel = arc(look, b);
+    const y = horizonY - e * scale;
+    if (Math.abs(rel) > span + w / 2 || y < -h * scale || y > height + h * scale) {
+      hide(thing);
+      return;
+    }
+    if (!thing.shown) { thing.el.style.display = 'block'; thing.shown = true; }
+    thing.el.style.left   = (cx + rel * scale) + 'px';
+    thing.el.style.top    = y + 'px';
+    thing.el.style.width  = (w * scale) + 'px';
+    thing.el.style.height = (h * scale) + 'px';
+  }
+
   function drawWorld() {
     const cx = horizonW / 2;
     const horizonY = horizonH * 0.54;           // from the top of the layer
@@ -1138,6 +1301,11 @@
         w: horizonW, h: horizonH, cx, horizonY, z: ppd, look: heading,
         lookU: swung, span: FOV / 2 + 4, travel: run, slide: 0, mist: 0.24
       });
+    }
+
+    if (plane) {
+      hang(silhouette, heading, plane.b, plane.e, plane.type.w, plane.type.h,
+           ppd, horizonW / 2, horizonH * 0.54, FOV / 2, horizonH);
     }
 
     // Water: slides sideways as you turn, and towards you as you make way.
@@ -1201,19 +1369,7 @@
       (side * 0.18).toFixed(1) + 'px ' + ((run * WAKE_FAR * mag) % 4000).toFixed(1) + 'px';
 
     // Anything hung on the sky by bearing and elevation
-    const place = (thing, b, e, w, h) => {
-      const rel = arc(look, b);
-      const y = horizonY - e * z;
-      if (Math.abs(rel) > spanX + w / 2 || y < -h * z || y > sceneH + h * z) {
-        if (thing.shown) { thing.el.style.display = 'none'; thing.shown = false; }
-        return;
-      }
-      if (!thing.shown) { thing.el.style.display = 'block'; thing.shown = true; }
-      thing.el.style.left   = (cx + rel * z) + 'px';
-      thing.el.style.top    = y + 'px';
-      thing.el.style.width  = (w * z) + 'px';
-      thing.el.style.height = (h * z) + 'px';
-    };
+    const place = (thing, b, e, w, h) => hang(thing, look, b, e, w, h, z, cx, horizonY, spanX, sceneH);
 
     place(sun, SUN.bearing, SUN.elev, SUN.size, SUN.size);
 
@@ -1221,14 +1377,12 @@
 
     for (const f of flyers) {
       const it = f.item;
-      if (it.drift) {
-        f.b = norm(f.b + it.drift * dt);
-        place(f, f.b, it.elev, it.w, it.h);
-      } else {
-        const t = clock * it.pace + f.phase;
-        place(f, it.bearing + Math.cos(t) * it.loop, it.elev + Math.sin(t) * it.loop * 0.3, it.w, it.h);
-      }
+      const t = clock * it.pace + f.phase;
+      place(f, it.bearing + Math.cos(t) * it.loop, it.elev + Math.sin(t) * it.loop * 0.3, it.w, it.h);
     }
+
+    // The silhouette from the helm, near enough now to see what it is
+    if (plane) place(plane.type, plane.b, plane.e, plane.type.w, plane.type.h);
 
     placeMarks(glassMarks, look, z, cx, sceneH - horizonY, spanX + 4);
 
@@ -1257,6 +1411,136 @@
       mag.toFixed(mag < 10 ? 1 : 0).replace(/\.0$/, '') + '×';
   }
 
+  // ---- Aircraft ------------------------------------------------------------
+  // Send one over, German or British at random, in from just out of sight to one side.
+  // It crosses ahead of the bow low over the horizon, where you can see it from the helm.
+  function launchAircraft() {
+    const type = sprites[Math.floor(Math.random() * sprites.length)];
+    const side = Math.random() < 0.5 ? -1 : 1;
+    plane = {
+      type,
+      b: norm(heading + side * PLANE_ENTER),
+      e: between(PLANE_ELEV),
+      dir: -side,
+      flown: 0,
+      spotted: false,
+      hold: 0,
+      fade: 0
+    };
+
+    // Turned about rather than mirrored, so it's still the underside you see
+    const turn = plane.dir < 0 ? 'rotate(180deg)' : '';
+    silhouette.el.firstElementChild.style.transform = turn;
+    type.el.firstElementChild.style.transform = turn;
+    type.el.classList.add('is-target');
+
+    // For the rest of the game to read: which aircraft is up there now
+    gl.root.dataset.aircraft = type.art;
+  }
+
+  // Clicked on through the glasses: it holds still while you're asked whose it is
+  function spotAircraft() {
+    plane.spotted = true;
+    plane.asking = true;
+    plane.hold = SPOT_HOLD;
+    plane.fade = SPOT_FADE;
+    plane.type.el.classList.remove('is-target');
+    gl.root.dispatchEvent(new CustomEvent('aircraftspotted', {
+      bubbles: true,
+      detail: { aircraft: plane.type.art }
+    }));
+    askSide();
+  }
+
+  function askSide() {
+    gl.hint.classList.remove('is-shown');
+    gl.verdict.textContent = '';
+    gl.ask.classList.remove('is-answered', 'is-right', 'is-wrong');
+    for (const b of gl.answers) { b.disabled = false; b.classList.remove('is-chosen'); }
+    gl.ask.classList.add('is-shown');
+    gl.ask.setAttribute('aria-hidden', 'false');
+    gl.ask.focus({ preventScroll: true });       // the question, not an answer, so neither looks picked
+  }
+
+  // Answered: say whether it was right, then let it hold a moment and fade
+  function answerSide(button) {
+    if (!plane || !plane.asking) return;
+    plane.asking = false;
+    const { art, side, name } = plane.type;
+    const answer = button.dataset.side;
+    const correct = answer === side;
+
+    for (const b of gl.answers) b.disabled = true;
+    button.classList.add('is-chosen');
+    gl.verdict.textContent = (correct ? 'Correct: ' : 'Not quite: ') +
+      'that’s a ' + name + ', ' + SIDES[side] + '.';
+    gl.ask.classList.add('is-answered', correct ? 'is-right' : 'is-wrong');
+    gl.lower.focus({ preventScroll: true });
+
+    // For the rest of the game to read: what was up there, and what you called it
+    gl.root.dispatchEvent(new CustomEvent('aircraftidentified', {
+      bubbles: true,
+      detail: { aircraft: art, side, answer, correct }
+    }));
+  }
+
+  function closeAsk() {
+    gl.ask.classList.remove('is-shown');
+    gl.ask.setAttribute('aria-hidden', 'true');
+  }
+
+  // Glasses lowered before answering: the aircraft carries on, still to be spotted
+  function unspotAircraft() {
+    plane.spotted = false;
+    plane.asking = false;
+    plane.type.el.classList.add('is-target');
+    closeAsk();
+  }
+
+  for (const b of gl.answers) b.addEventListener('click', () => answerSide(b));
+
+  function retireAircraft() {
+    closeAsk();
+    for (const thing of [silhouette, plane.type]) {
+      hide(thing);
+      thing.el.classList.remove('is-target', 'is-spotted');
+    }
+    plane = null;
+    planeWait = between(PLANE_GAP);
+    delete gl.root.dataset.aircraft;
+  }
+
+  // Flies whether or not the glasses are up. Once it's spotted or out of sight,
+  // a while later another comes over.
+  function flyAircraft(dt) {
+    if (!plane) {
+      planeWait -= dt;
+      if (planeWait <= 0) launchAircraft();
+      return;
+    }
+    if (plane.asking) return;                    // held still until you answer
+    if (plane.spotted && plane.hold > 0) {
+      plane.hold -= dt;
+      if (plane.hold <= 0) {
+        silhouette.el.classList.add('is-spotted');
+        plane.type.el.classList.add('is-spotted');
+      }
+      return;
+    }
+    plane.b = norm(plane.b + PLANE_DRIFT * plane.dir * dt);
+    plane.flown += PLANE_DRIFT * dt;
+    if (plane.spotted) plane.fade -= dt;
+    if ((plane.spotted && plane.fade <= 0) || plane.flown > PLANE_PASS) retireAircraft();
+  }
+
+  const HINT = gl.hint.textContent;
+  function showHint(text, ms) {
+    gl.hint.textContent = text;
+    gl.hint.classList.add('is-shown');
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => gl.hint.classList.remove('is-shown'), ms);
+  }
+
   function raiseGlasses() {
     if (glassesUp) return;
     glassesUp = true;
@@ -1265,15 +1549,14 @@
     gl.root.classList.add('is-up');
     gl.root.setAttribute('aria-hidden', 'false');
     layout();
-    gl.hint.classList.add('is-shown');
-    clearTimeout(hintTimer);
-    hintTimer = setTimeout(() => gl.hint.classList.remove('is-shown'), 4500);
+    showHint(HINT, 4500);
     gl.lower.focus({ preventScroll: true });
   }
 
   function lowerGlasses() {
     if (!glassesUp) return;
     glassesUp = false;
+    if (plane && plane.asking) unspotAircraft();
     peering = false;
     held.clear();
     gl.root.classList.remove('is-up', 'is-peering');
@@ -1284,8 +1567,12 @@
   gl.open.addEventListener('click', raiseGlasses);
   gl.lower.addEventListener('click', lowerGlasses);
 
-  // Point and drag: grab the view and pull it about
+  // Point and drag: grab the view and pull it about. Click on the aircraft to spot it.
   gl.field.addEventListener('pointerdown', ev => {
+    if (plane && !plane.spotted && plane.type.el.contains(ev.target)) {
+      spotAircraft();
+      return;
+    }
     peering = true;
     peerX = ev.clientX;
     peerY = ev.clientY;
@@ -1437,11 +1724,9 @@
     return sig;
   }
 
-  const between = ([lo, hi]) => (lo + Math.random() * (hi - lo)) * 1000;
-
   function expectSignal(range) {
     clearTimeout(signalTimer);
-    signalTimer = setTimeout(incoming, between(range));
+    signalTimer = setTimeout(incoming, between(range) * 1000);   // range is in seconds
   }
 
   // A signal comes in: the last slip is torn off and a fresh one feeds out.
@@ -1614,6 +1899,7 @@
   buildWorld(el.world, marks);
   buildWorld(gl.world, glassMarks);
   buildSky();
+  buildAircraft();
   buildCard();
   layout();
   window.addEventListener('resize', layout);

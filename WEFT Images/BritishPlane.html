@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WEFT: British Aircraft</title>
+<link rel="stylesheet" href="planestyle.css">
+</head>
+<body>
+
+<!-- Looking through the binoculars, as in the helm demo -->
+<div class="glasses">
+  <div class="glasses__cup glasses__cup--leather" aria-hidden="true"></div>
+  <div class="glasses__cup glasses__cup--brass" aria-hidden="true"></div>
+  <div class="glasses__cup glasses__cup--gap" aria-hidden="true"></div>
+
+  <div class="glasses__cup glasses__field">
+
+  <div class="sky" aria-hidden="true"></div>
+  <div class="clouds clouds--far" aria-hidden="true"></div>
+  <div class="smoke" aria-hidden="true"></div>
+  <div class="sea" aria-hidden="true"><div class="coast"></div></div>
+
+  <!-- Supermarine Spitfire Mk I, from below. Drawn nose-up, then turned to fly right.
+       Seen from below, the starboard wing is on the viewer's left (negative x).
+       WEFT: elliptical wing, gear tucked away, one radiator under the starboard wing,
+       slim fuselage, rounded tail. -->
+  <div class="flightpath">
+    <div class="plane">
+      <svg class="plane__art" viewBox="-150 -150 300 300" role="img" aria-label="Unidentified aircraft">
+        <defs>
+          <!-- Wing outline, no colour of its own: each side takes its paint from the <use> -->
+          <path id="spit-wing" d="M10 -30 C44 -31 84 -26 104 -14 C114 -8 116 0 110 5 C96 12 60 18 10 22 Z"/>
+
+          <g id="roundel">
+            <circle class="roundel__blue"  r="11"/>
+            <circle class="roundel__white" r="7"/>
+            <circle class="roundel__red"   r="3.5"/>
+          </g>
+
+          <!-- Markings and panel lines for one wing; mirrored for the other -->
+          <g id="spit-marks">
+            <path class="panel spit__panel" d="M12 19 L56 15 M62 14 C84 10 100 4 108 -6"/>
+            <ellipse class="panel spit__panel" cx="30" cy="-6" rx="11" ry="8"/>
+            <use href="#roundel" x="76" y="-4"/>
+            <path class="spit__skin" d="M4 72 C22 70 34 74 36 80 C37 86 30 90 4 90 Z"/>
+          </g>
+        </defs>
+
+        <g transform="rotate(90)">
+          <use href="#spit-wing" class="spit__wing--port"/>
+          <use href="#spit-wing" class="spit__wing--stbd" transform="scale(-1 1)"/>
+          <use href="#spit-marks"/>
+          <use href="#spit-marks" transform="scale(-1 1)"/>
+
+          <rect class="spit__radiator" x="-52" y="-6" width="16" height="22" rx="3"/>
+          <rect class="spit__radiator" x="36" y="-8" width="10" height="14" rx="5"/>
+
+          <path class="spit__skin" d="M0 -88 C6 -88 10 -82 11 -72 L11 -20 C11 10 9 40 6 70 L3 92 C2 96 -2 96 -3 92 L-6 70 C-9 40 -11 10 -11 -20 L-11 -72 C-10 -82 -6 -88 0 -88 Z"/>
+          <path class="panel spit__panel" d="M-11 -60 L11 -60 M0 20 L0 88"/>
+
+          <path class="spit__spinner" d="M0 -100 C4 -96 6 -90 6 -86 L-6 -86 C-6 -90 -4 -96 0 -100 Z"/>
+          <ellipse class="prop" cx="0" cy="-88" rx="33" ry="2.4"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="clouds clouds--near" aria-hidden="true"></div>
+
+  <div class="glasses__lens" aria-hidden="true"></div>
+  <svg class="glasses__reticle" viewBox="-100 -40 200 80" aria-hidden="true">
+    <path d="M-90 0 L90 0 M0 -30 L0 30"/>
+    <path d="M-80 -4 L-80 4 M-60 -4 L-60 4 M-40 -6 L-40 6 M-20 -4 L-20 4 M20 -4 L20 4 M40 -6 L40 6 M60 -4 L60 4 M80 -4 L80 4"/>
+  </svg>
+  </div>
+</div>
+
+</body>
+</html>
