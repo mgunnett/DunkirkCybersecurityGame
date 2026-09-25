@@ -131,20 +131,23 @@ body {
   -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, #000 20%);
 }
 
+/* z-index 0 keeps the marks' own z-indexes (nearer in front) inside this layer,
+   so they can't rise over the sky layers and take clicks meant for the aircraft */
 .world {
   position: absolute;
   inset: 0;
+  z-index: 0;
 }
 
-/* Aircraft over the horizon: from the helm, only a dark speck against the sky */
+/* Aircraft over the horizon: from the helm, only a dark silhouette against the sky */
 .air {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-.air .art--plane {
-  filter: brightness(0.55) saturate(0.3);
+.art--silhouette path {
+  fill: #2f3538;
   opacity: 0.85;
 }
 
@@ -734,6 +737,18 @@ body {
 
 .flyer { line-height: 0; }
 
+/* The aircraft in the glasses can be clicked to spot it */
+.flyer.is-target {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+/* Spotted: fades from both views. Keep in step with SPOT_FADE in the script. */
+.flyer.is-spotted {
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
 .flyer .art {
   width: 100%;
   height: 100%;
@@ -875,6 +890,80 @@ body {
   outline: none;
 }
 
+/* Asked when you click an aircraft: German or Allied? Same brass as the plate below it */
+.glasses__ask {
+  position: absolute;
+  left: 50%;
+  bottom: calc(2.2vh + 2.8rem);
+  padding: 0.7rem 1.1rem 0.8rem;
+  text-align: center;
+  font-family: var(--serif);
+  letter-spacing: 0.04em;
+  color: #3a2c12;
+  background: linear-gradient(180deg, var(--brass-lit), var(--brass));
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 8px);
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s;
+}
+
+.glasses__ask.is-shown {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.glasses__ask:focus { outline: none; }
+
+.glasses__question {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+}
+
+.glasses__answers {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.glasses__answer {
+  padding: 0.4rem 1.2rem;
+  font: inherit;
+  font-size: 0.85rem;
+  letter-spacing: inherit;
+  color: var(--brass-lit);
+  background: #2c2115;
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.glasses__answer:hover:not(:disabled),
+.glasses__answer:focus-visible {
+  filter: brightness(1.3);
+  transform: translateY(-1px);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(227, 198, 132, 0.7);
+}
+
+.glasses__answer:disabled { cursor: default; opacity: 0.5; }
+.glasses__answer.is-chosen { opacity: 1; box-shadow: 0 0 0 2px var(--ink); }
+
+.glasses__verdict {
+  display: none;
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+}
+
+.glasses__ask.is-answered .glasses__verdict { display: block; }
+.glasses__ask.is-right .glasses__verdict    { color: #1f4d33; }
+.glasses__ask.is-wrong .glasses__verdict    { color: #7a1f16; }
+
 /* --- Teleprinter, to starboard of the binnacle ---------------------------- */
 /* Colours follow Telex Machine Demo/telex.css so the two read as one machine */
 
@@ -966,6 +1055,7 @@ body {
   .art--gull,
   .art--plane .airscrew { animation: none; }
   .glasses__optic { transition: none; filter: none; }
+  .glasses__ask { transition: none; }
 }
 
 /* --- Narrow screens ------------------------------------------------------- */

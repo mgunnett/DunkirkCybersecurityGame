@@ -253,8 +253,19 @@
     </div>
   </div>
 
-  <p class="glasses__hint" id="glassHint">Drag to look about &middot; scroll to change power &middot; Esc to lower</p>
+  <p class="glasses__hint" id="glassHint">Drag to look about &middot; scroll to change power &middot; click an aircraft to identify it &middot; Esc to lower</p>
   <p class="glasses__plate" id="glassPlate" aria-live="off">Bearing 000&#176; &middot; Elevation +0&#176; &middot; 7&#215;</p>
+
+  <!-- Asked when you click an aircraft. It holds still until you answer. -->
+  <div class="glasses__ask" id="glassAsk" role="group" aria-labelledby="glassQuestion" aria-hidden="true" tabindex="-1">
+    <p class="glasses__question" id="glassQuestion">Is this aircraft German or Allied?</p>
+    <div class="glasses__answers">
+      <button class="glasses__answer" type="button" data-side="german">German</button>
+      <button class="glasses__answer" type="button" data-side="allied">Allied</button>
+    </div>
+    <p class="glasses__verdict" id="glassVerdict" aria-live="polite"></p>
+  </div>
+
   <button class="glasses__lower" id="glassLower" type="button">Lower glasses</button>
 </div>
 
@@ -331,6 +342,16 @@
 <template id="art-gull">
   <svg class="art art--gull" viewBox="0 0 40 16" preserveAspectRatio="none">
     <path d="M2 10 Q10 1 20 9 Q30 1 38 10 Q30 5 20 12 Q10 5 2 10 Z"/>
+  </svg>
+</template>
+
+<!-- What an aircraft looks like from the helm: no markings, no type, just a dark shape.
+     Drawn nose-up, then turned to fly right, like the sprites below. -->
+<template id="art-silhouette">
+  <svg class="art art--silhouette" viewBox="-150 -150 300 300" preserveAspectRatio="none">
+    <g transform="rotate(90)">
+      <path d="M0 -100 C7 -100 11 -92 11 -80 L11 -40 L120 -26 Q128 -24 128 -16 L128 -6 Q128 0 120 0 L11 8 L7 70 L44 78 Q50 80 50 86 L50 92 L4 96 L0 104 L-4 96 L-50 92 L-50 86 Q-50 80 -44 78 L-7 70 L-11 8 L-120 0 Q-128 0 -128 -6 L-128 -16 Q-128 -24 -120 -26 L-11 -40 L-11 -80 C-11 -92 -7 -100 0 -100 Z"/>
+    </g>
   </svg>
 </template>
 
@@ -488,17 +509,21 @@
   ];
 
   // ---- Aircraft for WEFT spotting -----------------------------------------
-  // One at a time crosses low over the horizon: a speck through the windscreen,
-  // near enough to name through the glasses. w and h are angular sizes.
+  // Now and then one crosses low over the horizon. From the helm it's only a silhouette;
+  // through the glasses it's a German or British aircraft. Clicking it spots it, and
+  // you're asked whose it is. w and h are angular sizes.
   const AIRCRAFT = {
-    stuka:    { w: 0.66, h: 0.50 },
-    spitfire: { w: 0.56, h: 0.43 }
+    stuka:    { w: 0.66, h: 0.50, side: 'german', name: 'Junkers Ju 87 “Stuka”' },
+    spitfire: { w: 0.56, h: 0.43, side: 'allied', name: 'Supermarine Spitfire' }
   };
+  const SIDES = { german: 'German', allied: 'Allied' };
   const PLANE_DRIFT = 0.8;         // degrees of bearing per second
   const PLANE_ELEV  = [1.8, 4.5];  // degrees above the horizon
   const PLANE_ENTER = 36;          // comes in from this far off the bow, just out of sight
   const PLANE_PASS  = 80;          // degrees it flies before it's gone
-  const PLANE_GAP   = [4, 12];     // seconds of empty sky between one and the next
+  const PLANE_GAP   = [8, 25];     // seconds of empty sky between one and the next
+  const SPOT_HOLD   = 5;           // seconds it holds still once answered, to be looked at
+  const SPOT_FADE   = 1.2;         // then seconds to fade; matches .is-spotted
 
   // ---- State --------------------------------------------------------------
   let wheelAngle = 0;
@@ -530,9 +555,10 @@
   const clouds   = [];
   const flyers   = [];
   let sun        = null;
-  const planes   = [];       // one of each type; only one is up at a time
-  let plane      = null;     // the one up there now
-  let planeWait  = 1.5;      // seconds until the next one comes over
+  const sprites  = [];       // one of each aircraft type, seen through the glasses
+  let silhouette = null;     // what any of them looks like from the helm
+  let plane      = null;     // the flight up there now, if any
+  let planeWait  = 3;        // seconds until the next one comes over
 
   const gl = {
     root:   document.getElementById('glasses'),
@@ -549,7 +575,10 @@
     world:  document.getElementById('glassWorld'),
     air:    document.getElementById('glassAir'),
     plate:  document.getElementById('glassPlate'),
-    hint:   document.getElementById('glassHint')
+    hint:   document.getElementById('glassHint'),
+    ask:    document.getElementById('glassAsk'),
+    verdict: document.getElementById('glassVerdict'),
+    answers: [...document.querySelectorAll('.glasses__answer')]
   };
 
   const el = {
@@ -653,15 +682,18 @@
     sun = { el: gl.sun, shown: true };
   }
 
-  // Each aircraft is drawn twice: small over the windscreen horizon, and in the glasses
+  // From the helm every aircraft is the same dark shape; only the glasses show which it is
   function buildAircraft() {
+    const far = artwork('silhouette', 'flyer');
+    far.style.display = 'none';
+    el.air.appendChild(far);
+    silhouette = { el: far, shown: false };
+
     for (const [art, size] of Object.entries(AIRCRAFT)) {
-      const far  = artwork(art, 'flyer');
       const near = artwork(art, 'flyer');
-      far.style.display = near.style.display = 'none';
-      el.air.appendChild(far);
+      near.style.display = 'none';
       gl.air.appendChild(near);
-      planes.push({ art, ...size, far: { el: far, shown: false }, near: { el: near, shown: false } });
+      sprites.push({ art, ...size, el: near, shown: false });
     }
   }
 
@@ -823,7 +855,7 @@
     placeMarks(marks, heading, ppd, horizonW / 2, horizonH * 0.46, FOV / 2 + 4);
 
     if (plane) {
-      hang(plane.far, heading, plane.b, plane.e, plane.w, plane.h,
+      hang(silhouette, heading, plane.b, plane.e, plane.type.w, plane.type.h,
            ppd, horizonW / 2, horizonH * 0.54, FOV / 2, horizonH);
     }
 
@@ -903,8 +935,8 @@
       place(f, it.bearing + Math.cos(t) * it.loop, it.elev + Math.sin(t) * it.loop * 0.3, it.w, it.h);
     }
 
-    // The same aircraft that's a speck over the windscreen, only nearer
-    if (plane) place(plane.near, plane.b, plane.e, plane.w, plane.h);
+    // The silhouette from the helm, near enough now to see what it is
+    if (plane) place(plane.type, plane.b, plane.e, plane.type.w, plane.type.h);
 
     placeMarks(glassMarks, look, z, cx, sceneH - horizonY, spanX + 4);
 
@@ -930,38 +962,130 @@
   // Send one over, German or British at random, in from just out of sight to one side.
   // It crosses ahead of the bow low over the horizon, where you can see it from the helm.
   function launchAircraft() {
-    plane = planes[Math.floor(Math.random() * planes.length)];
+    const type = sprites[Math.floor(Math.random() * sprites.length)];
     const side = Math.random() < 0.5 ? -1 : 1;
-    plane.b = norm(heading + side * PLANE_ENTER);
-    plane.e = between(PLANE_ELEV);
-    plane.dir = -side;
-    plane.flown = 0;
+    plane = {
+      type,
+      b: norm(heading + side * PLANE_ENTER),
+      e: between(PLANE_ELEV),
+      dir: -side,
+      flown: 0,
+      spotted: false,
+      hold: 0,
+      fade: 0
+    };
 
     // Turned about rather than mirrored, so it's still the underside you see
     const turn = plane.dir < 0 ? 'rotate(180deg)' : '';
-    plane.far.el.firstElementChild.style.transform = turn;
-    plane.near.el.firstElementChild.style.transform = turn;
+    silhouette.el.firstElementChild.style.transform = turn;
+    type.el.firstElementChild.style.transform = turn;
+    type.el.classList.add('is-target');
 
     // For the rest of the game to read: which aircraft is up there now
-    gl.root.dataset.aircraft = plane.art;
+    gl.root.dataset.aircraft = type.art;
   }
 
-  // Flies whether or not the glasses are up; once it's gone, a while later another comes
+  // Clicked on through the glasses: it holds still while you're asked whose it is
+  function spotAircraft() {
+    plane.spotted = true;
+    plane.asking = true;
+    plane.hold = SPOT_HOLD;
+    plane.fade = SPOT_FADE;
+    plane.type.el.classList.remove('is-target');
+    gl.root.dispatchEvent(new CustomEvent('aircraftspotted', {
+      bubbles: true,
+      detail: { aircraft: plane.type.art }
+    }));
+    askSide();
+  }
+
+  function askSide() {
+    gl.hint.classList.remove('is-shown');
+    gl.verdict.textContent = '';
+    gl.ask.classList.remove('is-answered', 'is-right', 'is-wrong');
+    for (const b of gl.answers) { b.disabled = false; b.classList.remove('is-chosen'); }
+    gl.ask.classList.add('is-shown');
+    gl.ask.setAttribute('aria-hidden', 'false');
+    gl.ask.focus({ preventScroll: true });       // the question, not an answer, so neither looks picked
+  }
+
+  // Answered: say whether it was right, then let it hold a moment and fade
+  function answerSide(button) {
+    if (!plane || !plane.asking) return;
+    plane.asking = false;
+    const { art, side, name } = plane.type;
+    const answer = button.dataset.side;
+    const correct = answer === side;
+
+    for (const b of gl.answers) b.disabled = true;
+    button.classList.add('is-chosen');
+    gl.verdict.textContent = (correct ? 'Correct: ' : 'Not quite: ') +
+      'that’s a ' + name + ', ' + SIDES[side] + '.';
+    gl.ask.classList.add('is-answered', correct ? 'is-right' : 'is-wrong');
+    gl.lower.focus({ preventScroll: true });
+
+    // For the rest of the game to read: what was up there, and what you called it
+    gl.root.dispatchEvent(new CustomEvent('aircraftidentified', {
+      bubbles: true,
+      detail: { aircraft: art, side, answer, correct }
+    }));
+  }
+
+  function closeAsk() {
+    gl.ask.classList.remove('is-shown');
+    gl.ask.setAttribute('aria-hidden', 'true');
+  }
+
+  // Glasses lowered before answering: the aircraft carries on, still to be spotted
+  function unspotAircraft() {
+    plane.spotted = false;
+    plane.asking = false;
+    plane.type.el.classList.add('is-target');
+    closeAsk();
+  }
+
+  for (const b of gl.answers) b.addEventListener('click', () => answerSide(b));
+
+  function retireAircraft() {
+    closeAsk();
+    for (const thing of [silhouette, plane.type]) {
+      hide(thing);
+      thing.el.classList.remove('is-target', 'is-spotted');
+    }
+    plane = null;
+    planeWait = between(PLANE_GAP);
+    delete gl.root.dataset.aircraft;
+  }
+
+  // Flies whether or not the glasses are up. Once it's spotted or out of sight,
+  // a while later another comes over.
   function flyAircraft(dt) {
     if (!plane) {
       planeWait -= dt;
       if (planeWait <= 0) launchAircraft();
       return;
     }
+    if (plane.asking) return;                    // held still until you answer
+    if (plane.spotted && plane.hold > 0) {
+      plane.hold -= dt;
+      if (plane.hold <= 0) {
+        silhouette.el.classList.add('is-spotted');
+        plane.type.el.classList.add('is-spotted');
+      }
+      return;
+    }
     plane.b = norm(plane.b + PLANE_DRIFT * plane.dir * dt);
     plane.flown += PLANE_DRIFT * dt;
-    if (plane.flown > PLANE_PASS) {
-      hide(plane.far);
-      hide(plane.near);
-      plane = null;
-      planeWait = between(PLANE_GAP);
-      delete gl.root.dataset.aircraft;
-    }
+    if (plane.spotted) plane.fade -= dt;
+    if ((plane.spotted && plane.fade <= 0) || plane.flown > PLANE_PASS) retireAircraft();
+  }
+
+  const HINT = gl.hint.textContent;
+  function showHint(text, ms) {
+    gl.hint.textContent = text;
+    gl.hint.classList.add('is-shown');
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => gl.hint.classList.remove('is-shown'), ms);
   }
 
   function raiseGlasses() {
@@ -972,15 +1096,14 @@
     gl.root.classList.add('is-up');
     gl.root.setAttribute('aria-hidden', 'false');
     layout();
-    gl.hint.classList.add('is-shown');
-    clearTimeout(hintTimer);
-    hintTimer = setTimeout(() => gl.hint.classList.remove('is-shown'), 4500);
+    showHint(HINT, 4500);
     gl.lower.focus({ preventScroll: true });
   }
 
   function lowerGlasses() {
     if (!glassesUp) return;
     glassesUp = false;
+    if (plane && plane.asking) unspotAircraft();
     peering = false;
     held.clear();
     gl.root.classList.remove('is-up', 'is-peering');
@@ -991,8 +1114,12 @@
   gl.open.addEventListener('click', raiseGlasses);
   gl.lower.addEventListener('click', lowerGlasses);
 
-  // Point and drag: grab the view and pull it about
+  // Point and drag: grab the view and pull it about. Click on the aircraft to spot it.
   gl.field.addEventListener('pointerdown', ev => {
+    if (plane && !plane.spotted && plane.type.el.contains(ev.target)) {
+      spotAircraft();
+      return;
+    }
     peering = true;
     peerX = ev.clientX;
     peerY = ev.clientY;
