@@ -851,9 +851,32 @@ body {
   filter: drop-shadow(0 0 4px rgba(255, 122, 51, 0.8));
 }
 
-/* --- At the teleprinter: the Telex Machine Demo, loaded as it is ---------- */
+/* --- Rulebook, on the dash face to starboard of the wheel ----------------- */
+/* Same leather and gilt as the book it opens, in Rulebook Demo/rulebook.css */
 
-.telexroom {
+.rulebook {
+  right: 14%;
+  bottom: 5%;
+  height: 15%;
+  aspect-ratio: 150 / 200;
+  z-index: 6;               /* in front of the dash face it hangs on */
+}
+
+.rb__shadow  { fill: rgba(0, 0, 0, 0.45); }
+.rb__pages   { fill: #e8dcbe; stroke: #b3a179; stroke-width: 1; }
+.rb__leaves  { fill: none; stroke: #b3a179; stroke-width: 0.8; }
+.rb__cover   { fill: url(#rbLeather); stroke: #1f0806; stroke-width: 1.5; }
+.rb__spine   { fill: #2e0d08; }
+.rb__band    { fill: none; stroke: #6a2a1b; stroke-width: 3; stroke-linecap: round; }
+.rb__gilt    { fill: none; stroke: var(--brass-lit); stroke-width: 1.2; opacity: 0.75; }
+.rb__title   { fill: var(--brass-lit); font-family: var(--serif); font-size: 15px; letter-spacing: 2px; text-anchor: middle; }
+.rb__emblem  { fill: none; stroke: var(--brass-lit); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rb__ribbon  { fill: var(--vermilion); }
+.rb__sheen   { fill: rgba(255, 225, 170, 0.08); }
+
+/* --- Rooms: the telex and the rulebook, each loaded from its own folder -- */
+
+.room {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -863,13 +886,13 @@ body {
   transition: opacity 0.35s ease, visibility 0s linear 0.35s;
 }
 
-.telexroom.is-open {
+.room.is-open {
   opacity: 1;
   visibility: visible;
   transition: opacity 0.35s ease;
 }
 
-.telexroom__frame {
+.room__frame {
   display: block;
   width: 100%;
   height: 100%;
@@ -878,10 +901,19 @@ body {
   transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.telexroom.is-open .telexroom__frame { transform: scale(1); }
+.room.is-open .room__frame { transform: scale(1); }
+
+/* The book is held up in front of the helm, which stays in view behind it */
+.room--book {
+  background: rgba(12, 6, 3, 0.72);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.room--book .room__frame { background: transparent; }
 
 /* Same brass fitting as the one that lowers the glasses */
-.telexroom__back {
+.room__back {
   position: absolute;
   right: 2.2vw;
   top: 2.2vh;
@@ -898,15 +930,15 @@ body {
   transition: filter 0.2s ease, transform 0.2s ease;
 }
 
-.telexroom__back:hover,
-.telexroom__back:focus-visible {
+.room__back:hover,
+.room__back:focus-visible {
   filter: brightness(1.1) drop-shadow(0 0 6px rgba(227, 198, 132, 0.6));
   transform: translateY(-1px);
   outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .telexroom__frame { transition: none; transform: none; }
+  .room__frame { transition: none; transform: none; }
   .art--gull { animation: none; }
   .glasses__optic { transition: none; filter: none; }
 }
@@ -916,6 +948,7 @@ body {
 @media (max-width: 620px) {
   .binoculars { left: 7%; height: 8%; bottom: 50%; }
   .telex      { right: 5%; height: 9%; bottom: 50%; }
+  .rulebook   { right: 2%; bottom: 3%; height: 10%; }
   .glasses__hint { white-space: normal; width: 80vw; text-align: center; }
   .binnacle { height: 30%; bottom: 47%; }
   .dial     { width: clamp(64px, 12vh, 96px); top: 7%; }

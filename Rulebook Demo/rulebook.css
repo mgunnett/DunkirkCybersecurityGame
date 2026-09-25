@@ -1,0 +1,495 @@
+/* ==================================================================
+   RULEBOOK — visuals
+   ------------------------------------------------------------------
+   Colours follow the ship (Ship Functionality Demo/shipstyle.css):
+   the same wood, brass and ivory.
+
+   All the type on a page is sized in cqi (a percentage of the page's
+   width), so the book lays out the same way at any window size.
+   ================================================================== */
+
+:root {
+  --wood-black: #24120a;
+  --wood-deep:  #3a1c0c;
+  --wood:       #5d2f14;
+
+  --brass:      #c69a4a;
+  --brass-lit:  #e3c684;
+  --brass-deep: #8a6526;
+
+  --leather:      #5a1f15;
+  --leather-deep: #2e0d08;
+
+  --paper:      #f1e7cf;
+  --paper-edge: #d9c9a2;
+  --ink:        #2e261a;
+  --ink-soft:   #7a6a4c;
+  --rubric:     #7a2418;   /* red for drop capitals and notes */
+
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --mono:  "Courier Prime", "Courier New", ui-monospace, monospace;
+
+  --turn: 650ms;           /* keep in step with TURN_MS in rulebook.js */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* On its own the book lies on the ship's wooden dash */
+body {
+  font-family: var(--serif);
+  background:
+    repeating-linear-gradient(92deg, rgba(0, 0, 0, 0.07) 0 2px, rgba(0, 0, 0, 0) 2px 16px),
+    radial-gradient(120% 90% at 50% 40%, var(--wood) 0%, var(--wood-deep) 55%, var(--wood-black) 100%);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Opened from the ship, the helm shows dimmed behind it */
+.is-embedded body { background: transparent; }
+
+.desk {
+  height: 100%;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-template-rows: auto auto;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+  column-gap: clamp(14px, 3vw, 44px);
+  row-gap: 4vh;
+  padding: 3vh 16px;
+}
+
+/* --- The book ------------------------------------------------------------- */
+
+.book {
+  /* Each page is 5 wide by 7 tall. Fit the pair to the window, leaving room for the arrows. */
+  --page-h: min(76vh, calc((100vw - 220px) / 1.43));
+  --page-w: calc(var(--page-h) * 0.715);
+
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  width: calc(var(--page-w) * 2);
+  height: var(--page-h);
+  touch-action: pan-y;
+}
+
+/* Leather boards showing round the pages, with a gilt rule */
+.book__cover {
+  position: absolute;
+  inset: -2.6% -1.9% -3.2%;
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg,
+      rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 47%,
+      rgba(0, 0, 0, 0.5) 49.3%, rgba(255, 220, 170, 0.08) 50%, rgba(0, 0, 0, 0.5) 50.7%,
+      rgba(0, 0, 0, 0) 53%),
+    radial-gradient(130% 110% at 50% 30%, var(--leather) 0%, var(--leather-deep) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(227, 198, 132, 0.18),
+    0 3vh 6vh rgba(0, 0, 0, 0.6),
+    0 1vh 2vh rgba(0, 0, 0, 0.45);
+}
+
+.book__cover::before {
+  content: "";
+  position: absolute;
+  inset: 1.1% 0.8%;
+  border: 1px solid rgba(227, 198, 132, 0.28);
+  border-radius: 3px;
+}
+
+.spread {
+  position: absolute;
+  inset: 0;
+  perspective: calc(var(--page-w) * 6);
+}
+
+/* Each side of the book. The page inside sizes its type from this. */
+.slot,
+.leaf__face,
+.measure {
+  position: absolute;
+  top: 0;
+  width: var(--page-w);
+  height: 100%;
+  container-type: inline-size;
+}
+
+.slot--left  { left: 0; }
+.slot--right { left: 50%; }
+
+/* The thickness of the paper block, stepped out under each side */
+.slot--left {
+  box-shadow: -1px 1px 0 var(--paper-edge), -2px 2px 0 #bfae86, -3px 3px 0 var(--paper-edge), -4px 4px 0 #b3a179;
+}
+.slot--right {
+  box-shadow: 1px 1px 0 var(--paper-edge), 2px 2px 0 #bfae86, 3px 3px 0 var(--paper-edge), 4px 4px 0 #b3a179;
+}
+
+.measure {
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Shadow down the spine, over both pages */
+.gutter {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 7%;
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(60, 40, 15, 0) 0%,
+    rgba(60, 40, 15, 0.16) 38%,
+    rgba(35, 22, 8, 0.38) 50%,
+    rgba(60, 40, 15, 0.16) 62%,
+    rgba(60, 40, 15, 0) 100%);
+}
+
+/* --- The leaf that turns ---------------------------------------------------- */
+
+.leaf {
+  position: absolute;
+  top: 0;
+  width: var(--page-w);
+  height: 100%;
+  display: none;
+  z-index: 5;
+  transform-style: preserve-3d;
+  transition: transform var(--turn) cubic-bezier(0.35, 0.05, 0.25, 1);
+}
+
+.leaf--fwd  { display: block; left: 50%; transform-origin: 0 50%; }
+.leaf--back { display: block; left: 0;   transform-origin: 100% 50%; }
+.leaf--fwd.is-turning  { transform: rotateY(-180deg); }
+.leaf--back.is-turning { transform: rotateY(180deg); }
+
+.leaf__face {
+  left: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.leaf__face--back { transform: rotateY(180deg); }
+
+/* The paper darkens as it stands up off the book */
+.leaf__face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(90deg, rgba(40, 25, 8, 0.35), rgba(40, 25, 8, 0.05));
+}
+
+.leaf.is-turning .leaf__face::after { animation: lift var(--turn) ease-in-out; }
+
+@keyframes lift {
+  50% { opacity: 1; }
+}
+
+/* --- A page ---------------------------------------------------------------- */
+
+.page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8.5cqi 9cqi 6.5cqi;
+  color: var(--ink);
+  font-size: 3.55cqi;
+  line-height: 1.5;
+  background:
+    repeating-linear-gradient(0deg, rgba(120, 90, 40, 0.025) 0 1px, rgba(0, 0, 0, 0) 1px 4px),
+    radial-gradient(140% 100% at 50% 50%, rgba(255, 250, 235, 0.5) 0%, rgba(255, 250, 235, 0) 70%),
+    var(--paper);
+}
+
+/* Wider margin on the outside edge, and the paper curving into the spine */
+.page--left {
+  padding-left: 10cqi;
+  padding-right: 8cqi;
+  border-radius: 3px 0 0 3px;
+  background:
+    linear-gradient(270deg, rgba(90, 60, 20, 0.28) 0%, rgba(90, 60, 20, 0.08) 5%, rgba(90, 60, 20, 0) 14%),
+    repeating-linear-gradient(0deg, rgba(120, 90, 40, 0.025) 0 1px, rgba(0, 0, 0, 0) 1px 4px),
+    var(--paper);
+}
+
+.page--right {
+  padding-left: 8cqi;
+  padding-right: 10cqi;
+  border-radius: 0 3px 3px 0;
+  background:
+    linear-gradient(90deg, rgba(90, 60, 20, 0.28) 0%, rgba(90, 60, 20, 0.08) 5%, rgba(90, 60, 20, 0) 14%),
+    repeating-linear-gradient(0deg, rgba(120, 90, 40, 0.025) 0 1px, rgba(0, 0, 0, 0) 1px 4px),
+    var(--paper);
+}
+
+/* Running head: the book's title on the left, the chapter's on the right */
+.page__head {
+  flex: none;
+  height: 6cqi;
+  font-size: 2.4cqi;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The only part text goes in. It is never allowed to spill. */
+.page__body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flow-root;
+  text-align: justify;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+.page__folio {
+  flex: none;
+  height: 5cqi;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  font-size: 2.8cqi;
+  color: var(--ink-soft);
+}
+
+.page--left  .page__folio { justify-content: flex-start; }
+.page--right .page__folio { justify-content: flex-end; }
+
+/* --- What goes on a page ---------------------------------------------------- */
+
+.page__body > :first-child { margin-top: 0; }
+
+.page__body p {
+  margin: 0;
+  text-indent: 1.4em;
+}
+
+.page__body p.lead,
+.page__body p.cont,
+.page__body p.entry { text-indent: 0; }
+
+/* The last line of a paragraph that carries on overleaf runs to the margin */
+.page__body .runs-on,
+.page__body .runs-on p { text-align-last: justify; }
+
+.page__body p.entry { margin-top: 0.55em; }
+.page__body p.entry.cont { margin-top: 0; }
+
+.drop::first-letter {
+  float: left;
+  font-size: 3.3em;
+  line-height: 0.82;
+  padding: 0.07em 0.08em 0 0;
+  color: var(--rubric);
+}
+
+.bk-h1 {
+  margin: 7cqi 0 6cqi;
+  font-size: 6.6cqi;
+  font-weight: normal;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  text-align: center;
+  -webkit-hyphens: manual;
+  hyphens: manual;
+}
+
+.bk-h1::after {
+  content: "";
+  display: block;
+  width: 16cqi;
+  height: 1px;
+  margin: 4cqi auto 0;
+  background: currentColor;
+  opacity: 0.45;
+}
+
+.bk-h2 {
+  margin: 1.1em 0 0.3em;
+  font-size: 1em;
+  font-weight: bold;
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  text-align: left;
+  -webkit-hyphens: manual;
+  hyphens: manual;
+  break-after: avoid;
+}
+
+.page__body p.bk-li {
+  position: relative;
+  margin-top: 0.35em;
+  padding-left: 1.3em;
+  text-indent: 0;
+  text-align: left;
+}
+
+.page__body p.bk-li::before {
+  content: "\2022";
+  position: absolute;
+  left: 0.3em;
+  color: var(--rubric);
+}
+
+.page__body p.bk-li.cont { margin-top: 0; }
+.page__body p.bk-li + p:not(.bk-li) { margin-top: 0.6em; }
+.page__body p.bk-li.cont::before { content: none; }
+
+.bk-note {
+  margin: 0.8em 0;
+  padding: 0.55em 0.8em;
+  border: 1px solid rgba(122, 36, 24, 0.35);
+  border-left: 3px solid var(--rubric);
+  background: rgba(176, 58, 46, 0.06);
+  font-style: italic;
+}
+
+.bk-note p { text-indent: 0; text-align: left; }
+.bk-note.cont { border-top-style: dashed; }
+.bk-note.runs-on { border-bottom-style: dashed; }
+
+/* A teleprinter slip pasted into the page */
+.bk-pre {
+  margin: 0.8em 0;
+  padding: 0.6em 0.8em;
+  font-family: var(--mono);
+  font-size: 2.75cqi;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: left;
+  color: #3b2d46;
+  background: #e6d8b4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+/* --- Special pages ---------------------------------------------------------- */
+
+.page--title .page__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.page--title .page__body p {
+  margin: 0.5em 0;
+  text-indent: 0;
+  text-align: center;
+}
+
+.page--title .bk-h1 {
+  margin: 0 0 5cqi;
+  font-size: 9cqi;
+}
+
+.page--title .bk-note {
+  margin-top: 10cqi;
+  font-size: 2.8cqi;
+}
+
+/* Marbled paper inside the boards */
+.page--endpaper {
+  background:
+    radial-gradient(40% 30% at 20% 25%, rgba(122, 36, 24, 0.55), rgba(122, 36, 24, 0) 70%),
+    radial-gradient(35% 40% at 75% 35%, rgba(138, 101, 38, 0.55), rgba(138, 101, 38, 0) 70%),
+    radial-gradient(45% 35% at 40% 75%, rgba(46, 13, 8, 0.6), rgba(46, 13, 8, 0) 70%),
+    radial-gradient(30% 30% at 85% 85%, rgba(122, 36, 24, 0.5), rgba(122, 36, 24, 0) 70%),
+    repeating-radial-gradient(circle at 30% 40%, rgba(227, 198, 132, 0.12) 0 2px, rgba(0, 0, 0, 0) 2px 9px),
+    #6e3a22;
+}
+
+.page--endpaper.page--left  { box-shadow: inset -2cqi 0 3cqi rgba(0, 0, 0, 0.35); }
+.page--endpaper.page--right { box-shadow: inset 2cqi 0 3cqi rgba(0, 0, 0, 0.35); }
+
+/* --- Arrows and the page plate -------------------------------------------- */
+
+.turn {
+  width: clamp(42px, 4.6vw, 60px);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid var(--brass-deep);
+  border-radius: 50%;
+  cursor: pointer;
+  background: radial-gradient(circle at 35% 30%, var(--brass-lit) 0%, var(--brass) 55%, var(--brass-deep) 100%);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+}
+
+.turn svg {
+  display: block;
+  width: 55%;
+  height: 55%;
+  margin: auto;
+  fill: none;
+  stroke: #3a2c12;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.turn--prev { grid-column: 1; grid-row: 1; }
+.turn--next { grid-column: 3; grid-row: 1; }
+
+.turn:hover:not(:disabled),
+.turn:focus-visible {
+  transform: scale(1.06);
+  filter: brightness(1.08) drop-shadow(0 0 6px rgba(227, 198, 132, 0.6));
+  outline: none;
+}
+
+.turn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  filter: grayscale(0.4);
+}
+
+.plate {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: center;
+  margin: 0;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: #3a2c12;
+  background: linear-gradient(180deg, var(--brass-lit), var(--brass));
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaf { transition: none; }
+}
+
+/* Narrow screens: the arrows move under the book */
+@media (max-width: 700px) {
+  .book { --page-h: min(76vh, calc((100vw - 32px) / 1.43)); grid-column: 1 / -1; }
+  .turn--prev, .turn--next { grid-row: 2; }
+  .turn--prev { justify-self: end; }
+  .turn--next { justify-self: start; }
+}

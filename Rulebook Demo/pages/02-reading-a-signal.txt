@@ -1,0 +1,35 @@
+# Reading a Signal
+
+Every signal from Dover is printed in the same order, with the same headings, in capital letters. Learn the shape of an honest signal so well that a wrong one looks wrong at a glance.
+
+```
+M.Y. KESTREL GBKW
+NR 031  MOST IMMEDIATE
+0412Z/30 MAY 40
+FM V.A. DOVER (DYNAMO)
+TO M.Y. KESTREL
+--------------------------
+ENEMY BATTERIES AT GRAVELINES
+NOW RANGING ON ROUTE Z ...
+ACKNOWLEDGE BY LAMP ON SIGHT.
+```
+
+## The serial number
+
+Each signal carries a serial, written NR followed by a number. Dover numbers its traffic in one continuous series, so each new signal you receive must carry a higher number than the last. Numbers may be skipped, because not every signal is addressed to you, but they never go backwards and never repeat.
+
+## The priority
+
+One of three words, and only these: ROUTINE, IMMEDIATE, or MOST IMMEDIATE. Dover does not invent new ones. A signal marked URGENT, FLASH or TOP PRIORITY did not come from Dover.
+
+## The time of origin
+
+Written as four figures of Greenwich time, the letter Z, and the date: *0412Z/30 MAY 40* is twelve minutes past four in the morning on the thirtieth of May. Times move forward with the serial numbers. A later serial with an earlier time is a forgery.
+
+## Sender and addressee
+
+Genuine signals come from V.A. DOVER (DYNAMO) and are addressed to this vessel by name and call sign, M.Y. KESTREL, GBKW. Any other sender, however senior it sounds, is to be disbelieved.
+
+## The body and sign-off
+
+Orders are short and plain. Courses are always given as three figures in degrees, such as 072 or 213. Most signals close with a standing instruction, ACKNOWLEDGE BY LAMP ON SIGHT, or a particular order in its place.

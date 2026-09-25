@@ -1,0 +1,23 @@
+# Glossary
+
+**Acknowledge by lamp.** Reply to a signal by flashing a signal lamp to the nearest naval vessel, never by wireless.
+
+**Binnacle.** The stand in front of the wheel that holds the compass.
+
+**Call sign.** The letters that identify a vessel by wireless and teleprinter. Ours is GBKW.
+
+**Course.** The direction you steer, given in three figures of degrees from north: 000 is north, 090 east, 180 south, 270 west.
+
+**Lubber line.** The mark on the front of the compass bowl. The figure on the card beneath it is the course you are steering.
+
+**Mole.** The long breakwater at Dunkirk harbour, used as a pier to embark troops.
+
+**Serial.** The number given to each signal, written NR, in one continuous series.
+
+**Swept channel.** A route cleared of mines by minesweepers and marked by buoys. Stay inside it.
+
+**Time of origin.** When a signal was written, given in Greenwich time and marked Z.
+
+**V.A. Dover.** Vice-Admiral, Dover: the only authority that sends you orders.
+
+**Wireless silence.** No radio transmissions of any kind. Transmitting gives your position away to the enemy.
