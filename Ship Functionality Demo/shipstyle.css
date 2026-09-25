@@ -1191,7 +1191,6 @@ body {
   .telex__slip.is-feeding { animation: none; }
   .telex.is-calling .tx__lamp { animation: none; fill: #ff7a33; }
   .signal__sheet { transition: none; }
-  .telexroom__frame { transition: none; transform: none; }
   .art--gull,
   .art--plane .airscrew { animation: none; }
   .glasses__optic { transition: none; filter: none; }

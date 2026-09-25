@@ -22,12 +22,12 @@
       <div class="horizon" id="horizon">
         <div class="sky"></div>
         <div class="horizon__clouds" id="clouds"></div>
-        <div class="air" id="air"></div>
         <div class="haze"></div>
         <div class="sea"></div>
         <div class="swell" id="swell"></div>
         <canvas class="surface" id="surface"></canvas>
         <div class="world" id="world"></div>
+        <div class="air" id="air"></div>
       </div>
 
       <svg class="foredeck" viewBox="0 0 1000 260" preserveAspectRatio="none" aria-hidden="true">
@@ -642,7 +642,7 @@
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const norm  = d => ((d % 360) + 360) % 360;
   const DEG   = 180 / Math.PI;
-  const between = ([lo, hi]) => lo + Math.random() * (hi - lo);
+  const within = ([lo, hi]) => lo + Math.random() * (hi - lo);   // seconds; between() below is ms
 
   const hide = thing => {
     if (thing.shown) { thing.el.style.display = 'none'; thing.shown = false; }
@@ -1178,6 +1178,7 @@
     for (const c of clouds) c.b = norm(c.b + WIND * dt);
     flyAircraft(dt);
 
+    flyAircraft(dt);
     drawWorld();
     drawStation(rudder);
     if (glassesUp) drawGlasses(dt);
@@ -1247,6 +1248,11 @@
       s.el.style.top    = y + 'px';
       s.el.style.width  = (c.w * ppd) + 'px';
       s.el.style.height = (c.h * ppd) + 'px';
+    }
+
+    if (plane) {
+      hang(silhouette, heading, plane.b, plane.e, plane.type.w, plane.type.h,
+           ppd, cx, horizonY, FOV / 2, horizonH);
     }
 
     // Hidden behind the glasses when they're up, so spare the drawing
@@ -1374,10 +1380,11 @@
     plane = {
       type,
       b: norm(heading + side * PLANE_ENTER),
-      e: between(PLANE_ELEV),
+      e: within(PLANE_ELEV),
       dir: -side,
       flown: 0,
       spotted: false,
+      asking: false,
       hold: 0,
       fade: 0
     };
@@ -1460,7 +1467,7 @@
       thing.el.classList.remove('is-target', 'is-spotted');
     }
     plane = null;
-    planeWait = between(PLANE_GAP);
+    planeWait = within(PLANE_GAP);
     delete gl.root.dataset.aircraft;
   }
 
