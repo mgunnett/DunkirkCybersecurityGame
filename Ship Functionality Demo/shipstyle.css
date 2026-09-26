@@ -182,8 +182,6 @@ body {
 
 /* --- Things out in the water ----------------------------------------------------- */
 
-.art--island  path { fill: #3a5762; }
-
 .art--lighthouse .art__tower   { fill: #f1ece0; }
 .art--lighthouse .art__band    { fill: var(--vermilion); }
 .art--lighthouse .art__lantern { fill: #2b2b28; }
