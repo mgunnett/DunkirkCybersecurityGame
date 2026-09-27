@@ -1315,6 +1315,30 @@ body {
   .glasses__ask { transition: none; }
 }
 
+/* --- DEBUG: goal readout. Remove with #debugGoal ---------------------------- */
+
+.debug {
+  position: fixed;
+  left: 8px;
+  top: 8px;
+  z-index: 100;
+  margin: 0;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: #ff8be9;
+  background: rgba(0, 0, 0, 0.72);
+  border: 1px solid #ff2bd6;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.debug.is-reached {
+  color: #8cf2a8;
+  border-color: #2bd65a;
+}
+
 /* --- Narrow screens ------------------------------------------------------- */
 
 @media (max-width: 620px) {

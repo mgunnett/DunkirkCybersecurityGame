@@ -514,6 +514,9 @@
   </svg>
 </template>
 
+<!-- DEBUG: where the goal on the beach is. Remove once it needn't be seen. -->
+<pre class="debug" id="debugGoal" aria-hidden="true"></pre>
+
 <script>
 (() => {
   'use strict';
@@ -594,6 +597,13 @@
     haze:  [200, 214, 216]
   };
 
+  // ---- The goal -----------------------------------------------------------
+  // A spot on the beach, picked afresh each time the game starts. The shoals
+  // keep her COAST_OFF metres out, so coming within GOAL_REACH of it counts.
+  const GOAL_ALONG = [500, 7500];      // metres north the spot may fall, along the shore
+  const GOAL_UP    = 30;               // metres up the sand from the waterline
+  const GOAL_REACH = COAST_OFF + 150;  // metres
+
   // ---- Wavelets -----------------------------------------------------------
   // Drawn in bands by range, each band a lattice of small crests. Further out
   // the rows close up and the crests shrink, so the sea reads as perspective.
@@ -649,6 +659,7 @@
   let roll       = 0;        // degrees, shared by the windscreen and the glasses
   let aground    = false;    // up against the shoals
   const origin   = { x: boatX, y: boatY };  // (0, 0) on the position indicator
+  let goal       = null;     // { x, y, reached } in metres, like boatX and boatY; see placeGoal()
   const marks    = [];
   const skyClouds = [];      // the low clouds, as seen through the windscreen
 
@@ -710,6 +721,7 @@
     plate:   document.getElementById('headingPlate'),
     posX:    document.getElementById('posX'),
     posY:    document.getElementById('posY'),
+    debug:   document.getElementById('debugGoal'),
     rudder:  document.getElementById('rudderNeedle'),
     logHand: document.getElementById('logNeedle'),
     logText: document.getElementById('logCounter')
@@ -937,6 +949,55 @@
     return Math.min(d, 60000);
   }
 
+  // ---- The goal -----------------------------------------------------------
+  function placeGoal() {
+    const y = between(GOAL_ALONG);
+    return { x: coastX(y) + GOAL_UP, y, reached: false };
+  }
+
+  function checkGoal() {
+    if (goal.reached || Math.hypot(goal.x - boatX, goal.y - boatY) > GOAL_REACH) return;
+    goal.reached = true;
+    console.info('[goal] reached');
+  }
+
+  // DEBUG: a flag on the goal, drawn over the land at a fixed size so it shows
+  // at any range. Remove it, and drawDebug(), once the goal needn't be seen.
+  function drawGoalMarker(ctx, v) {
+    const dx = goal.x - boatX;
+    const dy = goal.y - boatY;
+    const range = Math.hypot(dx, dy);
+    const rel = arc(v.look, Math.atan2(dx, dy) * DEG);
+    const x = v.cx + rel * v.z;
+    if (Math.abs(rel) > 90 || x < -60 || x > v.w + 60) return;
+    const y = v.horizonY + subtendH(EYE, range) * v.z;
+
+    ctx.save();
+    ctx.strokeStyle = ctx.fillStyle = goal.reached ? '#2bd65a' : '#ff2bd6';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 8, 2.5, 0, 0, Math.PI * 2);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y - 46);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y - 46);
+    ctx.lineTo(x + 18, y - 40);
+    ctx.lineTo(x, y - 34);
+    ctx.closePath();
+    ctx.fill();
+
+    const label = 'GOAL ' + Math.round(range) + ' m';
+    ctx.font = '12px ui-monospace, Menlo, monospace';
+    ctx.textAlign = 'center';
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.fillRect(x - tw / 2 - 4, y - 66, tw + 8, 17);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fillText(label, x, y - 53);
+    ctx.restore();
+  }
+
   // Land colour at range, going over to the haze
   function tint(rgb, d, alpha) {
     const t = Math.pow(clamp(d / LAND_HAZE, 0, 1), 0.6);
@@ -951,6 +1012,7 @@
     drawSkyline(s.ctx, v);
     drawWaves(s.ctx, v);
     drawCoast(s.ctx, v);
+    drawGoalMarker(s.ctx, v);   // DEBUG
   }
 
   // The horizon isn't a ruled line: the far swell lifts and settles along it.
@@ -1254,12 +1316,14 @@
       aground = warned;
       el.shoal.classList.toggle('is-shown', warned);
     }
+    checkGoal();
 
     for (const c of clouds) c.b = norm(c.b + WIND * dt);
 
     flyAircraft(dt);
     drawWorld();
     drawStation(rudder);
+    drawDebug();   // DEBUG
     if (glassesUp) drawGlasses(dt);
     requestAnimationFrame(frame);
   }
@@ -1677,6 +1741,24 @@
     el.logText.textContent = miles.toFixed(2);
   }
 
+  // DEBUG: the goal in the position indicator's terms, and how to steer for it.
+  // Remove with #debugGoal and drawGoalMarker().
+  function drawDebug() {
+    const dx = goal.x - boatX;
+    const dy = goal.y - boatY;
+    const brg = norm(Math.atan2(dx, dy) * DEG);
+    const off = arc(heading, brg);
+    const steer = Math.abs(off) < 1 ? 'dead ahead'
+      : Math.round(Math.abs(off)) + '° to ' + (off < 0 ? 'port' : 'starboard');
+    const text =
+      'GOAL  X ' + signed(goal.x - origin.x) + '  Y ' + signed(goal.y - origin.y) + '\n' +
+      Math.round(Math.hypot(dx, dy)) + ' m, bearing ' +
+      String(Math.round(brg) % 360).padStart(3, '0') + '° (' + steer + ')\n' +
+      (goal.reached ? 'REACHED' : 'reached within ' + GOAL_REACH + ' m');
+    if (el.debug.textContent !== text) el.debug.textContent = text;
+    el.debug.classList.toggle('is-reached', goal.reached);
+  }
+
   // ---- Teleprinter --------------------------------------------------------
   // The machine never moves. Every so often a signal comes in: the lamp
   // flashes and a slip feeds out, too small to read from the wheel. Click
@@ -1936,6 +2018,7 @@
     .then(() => loadScript(TELEX_DIR + 'signals/manifest.js'))
     .catch(e => console.error('[telex] could not load ' + e.message));
 
+  goal = placeGoal();
   buildWorld(el.world, marks);
   buildWorld(gl.world, glassMarks);
   buildSky();
