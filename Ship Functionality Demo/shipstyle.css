@@ -324,6 +324,39 @@ body {
   text-anchor: middle;
 }
 
+/* --- Position indicator, just to starboard of the binnacle ---------------- */
+/* Enamel and brass follow the teleprinter; the tx__ classes are shared */
+
+.position {
+  position: absolute;
+  left: calc(50% + 8dvh);   /* clear of the binnacle bowl, which is sized by height */
+  bottom: 49%;
+  height: 10%;
+  aspect-ratio: 170 / 120;
+  z-index: 4;
+  overflow: visible;
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55));
+}
+
+.pos__hanger { display: none; }
+.pos__shell  { fill: url(#posEnamel); stroke: #14160f; stroke-width: 1.5; }
+.pos__window { fill: #0f110d; stroke: #b8934f; stroke-width: 2.5; }
+.pos__rule   { fill: none; stroke: rgba(242, 196, 107, 0.14); stroke-width: 1; }
+.pos__sheen  { fill: rgba(255, 255, 255, 0.05); }
+
+.pos__axis {
+  fill: #b8934f;
+  font-family: var(--serif);
+  font-size: 13px;
+}
+
+.pos__value {
+  fill: #f2c46b;
+  font-family: var(--mono);
+  font-size: 17px;
+  text-anchor: end;
+}
+
 .card__face   { fill: var(--ivory); }
 .card__north  { fill: var(--vermilion); }
 .card__rose   { fill: rgba(70, 64, 47, 0.28); }
@@ -1295,4 +1328,20 @@ body {
   .dial--stbd { right: 3%; }
   .wheel    { width: 80vw; bottom: -8%; }
   .speedplate { display: none; }
+}
+
+/* Narrower than about 6:5 there's no room on the dash top between the binnacle
+   and the telex, and the wheel covers the dash face: hang the position
+   indicator from the deckhead instead, over the middle of the windscreen */
+@media (max-width: 620px), (max-aspect-ratio: 6 / 5) {
+  .position {
+    left: 50%;
+    top: 10%;
+    bottom: auto;
+    height: 6.5%;
+    transform: translateX(-50%);
+  }
+  .pos__hanger { display: inline; }
+  .pos__footing,
+  .position .tx__foot { display: none; }
 }

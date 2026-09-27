@@ -87,6 +87,42 @@
     <rect class="brass" x="56" y="386" width="128" height="16" rx="3"/>
   </svg>
 
+  <!-- Position indicator, stood beside the binnacle. Reads metres from where she
+       started, which is (0, 0): X is east, Y is north. Same enamel as the telex. -->
+  <svg class="position" viewBox="0 0 170 120" role="img"
+       aria-label="Position indicator: metres from the start, X east and Y north">
+    <defs>
+      <linearGradient id="posEnamel" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#4a5142"/>
+        <stop offset="0.4" stop-color="#33382f"/>
+        <stop offset="1" stop-color="#1e211c"/>
+      </linearGradient>
+    </defs>
+    <ellipse class="tx__shadow pos__footing" cx="85" cy="113" rx="80" ry="7"/>
+    <!-- Straps it hangs from on narrow screens, where it moves up to the deckhead -->
+    <g class="pos__hanger">
+      <rect class="brass" x="36" y="-140" width="7" height="158" rx="2"/>
+      <rect class="brass" x="127" y="-140" width="7" height="158" rx="2"/>
+    </g>
+
+    <path class="pos__shell" d="M18 14 L152 14 L164 106 L6 106 Z"/>
+    <path class="tx__edge" d="M21 17 L149 17"/>
+
+    <rect class="tx__plate" x="53" y="21" width="64" height="13" rx="2"/>
+    <text class="tx__letter" x="85" y="30.5">POSITION</text>
+
+    <rect class="pos__window" x="24" y="40" width="122" height="58" rx="3"/>
+    <text class="pos__axis" x="34" y="63">X</text>
+    <text class="pos__value" id="posX" x="136" y="64">+0000</text>
+    <path class="pos__rule" d="M30 71 L140 71"/>
+    <text class="pos__axis" x="34" y="89">Y</text>
+    <text class="pos__value" id="posY" x="136" y="90">+0000</text>
+    <path class="pos__sheen" d="M28 44 L70 44 L56 94 L28 94 Z"/>
+
+    <rect class="tx__foot" x="14" y="104" width="24" height="7" rx="2"/>
+    <rect class="tx__foot" x="132" y="104" width="24" height="7" rx="2"/>
+  </svg>
+
   <!-- Binoculars, stood on the dash top to port of the binnacle. Click to raise them. -->
   <button class="prop binoculars" id="binoculars" type="button"
           aria-label="Binoculars: raise them to look out" data-label="Binoculars">
@@ -612,6 +648,7 @@
   let horizonH   = 0;
   let roll       = 0;        // degrees, shared by the windscreen and the glasses
   let aground    = false;    // up against the shoals
+  const origin   = { x: boatX, y: boatY };  // (0, 0) on the position indicator
   const marks    = [];
   const skyClouds = [];      // the low clouds, as seen through the windscreen
 
@@ -671,6 +708,8 @@
     shoal:   document.getElementById('shoalPlate'),
     card:    document.getElementById('compassCard'),
     plate:   document.getElementById('headingPlate'),
+    posX:    document.getElementById('posX'),
+    posY:    document.getElementById('posY'),
     rudder:  document.getElementById('rudderNeedle'),
     logHand: document.getElementById('logNeedle'),
     logText: document.getElementById('logCounter')
@@ -680,6 +719,10 @@
   const norm  = d => ((d % 360) + 360) % 360;
   const DEG   = 180 / Math.PI;
   const between = ([lo, hi]) => lo + Math.random() * (hi - lo);
+  const signed = v => {                          // -12.4 -> "−0012", for the position indicator
+    const n = Math.round(v);
+    return (n < 0 ? '−' : '+') + String(Math.abs(n)).padStart(4, '0');
+  };
 
   const hide = thing => {
     if (thing.shown) { thing.el.style.display = 'none'; thing.shown = false; }
@@ -1618,6 +1661,12 @@
     // A magnetic card stays put while the boat turns under it.
     el.card.setAttribute('transform', 'rotate(' + (-heading).toFixed(2) + ' 120 254)');
     el.plate.textContent = String(Math.round(heading) % 360).padStart(3, '0') + '\u00B0';
+
+    // Whole metres from the start, signed; only touched when the figure changes
+    const posX = signed(boatX - origin.x);
+    const posY = signed(boatY - origin.y);
+    if (el.posX.textContent !== posX) el.posX.textContent = posX;
+    if (el.posY.textContent !== posY) el.posY.textContent = posY;
 
     el.rudder.setAttribute('transform',
       'rotate(' + (rudder * NEEDLE).toFixed(2) + ' 65 72)');
