@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WEFT: German Aircraft</title>
+<link rel="stylesheet" href="planestyle.css">
+</head>
+<body>
+
+<!-- Looking through the binoculars, as in the helm demo -->
+<div class="glasses">
+  <div class="glasses__cup glasses__cup--leather" aria-hidden="true"></div>
+  <div class="glasses__cup glasses__cup--brass" aria-hidden="true"></div>
+  <div class="glasses__cup glasses__cup--gap" aria-hidden="true"></div>
+
+  <div class="glasses__cup glasses__field">
+
+  <div class="sky" aria-hidden="true"></div>
+  <div class="clouds clouds--far" aria-hidden="true"></div>
+  <div class="smoke" aria-hidden="true"></div>
+  <div class="sea" aria-hidden="true"><div class="coast"></div></div>
+
+  <!-- Junkers Ju 87 "Stuka", from below. Drawn nose-up, then turned to fly right.
+       WEFT: gull wing with a kink, fixed spatted legs, chin radiator, square tail. -->
+  <div class="flightpath">
+    <div class="plane">
+      <svg class="plane__art" viewBox="-150 -150 300 300" role="img" aria-label="Unidentified aircraft">
+        <defs>
+          <g id="balken">
+            <path class="cross__edge" d="M-6 -15 H6 V-6 H15 V6 H6 V15 H-6 V6 H-15 V-6 H-6 Z"/>
+            <path class="cross__bar"  d="M-2.5 -15 H2.5 V-2.5 H15 V2.5 H2.5 V15 H-2.5 V2.5 H-15 V-2.5 H-2.5 Z"/>
+          </g>
+
+          <!-- One half of the aircraft; mirrored for the other side -->
+          <g id="ju-half">
+            <path class="ju__skin" d="M12 -38 L62 -37 L130 -27 Q140 -25 140 -14 L139 2 Q138 8 131 8 L62 18 L12 20 Z"/>
+            <path class="panel ju__panel" d="M62 -37 L62 18 M66 12 L134 3"/>
+            <path class="ju__brake" d="M72 -31 L120 -25"/>
+            <use href="#balken" x="100" y="-6"/>
+
+            <path class="ju__skin" d="M5 84 L46 86 Q54 88 54 95 Q54 104 46 105 L5 106 Z"/>
+            <path class="panel ju__panel" d="M8 98 L50 98"/>
+            <path class="ju__strut" d="M7 76 L30 90"/>
+
+            <path class="ju__leg" d="M62 -30 L62 -14"/>
+            <path class="ju__spat" d="M62 -66 C68 -66 70 -52 69 -40 C68 -30 66 -24 62 -24 C58 -24 56 -30 55 -40 C54 -52 56 -66 62 -66 Z"/>
+          </g>
+        </defs>
+
+        <g transform="rotate(90)">
+          <use href="#ju-half"/>
+          <use href="#ju-half" transform="scale(-1 1)"/>
+
+          <path class="ju__skin" d="M0 -106 C8 -106 13 -100 14 -90 L15 -40 C15 -10 13 20 9 60 L5 108 C4 114 -4 114 -5 108 L-9 60 C-13 20 -15 -10 -15 -40 L-14 -90 C-13 -100 -8 -106 0 -106 Z"/>
+          <path class="panel ju__panel" d="M-14 -62 L14 -62 M0 30 L0 104"/>
+          <rect class="ju__radiator" x="-8" y="-92" width="16" height="20" rx="3"/>
+
+          <ellipse class="ju__bomb" cx="0" cy="-18" rx="5" ry="24"/>
+          <path class="ju__bomb" d="M-7 12 L7 12 L4 4 L-4 4 Z"/>
+
+          <ellipse class="ju__spinner" cx="0" cy="-108" rx="6" ry="5"/>
+          <ellipse class="prop" cx="0" cy="-112" rx="34" ry="2.5"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="clouds clouds--near" aria-hidden="true"></div>
+
+  <div class="glasses__lens" aria-hidden="true"></div>
+  <svg class="glasses__reticle" viewBox="-100 -40 200 80" aria-hidden="true">
+    <path d="M-90 0 L90 0 M0 -30 L0 30"/>
+    <path d="M-80 -4 L-80 4 M-60 -4 L-60 4 M-40 -6 L-40 6 M-20 -4 L-20 4 M20 -4 L20 4 M40 -6 L40 6 M60 -4 L60 4 M80 -4 L80 4"/>
+  </svg>
+  </div>
+</div>
+
+</body>
+</html>

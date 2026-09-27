@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rulebook</title>
+<link rel="stylesheet" href="rulebook.css">
+</head>
+<body>
+
+<main class="desk">
+
+  <button class="turn turn--prev" id="prev" type="button" aria-label="Previous pages" disabled>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 L8 12 L15 19"/></svg>
+  </button>
+
+  <!-- The book. Pages are laid out by rulebook.js from the files in pages/. -->
+  <div class="book" id="book">
+    <div class="book__cover" aria-hidden="true"></div>
+
+    <div class="spread">
+      <div class="slot slot--left" id="left"></div>
+      <div class="slot slot--right" id="right"></div>
+      <div class="gutter" aria-hidden="true"></div>
+      <div class="leaf" id="leaf" aria-hidden="true">
+        <div class="leaf__face leaf__face--front" id="leafFront"></div>
+        <div class="leaf__face leaf__face--back" id="leafBack"></div>
+      </div>
+    </div>
+
+    <!-- An invisible page the same size as the real ones, used to measure
+         how much text fits before anything is shown. -->
+    <div class="measure" id="measure" aria-hidden="true"></div>
+  </div>
+
+  <button class="turn turn--next" id="next" type="button" aria-label="Next pages" disabled>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5 L16 12 L9 19"/></svg>
+  </button>
+
+  <p class="plate" id="where" aria-live="polite">Opening the book&hellip;</p>
+</main>
+
+<script src="rulebook.js" defer></script>
+</body>
+</html>

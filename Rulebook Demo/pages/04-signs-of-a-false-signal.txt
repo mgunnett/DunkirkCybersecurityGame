@@ -1,0 +1,27 @@
+# Signs of a False Signal
+
+The enemy is careful and he is patient. His signals are not full of mistakes. Usually there is one thing wrong, placed where a tired man will not look. These are the tricks he is known to use.
+
+## Too much hurry
+
+Dover's signals are urgent, but they are never frantic. Be suspicious of any signal that tells you there is no time to check it, or piles on words such as AT ONCE, WITHOUT DELAY and REPEAT IMMEDIATELY in the same few lines.
+
+## Breaking silence
+
+Dover will never ask you to use your wireless, to send your position, or to report your course by radio. You are ordered to keep wireless silence and to acknowledge by lamp. A signal asking you to transmit is fishing for your position.
+
+## Leaving the swept water
+
+The channels have been swept clear of mines at great cost, and every true order keeps you inside them. Any signal that tells you to cut a corner, save time by leaving the channel, or pass *close* to a buoy on its wrong side is to be refused.
+
+## Small changes to a true order
+
+The cleverest false signal repeats a genuine order almost word for word and changes a single figure: 213 becomes 231, or 072 becomes 027. Always compare a new order with the last one you received. If it repeats an order you already hold, ask why it was sent again.
+
+## Countermanding without reason
+
+Dover does change its orders, but it always says why. A signal that cancels your last order and gives no reason, or blames an unnamed danger, should be treated with suspicion.
+
+## Unfamiliar forms
+
+Wrong priority words, times written in local hours instead of Z, courses given as words or points of the compass instead of three figures, and odd spellings of places are all signs that the writer has only studied our signals, not sent them.
