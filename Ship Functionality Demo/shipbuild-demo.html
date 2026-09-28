@@ -164,11 +164,12 @@
   </button>
 
   <!-- Teleprinter, stood on the dash top to starboard. It stays put: when a signal
-       comes in the lamp flashes and it prints a slip. Click the slip to read it. -->
+       comes in the lamp flashes and it prints a slip. Click the slip to read it;
+       drag it up to tear it off, and the next signal follows some time after. -->
   <div class="telex" id="telex">
     <div class="telex__feed">
       <button class="telex__slip" id="telexSlip" type="button" hidden disabled
-              aria-label="Signal slip: pick it up to read it">
+              aria-label="Signal slip: pick it up to read it, or drag it up (or press Up) to tear it off">
         <span class="telex__type" id="telexType"></span>
       </button>
     </div>
@@ -302,6 +303,9 @@
     </svg>
   </button>
 
+  <!-- Slips torn off the teleprinter, left wherever the player put them down -->
+  <div class="strewn" id="strewn"></div>
+
   <div class="gloom" aria-hidden="true"></div>
 </div>
 
@@ -364,7 +368,7 @@
   <button class="room__back" id="bookBack" type="button">Close the book</button>
 </div>
 
-<template id="art-lighthouse">
+<!-- <template id="art-lighthouse">
   <svg class="art art--lighthouse" viewBox="0 0 44 130" preserveAspectRatio="none">
     <path class="art__rock" d="M0 130 L5 114 L39 114 L44 130 Z"/>
     <path class="art__tower" d="M15 116 L17 38 L27 38 L29 116 Z"/>
@@ -372,7 +376,7 @@
     <rect class="art__lantern" x="14" y="24" width="16" height="14" rx="2"/>
     <path class="art__cap" d="M12 24 L22 12 L32 24 Z"/>
   </svg>
-</template>
+</template> -->
 
 <template id="art-buoy-port">
   <svg class="art art--buoy art--port" viewBox="0 0 26 78" preserveAspectRatio="none">
@@ -400,7 +404,7 @@
   </svg>
 </template>
 
-<template id="art-freighter">
+<!--<template id="art-freighter">
   <svg class="art art--freighter" viewBox="0 0 300 84" preserveAspectRatio="none">
     <path class="art__hull" d="M6 54 L294 54 L276 76 L24 76 Z"/>
     <rect class="art__box" x="54" y="36" width="42" height="18"/>
@@ -409,7 +413,7 @@
     <rect class="art__house" x="212" y="18" width="46" height="36"/>
     <rect class="art__stack" x="230" y="4" width="12" height="16"/>
   </svg>
-</template>
+</template> -->
 
 <!-- Things up in the sky, only made out through the glasses -->
 <template id="art-gull">
@@ -550,8 +554,9 @@
   // ---- Teleprinter --------------------------------------------------------
   const TELEX_DIR    = '../Telex Machine Demo/';  // signal files and config.js
   const SIGNAL_FIRST = [8, 20];    // seconds before the first signal comes in
-  const SIGNAL_GAP   = [40, 120];  // seconds after one is put down before the next
+  const SIGNAL_GAP   = [40, 120];  // seconds after one is torn off before the next
   const LINE_FEED    = 0.16;       // seconds per line as the slip feeds out
+  const TEAR_PULL    = 30;         // px the slip must be pulled away before it tears
 
   // Sky colour by elevation, horizon to zenith
   const SKY_STOPS = [
@@ -1763,21 +1768,28 @@
   // The machine never moves. Every so often a signal comes in: the lamp
   // flashes and a slip feeds out, too small to read from the wheel. Click
   // the slip to pick it up; it grows out of the machine to reading size.
+  // Pull it up and away to tear it off; only then is the next one expected.
+  // A torn slip stays wherever it's put down, to be read or moved again.
   // Signals are the files in ../Telex Machine Demo/signals, read the same way.
   const tx = {
-    root:  document.getElementById('telex'),
-    slip:  document.getElementById('telexSlip'),
-    type:  document.getElementById('telexType'),
-    view:  document.getElementById('signal'),
-    sheet: document.getElementById('signalSheet'),
-    back:  document.getElementById('signalBack')
+    root:   document.getElementById('telex'),
+    slip:   document.getElementById('telexSlip'),
+    type:   document.getElementById('telexType'),
+    strewn: document.getElementById('strewn'),
+    roof:   document.querySelector('.deckhead'),
+    view:   document.getElementById('signal'),
+    sheet:  document.getElementById('signalSheet'),
+    back:   document.getElementById('signalBack')
   };
   const signals   = [];
   let lastSignal  = null;      // so the random pick doesn't repeat itself
   let printed     = '';        // the text on the slip in the machine
-  let unread      = false;     // lamp stays on until it's picked up
-  let reading     = false;
+  let unread      = false;     // lamp stays on until it's picked up or torn off
+  let reading     = null;      // the slip being read, in the machine or put down
   let signalTimer = 0;
+  let pull        = null;      // the slip being dragged, if any
+  let justPulled  = false;     // so the end of a drag isn't read as a click
+  let topSlip     = 0;         // the last slip handled lies on top
 
   // A signal file is a header block, a --- rule, then the message.
   // Unknown headers are kept under lower_snake_case keys, as in telex.js.
@@ -1851,7 +1863,7 @@
     signalTimer = setTimeout(incoming, between(range) * 1000);   // range is in seconds
   }
 
-  // A signal comes in: the last slip is torn off and a fresh one feeds out.
+  // A signal comes in and a fresh slip feeds out.
   // From the helm it's only rows of type, one bar per printed line.
   function incoming() {
     const sig = pickSignal();
@@ -1886,21 +1898,21 @@
 
   tx.slip.addEventListener('animationend', slipFed);
 
-  // Transform that lays the reading sheet over the slip on the desk
-  function overSlip(to) {
-    const from = tx.slip.getBoundingClientRect();
+  // Transform that lays the reading sheet over a slip, in the machine or put down
+  function overSlip(slip, to) {
+    const from = slip.getBoundingClientRect();
     return 'translate(' + (from.left - to.left) + 'px,' + (from.top - to.top) + 'px) ' +
            'scale(' + (from.width / to.width) + ',' + (from.height / to.height) + ')';
   }
 
-  function pickUpSlip() {
-    if (reading || tx.slip.disabled) return;
-    reading = true;
-    if (unread) {
+  function pickUpSlip(slip) {
+    if (reading || slip.disabled || justPulled) return;
+    reading = slip;
+    if (slip === tx.slip && unread) {
       unread = false;
       tx.root.classList.remove('is-calling');
     }
-    tx.sheet.textContent = printed;
+    tx.sheet.textContent = slip === tx.slip ? printed : slip._text;
     tx.sheet.scrollTop = 0;
     tx.view.classList.add('is-open');
     tx.view.setAttribute('aria-hidden', 'false');
@@ -1908,7 +1920,7 @@
     if (!stillness.matches) {
       tx.sheet.style.transition = 'none';
       tx.sheet.style.transform = '';
-      tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
+      tx.sheet.style.transform = overSlip(slip, tx.sheet.getBoundingClientRect());
       void tx.sheet.offsetWidth;
       tx.sheet.style.transition = '';
       tx.sheet.style.transform = '';
@@ -1918,20 +1930,216 @@
 
   function putSlipDown() {
     if (!reading) return;
-    reading = false;
-    if (!stillness.matches) tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
+    const slip = reading;
+    reading = null;
+    if (!stillness.matches) tx.sheet.style.transform = overSlip(slip, tx.sheet.getBoundingClientRect());
     tx.view.classList.remove('is-open');
     tx.view.setAttribute('aria-hidden', 'true');
-    tx.slip.focus({ preventScroll: true });
-    expectSignal(SIGNAL_GAP);
+    slip.focus({ preventScroll: true });
   }
 
-  tx.slip.addEventListener('click', pickUpSlip);
+  tx.slip.addEventListener('click', () => pickUpSlip(tx.slip));
   tx.back.addEventListener('click', putSlipDown);
   tx.view.addEventListener('click', ev => { if (ev.target === tx.view) putSlipDown(); });
   window.addEventListener('keydown', ev => {
     if (reading && ev.key === 'Escape') putSlipDown();
   });
+
+  // Tearing the slip off. Until it tears it only strains against the machine,
+  // lifting and leaning toward the hand; past TEAR_PULL it comes away with a
+  // ragged edge and follows the hand. Let go, it lies where it was dropped,
+  // to be picked up and read, or dragged somewhere else.
+  function raggedEdge() {
+    const teeth = 14;
+    const pts = ['0 0', '100% 0'];
+    for (let i = teeth; i >= 0; i--) {
+      const bite = i % 2 ? between([2, 4]) : between([0, 1]);
+      pts.push((i / teeth * 100).toFixed(1) + '% calc(100% - ' + bite.toFixed(1) + 'px)');
+    }
+    return 'polygon(' + pts.join(', ') + ')';
+  }
+
+  // The torn-off piece: a copy of the slip, loose over the helm where it was
+  function tearOff() {
+    tx.slip.classList.remove('is-pulled');
+    tx.slip.style.transform = '';
+    const box  = tx.slip.getBoundingClientRect();
+    const deck = tx.strewn.getBoundingClientRect();
+
+    const piece = document.createElement('button');
+    piece.type = 'button';
+    piece.className = 'telex__torn is-held';
+    piece.setAttribute('aria-label',
+      'Torn-off signal: pick it up to read it, or drag it (or use the arrow keys) to move it');
+    // Placed and sized against the helm, so it stays put when the window changes
+    piece.style.left   = ((box.left - deck.left) / deck.width * 100).toFixed(2) + '%';
+    piece.style.top    = ((box.top - deck.top) / deck.height * 100).toFixed(2) + '%';
+    piece.style.height = (box.height / deck.height * 100).toFixed(2) + '%';
+    piece.style.aspectRatio = box.width.toFixed(1) + ' / ' + box.height.toFixed(1);
+    piece.style.zIndex = ++topSlip;
+    piece._text = printed;
+    piece._lean = piece._held = 0;
+
+    const paper = document.createElement('span');
+    paper.className = 'telex__slip';
+    paper.style.clipPath = raggedEdge();
+    const type = tx.type.cloneNode(true);
+    type.removeAttribute('id');
+    paper.appendChild(type);
+    piece.appendChild(paper);
+    tx.strewn.appendChild(piece);
+    strew(piece);
+
+    // Kept in place, only unseen, so it holds on to the pointer until let go
+    tx.slip.classList.add('is-torn');
+    if (unread) {
+      unread = false;
+      tx.root.classList.remove('is-calling');
+    }
+    return piece;
+  }
+
+  // In the hand: offset from where it was picked up, leaning with the drag
+  function holdPiece(piece, dx, dy) {
+    piece._held = clamp(piece._lean + dx * 0.12, -15, 15);
+    piece.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(' + piece._held.toFixed(1) + 'deg)';
+  }
+
+  // Put down anywhere on the helm below the deckhead, at the angle it was held
+  function layPiece(piece, left, top) {
+    const W = tx.strewn.clientWidth;
+    const H = tx.strewn.clientHeight;
+    left = clamp(left, 0, W - piece.offsetWidth);
+    top  = clamp(top, tx.roof.offsetHeight, H - piece.offsetHeight);
+    piece._lean = piece._held;
+    piece.classList.remove('is-held');
+    piece.style.left = (left / W * 100).toFixed(2) + '%';
+    piece.style.top  = (top / H * 100).toFixed(2) + '%';
+    piece.style.transform = 'rotate(' + piece._lean.toFixed(1) + 'deg)';
+  }
+
+  function dropPiece(piece, dx, dy) {
+    layPiece(piece, piece.offsetLeft + dx, piece.offsetTop + dy);
+  }
+
+  // The machine is empty again: start waiting for the next signal
+  function slipGone() {
+    tx.slip.hidden = true;
+    tx.slip.disabled = true;
+    tx.slip.classList.remove('is-torn');
+    printed = '';
+    expectSignal(SIGNAL_GAP);
+  }
+
+  // A drag that's barely moved is a click; one that has isn't
+  function startPull(ev, target, piece) {
+    pull = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false, piece };
+    justPulled = false;
+    target.setPointerCapture(ev.pointerId);
+  }
+
+  function pullMoved(ev) {
+    if (!pull || ev.pointerId !== pull.id) return false;
+    pull.dx = ev.clientX - pull.x;
+    pull.dy = ev.clientY - pull.y;
+    if (!pull.moved && Math.hypot(pull.dx, pull.dy) < 4) return false;
+    pull.moved = true;
+    return true;
+  }
+
+  function endPull(ev, target) {
+    if (!pull || ev.pointerId !== pull.id) return null;
+    const done = pull;
+    pull = null;
+    if (target.hasPointerCapture(ev.pointerId)) target.releasePointerCapture(ev.pointerId);
+    if (done.moved) {
+      justPulled = true;
+      setTimeout(() => { justPulled = false; }, 0);
+    }
+    return done;
+  }
+
+  tx.slip.addEventListener('pointerdown', ev => {
+    if (tx.slip.disabled || reading || pull || ev.button > 0) return;
+    startPull(ev, tx.slip, null);
+  });
+
+  tx.slip.addEventListener('pointermove', ev => {
+    if (!pullMoved(ev)) return;
+    const { dx, dy } = pull;
+    if (!pull.piece) {
+      const away = Math.hypot(dx, Math.min(0, dy));         // it won't push back into the machine
+      if (away < TEAR_PULL) {
+        const strain = away / TEAR_PULL;
+        tx.slip.classList.add('is-pulled');
+        tx.slip.style.transform = 'translateY(' + (-3 * strain).toFixed(1) + 'px) rotate(' +
+          clamp(dx * 0.3, -8, 8).toFixed(1) + 'deg)';
+        return;
+      }
+      pull.piece = tearOff();
+    }
+    holdPiece(pull.piece, dx, dy);
+  });
+
+  const letGoOfSlip = ev => {
+    const done = endPull(ev, tx.slip);
+    if (!done) return;
+    if (done.piece) {
+      dropPiece(done.piece, done.dx, done.dy);
+      slipGone();
+      done.piece.focus({ preventScroll: true });
+    } else if (done.moved) {
+      tx.slip.classList.remove('is-pulled');                 // springs back into place
+      tx.slip.style.transform = '';
+    }
+  };
+  tx.slip.addEventListener('pointerup', letGoOfSlip);
+  tx.slip.addEventListener('pointercancel', letGoOfSlip);
+
+  // From the keyboard, Up tears it straight off and lays it beside the machine
+  tx.slip.addEventListener('keydown', ev => {
+    if (ev.key !== 'ArrowUp' || tx.slip.disabled || pull) return;
+    ev.preventDefault();
+    const piece = tearOff();
+    piece._held = between([-8, 8]);
+    dropPiece(piece, -piece.offsetWidth * 1.8, piece.offsetHeight * 0.5);
+    slipGone();
+    piece.focus({ preventScroll: true });
+  });
+
+  // A slip that's been put down: click to read it, drag or arrow keys to move it
+  function strew(piece) {
+    piece.addEventListener('click', () => pickUpSlip(piece));
+
+    piece.addEventListener('pointerdown', ev => {
+      if (reading || pull || ev.button > 0) return;
+      piece.style.zIndex = ++topSlip;                        // the one picked up lies on top
+      startPull(ev, piece, piece);
+    });
+
+    piece.addEventListener('pointermove', ev => {
+      if (!pullMoved(ev)) return;
+      piece.classList.add('is-held');
+      holdPiece(piece, pull.dx, pull.dy);
+    });
+
+    const letGo = ev => {
+      const done = endPull(ev, piece);
+      if (done && done.moved) dropPiece(piece, done.dx, done.dy);
+    };
+    piece.addEventListener('pointerup', letGo);
+    piece.addEventListener('pointercancel', letGo);
+
+    const NUDGE = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    piece.addEventListener('keydown', ev => {
+      const step = NUDGE[ev.key];
+      if (!step || reading || pull) return;
+      ev.preventDefault();
+      const d = piece.offsetHeight * 0.25;
+      piece.style.zIndex = ++topSlip;
+      layPiece(piece, piece.offsetLeft + step[0] * d, piece.offsetTop + step[1] * d);
+    });
+  }
 
   // ---- Rulebook -----------------------------------------------------------
   // The book is its own page in its own folder (../Rulebook Demo), shown in

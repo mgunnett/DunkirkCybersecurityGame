@@ -1082,11 +1082,59 @@ body {
     linear-gradient(90deg, #d6c79f 0%, #e8dcbe 10%, #efe5ca 50%, #e8dcbe 90%, #d6c79f 100%);
   box-shadow: 0 0 0 1px rgba(120, 100, 60, 0.35);
   cursor: zoom-in;
-  transition: filter 0.2s ease;
+  touch-action: none;          /* a drag tears it off rather than scrolling */
+  transform-origin: 50% 100%;  /* strains from where it leaves the platen */
+  transition: filter 0.2s ease, transform 0.2s ease-out;
 }
 
 .telex__slip[hidden] { display: none; }
 .telex__slip:disabled { cursor: default; }
+
+/* Being pulled: follows the hand at once, and springs back if let go */
+.telex__slip.is-pulled { cursor: grabbing; transition: filter 0.2s ease; }
+
+/* Torn off: the machine's slip stays put but unseen until the drag ends */
+.telex__slip.is-torn { opacity: 0; }
+
+/* Torn-off slips lie over everything on the helm but the deckhead and gloom */
+.strewn {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+}
+
+/* A slip torn off and put down: lies flat, with a shadow to show it's loose */
+.telex__torn {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: zoom-in;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+  transition: filter 0.2s ease;
+}
+
+.telex__torn .telex__slip {
+  height: 100%;
+  cursor: inherit;
+}
+
+.telex__torn:hover,
+.telex__torn:focus-visible {
+  filter:
+    drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 5px rgba(227, 198, 132, 0.8));
+  outline: none;
+}
+
+/* In the hand: lifted clear of whatever it was lying on */
+.telex__torn.is-held {
+  cursor: grabbing;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.5));
+}
 
 .telex__slip:not(:disabled):hover,
 .telex__slip:focus-visible {
@@ -1136,7 +1184,7 @@ body {
 .tx__button  { fill: #2a211c; stroke: #544239; stroke-width: 1.5; }
 .tx__foot    { fill: #14160f; }
 
-/* Signal waiting: the lamp flashes until the slip is picked up */
+/* Signal waiting: the lamp flashes until the slip is picked up or torn off */
 .telex.is-calling .tx__lamp {
   animation: lamp 1s steps(1) infinite;
 }
@@ -1306,6 +1354,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .telex__slip.is-feeding { animation: none; }
+  .telex__slip { transition: filter 0.2s ease; }
   .telex.is-calling .tx__lamp { animation: none; fill: #ff7a33; }
   .signal__sheet { transition: none; }
   .room__frame { transition: none; transform: none; }
