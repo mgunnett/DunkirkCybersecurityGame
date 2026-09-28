@@ -13,5 +13,11 @@ TELEX.load([
   '02-route-x.js',
   '03-the-beaches.js',
   '04-air-attack.js',
-  '05-homeward.js'
+  '05-homeward.js',
+  '07-weather.js',
+  '08-kwinte-key.js',      // key first: the cipher waits for it
+  '09-kwinte-cipher.js',
+  '10-fuel-and-water.js',
+  '11-malo-key.js',
+  '12-malo-cipher.js'
 ]);
