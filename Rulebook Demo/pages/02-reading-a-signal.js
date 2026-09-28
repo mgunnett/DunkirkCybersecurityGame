@@ -1,8 +1,9 @@
+rulebookPage(String.raw`
 # Reading a Signal
 
 Every signal from Dover is printed in the same order, with the same headings, in capital letters. Learn the shape of an honest signal so well that a wrong one looks wrong at a glance.
 
-```
+~~~
 M.Y. KESTREL GBKW
 NR 031  MOST IMMEDIATE
 0412Z/30 MAY 40
@@ -12,7 +13,7 @@ TO M.Y. KESTREL
 ENEMY BATTERIES AT GRAVELINES
 NOW RANGING ON ROUTE Z ...
 ACKNOWLEDGE BY LAMP ON SIGHT.
-```
+~~~
 
 ## The serial number
 
@@ -33,3 +34,4 @@ Genuine signals come from V.A. DOVER (DYNAMO) and are addressed to this vessel b
 ## The body and sign-off
 
 Orders are short and plain. Courses are always given as three figures in degrees, such as 072 or 213. Most signals close with a standing instruction, ACKNOWLEDGE BY LAMP ON SIGHT, or a particular order in its place.
+`);

@@ -1,3 +1,4 @@
+rulebookPage(String.raw`
 @title-page
 
 # Signal Handbook
@@ -11,3 +12,4 @@ Issued by Vice-Admiral, Dover
 May 1940
 
 > RESTRICTED. This book is not to be taken ashore in enemy territory. If the vessel is in danger of capture it is to be weighted and thrown overboard.
+`);

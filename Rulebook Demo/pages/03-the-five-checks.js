@@ -1,3 +1,4 @@
+rulebookPage(String.raw`
 # The Five Checks
 
 Put every signal to these five checks, in order, before you touch the wheel. They take less than a minute. A signal must pass all five.
@@ -23,3 +24,4 @@ The time of origin must be later than the last signal's, and it must not be in t
 Plot the course before you steer it. A true order will keep you in the swept channel, clear of known minefields and away from the enemy's guns. It will agree with the order before it unless it says plainly why it does not, as in *enemy batteries now ranging on Route Z*.
 
 > If the order would take you into a minefield, onto a sandbank, or towards the enemy coast, it is false, no matter how well it passes the other four checks.
+`);
