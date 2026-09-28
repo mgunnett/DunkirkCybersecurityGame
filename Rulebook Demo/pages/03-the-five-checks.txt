@@ -1,0 +1,25 @@
+# The Five Checks
+
+Put every signal to these five checks, in order, before you touch the wheel. They take less than a minute. A signal must pass all five.
+
+## 1. Who sent it?
+
+The sender must be V.A. DOVER (DYNAMO), exactly. Look closely at the spelling. The enemy has been known to send from DOVRE, from V.A. DOVOR, and from a DOVER COMMAND that does not exist.
+
+## 2. Is it for us?
+
+It must be addressed to M.Y. KESTREL and carry our call sign, GBKW. A signal addressed to ALL SHIPS or to no one at all is not an order to you.
+
+## 3. Does the number fit?
+
+Check the serial against your record. It must be higher than the last one you received. If it is the same as one you already hold, or lower, the signal is false.
+
+## 4. Does the time fit?
+
+The time of origin must be later than the last signal's, and it must not be in the future. A signal cannot be written after it arrives.
+
+## 5. Does the order make sense?
+
+Plot the course before you steer it. A true order will keep you in the swept channel, clear of known minefields and away from the enemy's guns. It will agree with the order before it unless it says plainly why it does not, as in *enemy batteries now ranging on Route Z*.
+
+> If the order would take you into a minefield, onto a sandbank, or towards the enemy coast, it is false, no matter how well it passes the other four checks.

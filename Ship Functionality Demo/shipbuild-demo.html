@@ -22,6 +22,7 @@
       <div class="horizon" id="horizon">
         <div class="sky"></div>
         <div class="horizon__clouds" id="clouds"></div>
+        <div class="air" id="air"></div>
         <div class="haze"></div>
         <div class="sea"></div>
         <div class="swell" id="swell"></div>
@@ -85,6 +86,42 @@
     <rect class="bin__plate" x="82" y="330" width="76" height="28" rx="3"/>
     <text class="bin__reading" id="headingPlate" x="120" y="349">000&#176;</text>
     <rect class="brass" x="56" y="386" width="128" height="16" rx="3"/>
+  </svg>
+
+  <!-- Position indicator, stood beside the binnacle. Reads metres from where she
+       started, which is (0, 0): X is east, Y is north. Same enamel as the telex. -->
+  <svg class="position" viewBox="0 0 170 120" role="img"
+       aria-label="Position indicator: metres from the start, X east and Y north">
+    <defs>
+      <linearGradient id="posEnamel" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#4a5142"/>
+        <stop offset="0.4" stop-color="#33382f"/>
+        <stop offset="1" stop-color="#1e211c"/>
+      </linearGradient>
+    </defs>
+    <ellipse class="tx__shadow pos__footing" cx="85" cy="113" rx="80" ry="7"/>
+    <!-- Straps it hangs from on narrow screens, where it moves up to the deckhead -->
+    <g class="pos__hanger">
+      <rect class="brass" x="36" y="-140" width="7" height="158" rx="2"/>
+      <rect class="brass" x="127" y="-140" width="7" height="158" rx="2"/>
+    </g>
+
+    <path class="pos__shell" d="M18 14 L152 14 L164 106 L6 106 Z"/>
+    <path class="tx__edge" d="M21 17 L149 17"/>
+
+    <rect class="tx__plate" x="53" y="21" width="64" height="13" rx="2"/>
+    <text class="tx__letter" x="85" y="30.5">POSITION</text>
+
+    <rect class="pos__window" x="24" y="40" width="122" height="58" rx="3"/>
+    <text class="pos__axis" x="34" y="63">X</text>
+    <text class="pos__value" id="posX" x="136" y="64">+0000</text>
+    <path class="pos__rule" d="M30 71 L140 71"/>
+    <text class="pos__axis" x="34" y="89">Y</text>
+    <text class="pos__value" id="posY" x="136" y="90">+0000</text>
+    <path class="pos__sheen" d="M28 44 L70 44 L56 94 L28 94 Z"/>
+
+    <rect class="tx__foot" x="14" y="104" width="24" height="7" rx="2"/>
+    <rect class="tx__foot" x="132" y="104" width="24" height="7" rx="2"/>
   </svg>
 
   <!-- Binoculars, stood on the dash top to port of the binnacle. Click to raise them. -->
@@ -245,6 +282,43 @@
     </g>
   </svg>
 
+  <!-- Rulebook, hung on the dash face to starboard of the wheel. Click to open it.
+       The book itself lives in ../Rulebook Demo; its pages are .txt files there. -->
+  <button class="prop rulebook" id="rulebook" type="button"
+          aria-label="Rulebook: open it to read the rules" data-label="Rulebook">
+    <svg viewBox="0 0 150 200" aria-hidden="true">
+      <defs>
+        <linearGradient id="rbLeather" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#6a2a1b"/>
+          <stop offset="0.55" stop-color="#4a1a12"/>
+          <stop offset="1" stop-color="#2e0d08"/>
+        </linearGradient>
+      </defs>
+      <ellipse class="rb__shadow" cx="76" cy="193" rx="68" ry="6"/>
+
+      <path class="rb__pages" d="M24 14 L134 14 Q140 14 140 20 L140 180 Q140 186 134 186 L24 186 Z"/>
+      <path class="rb__leaves" d="M136 20 L136 180 M138 22 L138 178"/>
+
+      <rect class="rb__cover" x="10" y="8" width="124" height="176" rx="5"/>
+      <rect class="rb__spine" x="10" y="8" width="20" height="176" rx="4"/>
+      <path class="rb__band" d="M12 38 L28 38 M12 78 L28 78 M12 118 L28 118 M12 158 L28 158"/>
+      <path class="rb__sheen" d="M34 12 L60 12 L44 180 L34 180 Z"/>
+
+      <rect class="rb__gilt" x="38" y="20" width="84" height="152" rx="2"/>
+      <rect class="rb__gilt" x="42" y="24" width="76" height="144" rx="1"/>
+      <text class="rb__title" x="80" y="66">RULES</text>
+      <path class="rb__gilt" d="M60 76 L100 76"/>
+      <!-- A fouled anchor -->
+      <path class="rb__emblem" d="M80 94 L80 136 M70 102 L90 102 M66 124 Q68 138 80 138 Q92 138 94 124 M62 128 L66 122 L72 127 M98 128 L94 122 L88 127"/>
+      <circle class="rb__emblem" cx="80" cy="90" r="4"/>
+
+      <path class="brass" d="M134 8 L134 26 L118 8 Z"/>
+      <path class="brass" d="M134 184 L134 166 L118 184 Z"/>
+
+      <path class="rb__ribbon" d="M96 184 L96 198 L100 194 L104 198 L104 184 Z"/>
+    </svg>
+  </button>
+
   <div class="gloom" aria-hidden="true"></div>
 </div>
 
@@ -340,6 +414,17 @@
     <path d="M0 90 L0 87 L38 76 L92 28 L140 58 L188 46 L240 87 L240 90 Z"/>
   </svg>
 </template>
+  <button class="signal__back" id="signalBack" type="button">Put it down</button>
+</div>
+
+<!-- Reading the rulebook. The book stays in its own folder (../Rulebook Demo)
+     and is loaded here the first time it's opened. -->
+<div class="room room--book" id="bookroom" role="dialog" aria-modal="true"
+     aria-label="Reading the rulebook" aria-hidden="true">
+  <iframe class="room__frame" id="bookFrame" title="Rulebook"
+          data-src="../Rulebook Demo/index.html"></iframe>
+  <button class="room__back" id="bookBack" type="button">Close the book</button>
+</div>
 
 <template id="art-lighthouse">
   <svg class="art art--lighthouse" viewBox="0 0 44 130" preserveAspectRatio="none">
@@ -548,6 +633,8 @@
     { art: 'freighter',      x: 1400, y: -1500, w: 180, h:  40 },
     { art: 'island',         x:  900, y:  1300, w: 700, h: 130 },
     { art: 'island',         x:-1500, y:  -900, w: 600, h:  90 }
+    //{ art: 'lighthouse',     x: -520, y:   900, w:  12, h:  42 },
+    //{ art: 'freighter',      x: 1400, y: -1500, w: 180, h:  40 },
   ];
 
   // ---- The coast ----------------------------------------------------------
@@ -627,6 +714,7 @@
   let horizonH   = 0;
   let roll       = 0;        // degrees, shared by the windscreen and the glasses
   let aground    = false;    // up against the shoals
+  const origin   = { x: boatX, y: boatY };  // (0, 0) on the position indicator
   const marks    = [];
   const skyClouds = [];      // the low clouds, as seen through the windscreen
 
@@ -686,6 +774,8 @@
     shoal:   document.getElementById('shoalPlate'),
     card:    document.getElementById('compassCard'),
     plate:   document.getElementById('headingPlate'),
+    posX:    document.getElementById('posX'),
+    posY:    document.getElementById('posY'),
     rudder:  document.getElementById('rudderNeedle'),
     logHand: document.getElementById('logNeedle'),
     logText: document.getElementById('logCounter')
@@ -695,6 +785,11 @@
   const norm  = d => ((d % 360) + 360) % 360;
   const DEG   = 180 / Math.PI;
   const within = ([lo, hi]) => lo + Math.random() * (hi - lo);   // seconds; between() below is ms
+  const between = ([lo, hi]) => lo + Math.random() * (hi - lo);
+  const signed = v => {                          // -12.4 -> "−0012", for the position indicator
+    const n = Math.round(v);
+    return (n < 0 ? '−' : '+') + String(Math.abs(n)).padStart(4, '0');
+  };
 
   const hide = thing => {
     if (thing.shown) { thing.el.style.display = 'none'; thing.shown = false; }
@@ -1641,6 +1736,12 @@
     el.card.setAttribute('transform', 'rotate(' + (-heading).toFixed(2) + ' 120 254)');
     el.plate.textContent = String(Math.round(heading) % 360).padStart(3, '0') + '\u00B0';
 
+    // Whole metres from the start, signed; only touched when the figure changes
+    const posX = signed(boatX - origin.x);
+    const posY = signed(boatY - origin.y);
+    if (el.posX.textContent !== posX) el.posX.textContent = posX;
+    if (el.posY.textContent !== posY) el.posY.textContent = posY;
+
     el.rudder.setAttribute('transform',
       'rotate(' + (rudder * NEEDLE).toFixed(2) + ' 65 72)');
 
@@ -1662,6 +1763,7 @@
   //   key     the key to a later cipher, tied to it by INDICATOR
   //   cipher  enciphered with its key and printed in five-letter groups;
   //           it never comes in before its key has
+  // Signals are the files in ../Telex Machine Demo/signals, read the same way.
   const tx = {
     root:  document.getElementById('telex'),
     slip:  document.getElementById('telexSlip'),
@@ -1789,6 +1891,49 @@
     const lines = [];
     for (let i = 0; i < groups.length; i += perLine) lines.push(groups.slice(i, i + perLine).join(' '));
     return { lines, count: groups.length };
+    back:  document.getElementById('signalBack')
+  };
+  const signals   = [];
+  let lastSignal  = null;      // so the random pick doesn't repeat itself
+  let printed     = '';        // the text on the slip in the machine
+  let unread      = false;     // lamp stays on until it's picked up
+  let reading     = false;
+  let signalTimer = 0;
+
+  // A signal file is a header block, a --- rule, then the message.
+  // Unknown headers are kept under lower_snake_case keys, as in telex.js.
+  function parseSignal(text) {
+    const lines = String(text).replace(/\r\n?/g, '\n').split('\n');
+    const sig = {};
+    const body = [];
+    let inHeader = true;
+    for (const line of lines) {
+      if (inHeader) {
+        if (/^-{3,}\s*$/.test(line.trim())) { inHeader = false; continue; }
+        const m = line.match(/^([A-Za-z][A-Za-z0-9 _-]*):[ \t]*(.*)$/);
+        if (m) { sig[m[1].trim().toLowerCase().replace(/[ -]+/g, '_')] = m[2].trim(); continue; }
+        if (!line.trim()) continue;
+        inHeader = false;                        // no rule given; the body starts here
+      }
+      body.push(line);
+    }
+    sig.body = body.join('\n').trim();
+    return sig;
+  }
+
+  function wrapText(text, width) {
+    const out = [];
+    text.split(/\n{2,}/).forEach((para, n) => {
+      if (n) out.push('');
+      let line = '';
+      para.replace(/\s+/g, ' ').trim().split(' ').forEach(word => {
+        if (!line) line = word;
+        else if ((line + ' ' + word).length <= width) line += ' ' + word;
+        else { out.push(line); line = word; }
+      });
+      if (line) out.push(line);
+    });
+    return out;
   }
 
   // Set a signal in teleprinter form, with the defaults from config.js
@@ -1867,6 +2012,33 @@
     printed = compose(sig);
     delivered.add(sig);
     lastSignal = sig;
+    const sign = sig.sign !== undefined ? sig.sign : cfg.sign;
+    const foot = sign ? [bar, sign, 'NNNN'] : [bar, 'NNNN'];
+    const out = head.concat(wrapText(sig.body || '', cfg.columns), foot).join('\n');
+    const raw = typeof sig.raw === 'string' ? !/^(no|false|off|0|)$/i.test(sig.raw.trim()) : !!sig.raw;
+    return raw ? out : out.toUpperCase();
+  }
+
+  function pickSignal() {
+    if (!signals.length) return null;
+    let sig, guard = 0;
+    do sig = signals[Math.floor(Math.random() * signals.length)];
+    while (signals.length > 1 && sig === lastSignal && ++guard < 25);
+    lastSignal = sig;
+    return sig;
+  }
+
+  function expectSignal(range) {
+    clearTimeout(signalTimer);
+    signalTimer = setTimeout(incoming, between(range) * 1000);   // range is in seconds
+  }
+
+  // A signal comes in: the last slip is torn off and a fresh one feeds out.
+  // From the helm it's only rows of type, one bar per printed line.
+  function incoming() {
+    const sig = pickSignal();
+    if (!sig) return;
+    printed = compose(sig);
     const lines = printed.split('\n');
     const cols = Math.max(...lines.map(l => l.length));
 
@@ -1907,6 +2079,11 @@
   function over(target, sheet) {
     const from = target.getBoundingClientRect();
     const to = sheet.getBoundingClientRect();
+  tx.slip.addEventListener('animationend', slipFed);
+
+  // Transform that lays the reading sheet over the slip on the desk
+  function overSlip(to) {
+    const from = tx.slip.getBoundingClientRect();
     return 'translate(' + (from.left - to.left) + 'px,' + (from.top - to.top) + 'px) ' +
            'scale(' + (from.width / to.width) + ',' + (from.height / to.height) + ')';
   }
@@ -1918,12 +2095,15 @@
 
   function pickUpSlip() {
     if (reading || tx.slip.disabled || !current) return;
+  function pickUpSlip() {
+    if (reading || tx.slip.disabled) return;
     reading = true;
     if (unread) {
       unread = false;
       tx.root.classList.remove('is-calling');
     }
     setSheet(tx.sheet, current);
+    tx.sheet.textContent = printed;
     tx.sheet.scrollTop = 0;
     tx.view.classList.add('is-open');
     tx.view.setAttribute('aria-hidden', 'false');
@@ -1932,6 +2112,7 @@
       tx.sheet.style.transition = 'none';
       tx.sheet.style.transform = '';
       tx.sheet.style.transform = over(tx.slip, tx.sheet);
+      tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
       void tx.sheet.offsetWidth;
       tx.sheet.style.transition = '';
       tx.sheet.style.transform = '';
@@ -2126,6 +2307,80 @@
     if (ev.key !== 'Escape') return;
     if (reading) putSlipDown();
     else if (browsing) closeLog();
+  function putSlipDown() {
+    if (!reading) return;
+    reading = false;
+    if (!stillness.matches) tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
+    tx.view.classList.remove('is-open');
+    tx.view.setAttribute('aria-hidden', 'true');
+    tx.slip.focus({ preventScroll: true });
+    expectSignal(SIGNAL_GAP);
+  }
+
+  tx.slip.addEventListener('click', pickUpSlip);
+  tx.back.addEventListener('click', putSlipDown);
+  tx.view.addEventListener('click', ev => { if (ev.target === tx.view) putSlipDown(); });
+  window.addEventListener('keydown', ev => {
+    if (reading && ev.key === 'Escape') putSlipDown();
+  });
+
+  // ---- Rulebook -----------------------------------------------------------
+  // The book is its own page in its own folder (../Rulebook Demo), shown in
+  // a frame over the helm. It loads the first time it's opened and is kept,
+  // so the reader's place isn't lost.
+  function room(ids, { focusInside = false } = {}) {
+    const r = {
+      open:  document.getElementById(ids.open),
+      root:  document.getElementById(ids.root),
+      frame: document.getElementById(ids.frame),
+      back:  document.getElementById(ids.back),
+      up:    false
+    };
+
+    // Put the keyboard inside the frame, so the arrow keys turn the book's pages
+    const settle = () => {
+      if (focusInside) r.frame.focus({ preventScroll: true });
+      else r.back.focus({ preventScroll: true });
+    };
+
+    r.show = () => {
+      if (r.up) return;
+      r.up = true;
+      if (!r.frame.getAttribute('src')) {
+        r.frame.addEventListener('load', settle, { once: true });
+        r.frame.src = r.frame.dataset.src;
+      }
+      r.root.classList.add('is-open');
+      r.root.setAttribute('aria-hidden', 'false');
+      settle();
+    };
+
+    r.hide = () => {
+      if (!r.up) return;
+      r.up = false;
+      r.root.classList.remove('is-open');
+      r.root.setAttribute('aria-hidden', 'true');
+      r.open.focus({ preventScroll: true });
+    };
+
+    r.open.addEventListener('click', r.show);
+    r.back.addEventListener('click', r.hide);
+    return r;
+  }
+
+  const rooms = [
+    room({ open: 'rulebook', root: 'bookroom', frame: 'bookFrame', back: 'bookBack' }, { focusInside: true })
+  ];
+
+  // Escape while focus is out here on the helm page
+  window.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape') rooms.forEach(r => r.hide());
+  });
+
+  // The rulebook asks to be closed when Escape is pressed inside it.
+  window.addEventListener('message', ev => {
+    const r = rooms.find(x => x.up && ev.source === x.frame.contentWindow);
+    if (r && ev.data && ev.data.rulebook === 'close') r.hide();
   });
 
   // The signal files call TELEX.signal(text); the manifest calls TELEX.load(names).
@@ -2174,6 +2429,16 @@
     log:     () => filed.map(e => e.sig),        // what's been filed, newest first
     on:      (name, fn) => { (listeners[name] = listeners[name] || []).push(fn); }
                                                  // 'print' | 'read' | 'file' | 'select'
+  window.TELEX = {
+    signal: text => { const sig = parseSignal(text); signals.push(sig); return sig; },
+    load: async names => {
+      for (const name of names) {
+        try { await loadScript(TELEX_DIR + 'signals/' + name); }
+        catch (e) { console.error('[telex] could not load ' + e.message); }
+      }
+      expectSignal(SIGNAL_FIRST);
+    },
+    incoming                                     // bring a signal in now, from code
   };
 
   loadScript(TELEX_DIR + 'config.js')

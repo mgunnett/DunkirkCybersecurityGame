@@ -1,0 +1,11 @@
+# The chapters of the rulebook, in the order they appear.
+# One file name per line. Lines starting with # are notes and are ignored.
+# Add a new .txt file to this folder, then add its name here.
+
+00-title.txt
+01-before-you-sail.txt
+02-reading-a-signal.txt
+03-the-five-checks.txt
+04-signs-of-a-false-signal.txt
+05-when-in-doubt.txt
+06-glossary.txt

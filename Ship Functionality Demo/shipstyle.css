@@ -326,6 +326,39 @@ body {
   text-anchor: middle;
 }
 
+/* --- Position indicator, just to starboard of the binnacle ---------------- */
+/* Enamel and brass follow the teleprinter; the tx__ classes are shared */
+
+.position {
+  position: absolute;
+  left: calc(50% + 8dvh);   /* clear of the binnacle bowl, which is sized by height */
+  bottom: 49%;
+  height: 10%;
+  aspect-ratio: 170 / 120;
+  z-index: 4;
+  overflow: visible;
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55));
+}
+
+.pos__hanger { display: none; }
+.pos__shell  { fill: url(#posEnamel); stroke: #14160f; stroke-width: 1.5; }
+.pos__window { fill: #0f110d; stroke: #b8934f; stroke-width: 2.5; }
+.pos__rule   { fill: none; stroke: rgba(242, 196, 107, 0.14); stroke-width: 1; }
+.pos__sheen  { fill: rgba(255, 255, 255, 0.05); }
+
+.pos__axis {
+  fill: #b8934f;
+  font-family: var(--serif);
+  font-size: 13px;
+}
+
+.pos__value {
+  fill: #f2c46b;
+  font-family: var(--mono);
+  font-size: 17px;
+  text-anchor: end;
+}
+
 .card__face   { fill: var(--ivory); }
 .card__north  { fill: var(--vermilion); }
 .card__rose   { fill: rgba(70, 64, 47, 0.28); }
@@ -1137,6 +1170,22 @@ body {
 /* --- The slip, picked up and held close enough to read -------------------- */
 
 .signal {
+}
+
+@keyframes lamp {
+  0% {
+    fill: #ff7a33;
+    filter: drop-shadow(0 0 4px rgba(255, 122, 51, 0.9));
+  }
+  50% {
+    fill: #4a1a12;
+    filter: none;
+  }
+}
+
+/* --- The slip, picked up and held close enough to read -------------------- */
+
+.signal {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -1195,6 +1244,120 @@ body {
 
 .signal__back:hover,
 .signal__back:focus-visible {
+  filter: brightness(1.1) drop-shadow(0 0 6px rgba(227, 198, 132, 0.6));
+  transform: translateY(-1px);
+  outline: none;
+}
+
+/* --- Rulebook, on the dash face to starboard of the wheel ----------------- */
+/* Same leather and gilt as the book it opens, in Rulebook Demo/rulebook.css */
+
+.rulebook {
+  right: 14%;
+  bottom: 5%;
+  height: 15%;
+  aspect-ratio: 150 / 200;
+  z-index: 6;               /* in front of the dash face it hangs on */
+}
+
+.rb__shadow  { fill: rgba(0, 0, 0, 0.45); }
+.rb__pages   { fill: #e8dcbe; stroke: #b3a179; stroke-width: 1; }
+.rb__leaves  { fill: none; stroke: #b3a179; stroke-width: 0.8; }
+.rb__cover   { fill: url(#rbLeather); stroke: #1f0806; stroke-width: 1.5; }
+.rb__spine   { fill: #2e0d08; }
+.rb__band    { fill: none; stroke: #6a2a1b; stroke-width: 3; stroke-linecap: round; }
+.rb__gilt    { fill: none; stroke: var(--brass-lit); stroke-width: 1.2; opacity: 0.75; }
+.rb__title   { fill: var(--brass-lit); font-family: var(--serif); font-size: 15px; letter-spacing: 2px; text-anchor: middle; }
+.rb__emblem  { fill: none; stroke: var(--brass-lit); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rb__ribbon  { fill: var(--vermilion); }
+.rb__sheen   { fill: rgba(255, 225, 170, 0.08); }
+
+/* --- Rooms: pages from other folders, shown in a frame over the helm ----- */
+
+.room {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 7vh 4vw;
+  background: rgba(8, 4, 2, 0.72);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+
+.signal.is-open {
+.room.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease;
+}
+
+/* The same slip, at reading size. It grows out of the machine (see pickUpSlip). */
+.signal__sheet {
+  max-width: 100%;
+  max-height: 84vh;
+  margin: 0;
+  padding: 1.7em 1.5em 2em;
+  overflow: auto;
+  font-family: "Courier Prime", "Courier New", Courier, monospace;
+  font-size: clamp(11px, 2.1vh, 16px);
+  line-height: 1.55;
+  white-space: pre;
+  color: #2e2438;
+  background:
+    repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0 1px, rgba(0, 0, 0, 0) 1px 6px),
+    linear-gradient(90deg, #d6c79f 0%, #e8dcbe 5%, #efe5ca 50%, #e8dcbe 95%, #d6c79f 100%);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 22px 44px rgba(0, 0, 0, 0.6);
+  transform-origin: 0 0;
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Same brass fitting as the one that lowers the glasses */
+.signal__back {
+.room__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  transform: scale(1.04);
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.room.is-open .room__frame { transform: scale(1); }
+
+/* The book is held up in front of the helm, which stays in view behind it */
+.room--book {
+  background: rgba(12, 6, 3, 0.72);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.room--book .room__frame { background: transparent; }
+
+/* Same brass fitting as the one that lowers the glasses */
+.room__back {
+  position: absolute;
+  right: 2.2vw;
+  top: 2.2vh;
+  padding: 0.45rem 0.9rem;
+  font-family: var(--serif);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  color: #3a2c12;
+  background: linear-gradient(180deg, var(--brass-lit), var(--brass));
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.signal__back:hover,
+.signal__back:focus-visible {
+.room__back:hover,
+.room__back:focus-visible {
   filter: brightness(1.1) drop-shadow(0 0 6px rgba(227, 198, 132, 0.6));
   transform: translateY(-1px);
   outline: none;
@@ -1539,6 +1702,7 @@ body {
   .telex__slip.is-torn,
   .telex__log.is-filing { animation: none; }
   .log__folder { transition: none; transform: none; }
+  .room__frame { transition: none; transform: none; }
   .art--gull,
   .art--plane .airscrew { animation: none; }
   .glasses__optic { transition: none; filter: none; }
@@ -1558,6 +1722,7 @@ body {
   .log__body  { grid-template-columns: 1fr; grid-template-rows: minmax(0, 34%) 1fr; }
   .log__list  { border-right: 0; border-bottom: 1px solid rgba(94, 67, 32, 0.45); }
   .log__desk  { padding: 0.8rem 0.5rem; }
+  .rulebook   { right: 2%; bottom: 3%; height: 10%; }
   .glasses__hint { white-space: normal; width: 80vw; text-align: center; }
   .binnacle { height: 30%; bottom: 47%; }
   .dial     { width: clamp(64px, 12vh, 96px); top: 7%; }
@@ -1565,4 +1730,20 @@ body {
   .dial--stbd { right: 3%; }
   .wheel    { width: 80vw; bottom: -8%; }
   .speedplate { display: none; }
+}
+
+/* Narrower than about 6:5 there's no room on the dash top between the binnacle
+   and the telex, and the wheel covers the dash face: hang the position
+   indicator from the deckhead instead, over the middle of the windscreen */
+@media (max-width: 620px), (max-aspect-ratio: 6 / 5) {
+  .position {
+    left: 50%;
+    top: 10%;
+    bottom: auto;
+    height: 6.5%;
+    transform: translateX(-50%);
+  }
+  .pos__hanger { display: inline; }
+  .pos__footing,
+  .position .tx__foot { display: none; }
 }
