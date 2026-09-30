@@ -172,6 +172,11 @@
         <span class="telex__type" id="telexType"></span>
       </button>
     </div>
+    <!-- Lit after a German aircraft is identified: click the machine to report it -->
+    <button class="telex__report" id="telexReport" type="button" hidden
+            aria-label="Report the German aircraft on the telex">
+      <span class="telex__tag">Report sighting</span>
+    </button>
     <svg viewBox="0 0 200 150" aria-hidden="true">
       <defs>
         <linearGradient id="txEnamel" x1="0" x2="0" y1="0" y2="1">
@@ -1509,6 +1514,12 @@
     gl.verdict.textContent = (correct ? 'Correct: ' : 'Not quite: ') +
       'that’s a ' + name + ', ' + SIDES[side] + '.';
     gl.ask.classList.add('is-answered', correct ? 'is-right' : 'is-wrong');
+
+    // A German aircraft rightly called: it wants reporting on the telex
+    if (correct && side === 'german') {
+      gl.verdict.textContent += ' Lower the glasses and report it on the telex.';
+      askReport({ aircraft: art, name, bearing: plane.b });
+    }
     gl.lower.focus({ preventScroll: true });
 
     // For the rest of the game to read: what was up there, and what you called it
@@ -1688,7 +1699,8 @@
     type:  document.getElementById('telexType'),
     view:  document.getElementById('signal'),
     sheet: document.getElementById('signalSheet'),
-    back:  document.getElementById('signalBack')
+    back:  document.getElementById('signalBack'),
+    report: document.getElementById('telexReport')
   };
   const signals   = [];
   let lastSignal  = null;      // so the random pick doesn't repeat itself
@@ -1766,13 +1778,14 @@
 
   function expectSignal(range) {
     clearTimeout(signalTimer);
-    signalTimer = setTimeout(incoming, between(range) * 1000);   // range is in seconds
+    // range is in seconds; a slip still waiting to be read isn't printed over
+    signalTimer = setTimeout(() => unread ? expectSignal(SIGNAL_GAP) : incoming(),
+                             between(range) * 1000);
   }
 
   // A signal comes in: the last slip is torn off and a fresh one feeds out.
   // From the helm it's only rows of type, one bar per printed line.
-  function incoming() {
-    const sig = pickSignal();
+  function incoming(sig = pickSignal()) {
     if (!sig) return;
     printed = compose(sig);
     const lines = printed.split('\n');
@@ -1850,6 +1863,45 @@
   window.addEventListener('keydown', ev => {
     if (reading && ev.key === 'Escape') putSlipDown();
   });
+
+  // ---- Reporting a sighting -----------------------------------------------
+  // Once a German aircraft is identified the machine lights up to be clicked.
+  // Clicking it sends the report; a moment later Dover's reply prints on a slip.
+  const REPLY_DELAY = 1.8;     // seconds between sending and the reply coming in
+  let sighting    = null;      // the German aircraft waiting to be reported
+  let reportSerial = 100;
+
+  function askReport(s) {
+    sighting = s;
+    tx.report.hidden = false;
+    tx.root.classList.add('is-reporting');
+  }
+
+  function sendReport() {
+    if (!sighting) return;
+    const s = sighting;
+    sighting = null;
+    tx.report.hidden = true;
+    tx.root.classList.remove('is-reporting');
+
+    const bearing = String(Math.round(s.bearing) % 360).padStart(3, '0');
+    const name = s.name.replace(/[“”"]/g, '');
+    setTimeout(() => incoming({
+      serial: 'NR ' + ++reportSerial,
+      priority: 'IMMEDIATE',
+      body: 'Your report of enemy aircraft ' + name + ' bearing ' + bearing +
+            ' degrees received.\n\nRecon sent.',
+      sign: ''
+    }), REPLY_DELAY * 1000);
+
+    // For the rest of the game to read: what was reported
+    tx.root.dispatchEvent(new CustomEvent('aircraftreported', {
+      bubbles: true,
+      detail: { aircraft: s.aircraft, bearing: Math.round(s.bearing) }
+    }));
+  }
+
+  tx.report.addEventListener('click', sendReport);
 
   // ---- Rulebook -----------------------------------------------------------
   // The book is its own page in its own folder (../Rulebook Demo), shown in

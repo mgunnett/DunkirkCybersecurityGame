@@ -1152,6 +1152,59 @@ body {
   }
 }
 
+/* Sighting to report: the machine glows and the whole body is clickable,
+   under the slip so the slip can still be picked up */
+.telex__report {
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  top: 36%;
+  bottom: 6%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.telex__report[hidden] { display: none; }
+.telex__report:focus-visible { outline: none; }
+
+.telex.is-reporting {
+  animation: report-glow 1.4s ease-in-out infinite;
+}
+
+.telex.is-reporting:has(.telex__report:hover),
+.telex.is-reporting:has(.telex__report:focus-visible) {
+  animation: none;
+  filter:
+    drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 10px rgba(227, 198, 132, 1));
+}
+
+@keyframes report-glow {
+  0%, 100% { filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 2px rgba(227, 198, 132, 0.3)); }
+  50%      { filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 9px rgba(227, 198, 132, 0.95)); }
+}
+
+/* Brass tag hung under the machine while there's a sighting to send */
+.telex__tag {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: 0.4rem;
+  transform: translateX(-50%);
+  padding: 0.2rem 0.6rem;
+  white-space: nowrap;
+  font-family: var(--serif);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #3a2c12;
+  background: linear-gradient(180deg, var(--brass-lit), var(--brass));
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
 /* --- The slip, picked up and held close enough to read -------------------- */
 
 .signal {
@@ -1307,6 +1360,10 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .telex__slip.is-feeding { animation: none; }
   .telex.is-calling .tx__lamp { animation: none; fill: #ff7a33; }
+  .telex.is-reporting {
+    animation: none;
+    filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 8px rgba(227, 198, 132, 0.9));
+  }
   .signal__sheet { transition: none; }
   .room__frame { transition: none; transform: none; }
   .art--gull,
