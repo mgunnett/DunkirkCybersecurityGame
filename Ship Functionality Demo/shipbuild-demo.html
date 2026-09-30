@@ -603,9 +603,10 @@
   };
 
   // ---- The goal -----------------------------------------------------------
-  // A spot on the beach, picked afresh each time the game starts. The shoals
-  // keep her COAST_OFF metres out, so coming within GOAL_REACH of it counts.
-  const GOAL_ALONG = [500, 7500];      // metres north the spot may fall, along the shore
+  // A fixed spot on the beach, ten minutes' straight run at SPEED from the
+  // start. The shoals keep her COAST_OFF metres out, so coming within
+  // GOAL_REACH of it counts.
+  const GOAL_ALONG = 4505;             // metres north along the shore
   const GOAL_UP    = 30;               // metres up the sand from the waterline
   const GOAL_REACH = COAST_OFF + 150;  // metres
 
@@ -956,8 +957,7 @@
 
   // ---- The goal -----------------------------------------------------------
   function placeGoal() {
-    const y = between(GOAL_ALONG);
-    return { x: coastX(y) + GOAL_UP, y, reached: false };
+    return { x: coastX(GOAL_ALONG) + GOAL_UP, y: GOAL_ALONG, reached: false };
   }
 
   function checkGoal() {
