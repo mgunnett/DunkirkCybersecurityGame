@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shipbuild Demo</title>
 <link rel="stylesheet" href="shipstyle.css">
+<link rel="stylesheet" href="../Telex Machine Demo/desk.css">
 </head>
 <body>
 
@@ -358,6 +359,29 @@
      aria-label="Signal" aria-hidden="true">
   <pre class="signal__sheet" id="signalSheet"></pre>
   <button class="signal__back" id="signalBack" type="button">Put it down</button>
+</div>
+
+<!-- The cipher desk. Every slip is taken off the teleprinter and filed here once
+     it has been read. The desk itself lives in ../Telex Machine Demo (desk.js). -->
+<button class="deskopen" id="deskopen" type="button" aria-haspopup="dialog" aria-expanded="false">
+  Cipher desk <b id="deskcount">0</b>
+</button>
+
+<div class="desk" id="desk" role="dialog" aria-modal="true" aria-label="Cipher desk" hidden>
+  <header class="desk__bar">
+    <div class="desk__plate">Cipher desk</div>
+    <div class="desk__filters" role="group" aria-label="Show">
+      <button type="button" data-filter="all" aria-pressed="true">All <b>0</b></button>
+      <button type="button" data-filter="cipher" aria-pressed="false">Cipher <b>0</b></button>
+      <button type="button" data-filter="plain" aria-pressed="false">Plain <b>0</b></button>
+    </div>
+    <button class="desk__tidy" id="desktidy" type="button">Tidy</button>
+    <p class="desk__hint">Drag pages to arrange them. Click a page to read it again.</p>
+    <button class="close" id="deskclose" type="button" aria-label="Put the desk away"></button>
+  </header>
+  <div class="desk__surface" id="desksurface">
+    <p class="desk__empty" id="deskempty"></p>
+  </div>
 </div>
 
 <!-- Reading the rulebook. The book stays in its own folder (../Rulebook Demo)
@@ -1707,6 +1731,17 @@
   let printed     = '';        // the text on the slip in the machine
   let unread      = false;     // lamp stays on until it's picked up
   let reading     = false;
+  let current     = null;      // the signal on the slip in the machine
+  let readingFrom = null;      // null: the slip in the machine; else a page off the desk
+  let taking      = false;     // the slip just put down may be lifted off for the desk
+  const txListeners = {};
+
+  // The cipher desk (desk.js) listens for 'printend' and 'close'
+  function emit(name, payload) {
+    (txListeners[name] || []).forEach(fn => {
+      try { fn(payload); } catch (e) { console.error('[telex]', e); }
+    });
+  }
   let signalTimer = 0;
 
   // A signal file is a header block, a --- rule, then the message.
@@ -1787,6 +1822,7 @@
   // From the helm it's only rows of type, one bar per printed line.
   function incoming(sig = pickSignal()) {
     if (!sig) return;
+    current = sig;
     printed = compose(sig);
     const lines = printed.split('\n');
     const cols = Math.max(...lines.map(l => l.length));
@@ -1811,27 +1847,40 @@
   }
 
   function slipFed() {
+    if (!tx.slip.disabled || !current) return;   // not mid-feed
     tx.slip.classList.remove('is-feeding');
     tx.slip.disabled = false;
+    emit('printend', current);
   }
 
   tx.slip.addEventListener('animationend', slipFed);
 
-  // Transform that lays the reading sheet over the slip on the desk
-  function overSlip(to) {
-    const from = tx.slip.getBoundingClientRect();
+  // Transform that lays the reading sheet over the slip it was picked up from
+  function overSlip(to, source = tx.slip) {
+    const from = source.getBoundingClientRect();
     return 'translate(' + (from.left - to.left) + 'px,' + (from.top - to.top) + 'px) ' +
            'scale(' + (from.width / to.width) + ',' + (from.height / to.height) + ')';
   }
 
   function pickUpSlip() {
     if (reading || tx.slip.disabled) return;
-    reading = true;
     if (unread) {
       unread = false;
       tx.root.classList.remove('is-calling');
     }
-    tx.sheet.textContent = printed;
+    readSheet(printed, null);
+  }
+
+  // A page off the cipher desk, read again. It never goes back in the machine.
+  function readPage(paper) {
+    if (reading || !paper) return;
+    readSheet(paper.textContent, paper);
+  }
+
+  function readSheet(text, from) {
+    reading = true;
+    readingFrom = from;
+    tx.sheet.textContent = text;
     tx.sheet.scrollTop = 0;
     tx.view.classList.add('is-open');
     tx.view.setAttribute('aria-hidden', 'false');
@@ -1839,7 +1888,7 @@
     if (!stillness.matches) {
       tx.sheet.style.transition = 'none';
       tx.sheet.style.transform = '';
-      tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
+      tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect(), from || tx.slip);
       void tx.sheet.offsetWidth;
       tx.sheet.style.transition = '';
       tx.sheet.style.transform = '';
@@ -1847,15 +1896,47 @@
     tx.back.focus({ preventScroll: true });
   }
 
+  // Once read, the slip comes off the machine and goes on the cipher desk,
+  // so the sheet shrinks away towards the desk rather than back to the platen.
   function putSlipDown() {
     if (!reading) return;
     reading = false;
-    if (!stillness.matches) tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
+    const from = readingFrom;
+    readingFrom = null;
+    const toward = from && from.isConnected ? from : deskButton || tx.slip;
+    if (!stillness.matches) tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect(), toward);
     tx.view.classList.remove('is-open');
     tx.view.setAttribute('aria-hidden', 'true');
+    if (from) {
+      emit('close', from._signal || null);
+      return;
+    }
     tx.slip.focus({ preventScroll: true });
     expectSignal(SIGNAL_GAP);
+    taking = true;
+    emit('close', current);
+    taking = false;
+    if (current) tearOff();                      // no desk loaded: the slip still comes off
   }
+
+  // Lift the read slip off the machine. Returns it for the desk to file.
+  function tearOff() {
+    const sig = current;
+    current = null;
+    tx.slip.hidden = true;
+    tx.slip.disabled = true;
+    tx.type.textContent = '';
+    const paper = document.createElement('div');
+    paper.textContent = printed;
+    return { signal: sig, innerHTML: paper.innerHTML };
+  }
+
+  function takeSlip(sig) {
+    if (!taking || !current || sig !== current) return null;
+    return tearOff();
+  }
+
+  const deskButton = document.getElementById('deskopen');
 
   tx.slip.addEventListener('click', pickUpSlip);
   tx.back.addEventListener('click', putSlipDown);
@@ -1972,7 +2053,13 @@
   });
 
   window.TELEX = {
-    signal: text => { const sig = parseSignal(text); signals.push(sig); return sig; },
+    // Keys, enciphered and drill signals need the cipher desk, which the
+    // helm doesn't have yet; printed here they'd give away the plaintext.
+    signal: text => {
+      const sig = parseSignal(text);
+      if (!sig.key && !sig.cipher && sig.genuine === undefined) signals.push(sig);
+      return sig;
+    },
     load: async names => {
       for (const name of names) {
         try { await loadScript(TELEX_DIR + 'signals/' + name); }
@@ -1980,7 +2067,18 @@
       }
       expectSignal(SIGNAL_FIRST);
     },
-    incoming                                     // bring a signal in now, from code
+    incoming,                                    // bring a signal in now, from code
+
+    // What the cipher desk (desk.js) needs from the machine
+    on: (name, fn) => { (txListeners[name] = txListeners[name] || []).push(fn); },
+    take: takeSlip,                              // lift the read slip off for the desk
+    open: readPage,                              // read a page off the desk
+    isReading: () => reading,
+    cipher: {
+      letters: w => String(w || '').toUpperCase().replace(/[^A-Z]/g, ''),
+      isEnciphered: () => false,                 // cipher traffic is kept out of the helm for now
+      lines: sig => wrapText(sig.body || '', 38)
+    }
   };
 
   loadScript(TELEX_DIR + 'config.js')
@@ -1998,6 +2096,7 @@
   requestAnimationFrame(frame);
 })();
 </script>
+<script src="../Telex Machine Demo/desk.js"></script>
 
 </body>
 </html>

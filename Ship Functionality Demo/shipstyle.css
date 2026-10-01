@@ -1210,7 +1210,7 @@ body {
 .signal {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 95;              /* over the cipher desk (90), so its pages can be read */
   display: grid;
   place-items: center;
   padding: 7vh 4vw;

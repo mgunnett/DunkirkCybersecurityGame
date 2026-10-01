@@ -11,6 +11,10 @@ no audio.
 index.html          markup — the prop is one block you can lift out
 telex.css           everything visual
 telex.js            the machine — you shouldn't need to edit this
+desk.js, desk.css   the cipher desk: every read telegram is filed here
+decoder.js, decoder.css
+                    the desk's tools beside the enlarged sheet: keys,
+                    decoding, genuine-or-forged drills
 config.js           ship name, wrap width, how many slips to keep
 signals/
   manifest.js       which signal files load, in what order
@@ -20,6 +24,7 @@ signals/
   04-air-attack.js
   05-homeward.js
   06-recall.js      not in the manifest — delivered mid-game instead
+  07 … 11           the security drill — see "The cipher desk" below
 ```
 
 ## Fitting it into the ship
@@ -95,6 +100,113 @@ Any header the machine doesn't recognise is still parsed and handed to your
 code. `03-the-beaches.js` carries `ANSWER: 190`, which never reaches the
 paper but arrives as `sig.answer`. Useful for keeping a puzzle's solution
 next to the clue that states it.
+
+## The cipher desk and security drills
+
+### The desk
+
+The **Cipher desk** button (bottom right on the demo page) opens the desk
+at any time. Once a slip in the bay has been read and put down, it's taken
+out of the machine and filed on the desk as a page, so the bay only ever
+holds unread traffic.
+
+- **Filter.** *All*, *Cipher* (enciphered messages and keys) or *Plain*
+  (messages sent in clear), each with a count.
+- **Keys stay with their messages.** An enciphered message is clipped to
+  the key whose `KEY NAME` it carries as soon as both have come in. A
+  clipped key sits behind its message instead of lying loose, and reading
+  the message shows the key telegram alongside it. To re-clip by hand,
+  drag a loose key onto a cipher message, or pull the key out from behind
+  its message to unclip it. Choosing a key in the decoder's slot clips
+  it too.
+- **Arrange.** Drag pages anywhere. The desk scrolls when a page is
+  carried to its edge. With a page focused, the arrow keys move it (Shift
+  for bigger steps) and Enter reads it. **Tidy** lays the visible pages
+  out in columns again.
+- Each page is labelled with its serial, its type and how much has been
+  decoded, and stamped *Genuine* or *Suspect* once the player has judged it.
+
+The button and the desk are their own block in `index.html`, outside the
+prop. In the helm, put the button wherever it suits and drop its
+`position: fixed` rules in `desk.css`. `TELEX.desk.open()` and
+`TELEX.desk.close()` do the same from code, and `TELEX.desk.pages()` lists
+what has been filed.
+
+### The tools beside the sheet
+
+`decoder.js` and `decoder.css` add the desk's tools beside the enlarged
+sheet. They only appear for signals that carry the headers below. Plain
+signals open exactly as before.
+
+**Keys travel separately from messages.** A key is its own signal. When it
+prints it's filed in the player's key tray, and the machine prints the
+key group under the message.
+
+```js
+TELEX.signal(`
+SERIAL:   NR 071
+KEY:      DYNAMO
+KEY NAME: DAY KEY 31 MAY
+---
+Day key for enciphered traffic dated 31 May.
+`);
+```
+
+**Enciphered messages.** Write the body in plain English. The machine
+enciphers it (Vigenère, letters only) as it prints, and the keyword never
+reaches the paper. The `CYP` line on the slip tells the player which key
+to use.
+
+```js
+CIPHER:   VIGENERE
+KEYWORD:  DYNAMO
+KEY NAME: DAY KEY 31 MAY
+```
+
+On the desk the player drags a key from the tray into the slot (or
+clicks it), then clicks and drags across the punched tape to decode it
+letter by letter. Keyboard: Tab to the tape, arrow keys, Shift to extend,
+Enter to decode. Decoding with the wrong key gives nonsense, and that's
+the point. A forgery enciphered under some other key won't read under
+the genuine one.
+
+**Is it genuine?** Any signal, enciphered or in clear, can ask the player
+to judge it. After they answer, the desk explains what gave it away.
+
+| Header | Does |
+| --- | --- |
+| `GENUINE` | `yes` or `no`. Asks the player "genuine or suspect?" |
+| `CLUE 1`, `CLUE 2`, … | `quote \| why`. Something on the slip, and what it tells you. Listed as red flags for forgeries, or "why it checks out" for genuine signals |
+| `LESSON` | the takeaway, shown last |
+
+Each verdict is announced as a `telexverdict` event on `document`, with
+`{ signal, genuine, choice, correct }` as its detail, and
+`TELEX.desk.verdicts()` lists them all.
+
+The drill in `signals/` runs 07 to 11:
+
+| File | What it teaches |
+| --- | --- |
+| `07-day-key.js` | genuine key: it hands a secret over and never asks for one |
+| `08-bray-dunes.js` | genuine order, enciphered: decoding under your key proves the sender |
+| `09-fuel-request.js` | phishing in clear: lookalike sender, deadline, asks for the key |
+| `10-replacement-key.js` | forged key: "discard your key, use this one, don't check" |
+| `11-la-panne.js` | forged order under the forged key: nonsense under the real one |
+
+To send a key and its message as a pair, force them from the operator
+panel one after the other. The lamp stays lit until both have printed.
+The panel tags key and cipher signals, but never says which are forged.
+
+The helm in `Ship Functionality Demo` loads `desk.js` and `desk.css`
+from this folder. Once a slip has been read and put down, it comes off
+the teleprinter and goes onto the desk, and the player can read it again
+from there. The helm doesn't have the decoder tools yet, so it still
+leaves keys, enciphered signals and drill signals out of its random pick.
+
+The desk only needs these from whatever `window.TELEX` it finds:
+`on('printend' | 'close', fn)`, `take(sig)`, `open(paper)`,
+`cipher.letters / isEnciphered / lines`, and optionally `isReading()`.
+The helm provides them at the bottom of its teleprinter section.
 
 ## Driving it from puzzle code
 
