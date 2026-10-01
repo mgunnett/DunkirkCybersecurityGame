@@ -660,7 +660,8 @@ body {
 
 .glasses {
   /* Two overlapping eyepiece circles, sized to fit any screen */
-  --r:   min(45vh, 28.5vw);
+  --r-full: min(45vh, 28.5vw);
+  --r:   var(--r-full);
   --gap: calc(var(--r) * 0.72);
 
   position: fixed;
@@ -732,6 +733,25 @@ body {
 }
 
 .glasses.is-peering .glasses__field { cursor: grabbing; }
+
+/* With the rulebook open beside them (see .room--beside), the glasses keep
+   working in the left of the screen. The cups are sized to fit that share. */
+.glasses.is-with-book {
+  --r: min(42vh, 12.6vw);
+  right: 52vw;
+}
+
+.glasses.is-with-book > .book-spine { display: none; }
+
+/* Measures the eyepiece radius now (width) against its full-screen size
+   (height), so smaller glasses keep the same field of view (see layout) */
+.glasses__probe {
+  position: absolute;
+  width: var(--r);
+  height: var(--r-full);
+  visibility: hidden;
+  pointer-events: none;
+}
 
 /* Oversized so the roll never shows an edge */
 .glasses__scene {
@@ -946,7 +966,7 @@ body {
 
 .glasses__lower {
   left: auto;
-  right: 2.2vw;
+  right: calc(var(--spine-w) + 2.2vw);
   top: 2.2vh;
   padding: 0.45rem 0.9rem;
   font-size: 0.82rem;
@@ -1155,7 +1175,6 @@ body {
 /* --- The slip, picked up and held close enough to read -------------------- */
 
 .signal {
-  --spine-w: clamp(40px, 4.6vw, 72px);   /* the rulebook peeking in at the right */
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -1220,8 +1239,11 @@ body {
 }
 
 /* The rulebook's spine, the full height of the screen at its right edge, as if
-   the book were lying just beside the slip. Same leather as the book. */
-.signal__book {
+   the book were lying just beside the slip or the glasses. Same leather as the book. */
+.signal,
+.glasses { --spine-w: clamp(40px, 4.6vw, 72px); }
+
+.book-spine {
   position: absolute;
   top: 0;
   right: 0;
@@ -1248,17 +1270,20 @@ body {
   transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1), filter 0.2s ease;
 }
 
-.signal.is-open .signal__book { transform: translateX(0); }
+.signal.is-open > .book-spine,
+.glasses.is-up > .book-spine { transform: translateX(0); }
 
-.signal.is-open .signal__book:hover,
-.signal.is-open .signal__book:focus-visible {
+.signal.is-open > .book-spine:hover,
+.signal.is-open > .book-spine:focus-visible,
+.glasses.is-up > .book-spine:hover,
+.glasses.is-up > .book-spine:focus-visible {
   transform: translateX(-8px);
   filter: brightness(1.12) drop-shadow(0 0 8px rgba(227, 198, 132, 0.35));
   outline: none;
 }
 
 /* Title in gilt, running down the spine between two gilt rules */
-.signal__book-title {
+.book-spine__title {
   writing-mode: vertical-rl;
   padding: 1.2em 0;
   border-top: 1px solid var(--brass-lit);
@@ -1336,6 +1361,9 @@ body {
 
 .room--book .room__frame { background: transparent; }
 
+/* Opened from the glasses: the book takes the right of the screen, the glasses the left */
+.room--beside { left: 48vw; }
+
 /* Opened from the telex: the slip on the left, the book beside it */
 .room__aside { display: none; }
 
@@ -1390,7 +1418,7 @@ body {
   .telex.is-calling .tx__lamp { animation: none; fill: #ff7a33; }
   .signal__sheet { transition: none; }
   .room__frame { transition: none; transform: none; }
-  .signal__book { transition: none; }
+  .book-spine { transition: none; }
   .art--gull,
   .art--plane .airscrew { animation: none; }
   .glasses__optic { transition: none; filter: none; }
@@ -1410,7 +1438,10 @@ body {
   .dial--stbd { right: 3%; }
   .wheel    { width: 80vw; bottom: -8%; }
   .speedplate { display: none; }
-  .signal   { --spine-w: 30px; }
+  .signal,
+  .glasses  { --spine-w: 30px; }
+  .glasses.is-with-book { --r: min(21vh, 28.5vw); right: 0; bottom: 50%; }
+  .room--beside { left: 0; top: 50%; }
   .room--with-aside { flex-direction: column; align-items: stretch; padding: 7vh 4vw 0; }
   .room--with-aside .room__aside { max-width: none; max-height: 30vh; font-size: 11px; }
 }

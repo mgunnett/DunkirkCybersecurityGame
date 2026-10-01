@@ -308,6 +308,7 @@
 <!-- Looking through the binoculars. Same sea, same heading, much closer. -->
 <div class="glasses" id="glasses" role="dialog" aria-modal="true"
      aria-label="Looking through the binoculars" aria-hidden="true">
+  <div class="glasses__probe" id="glassProbe" aria-hidden="true"></div>
   <div class="glasses__optic">
     <div class="glasses__cup glasses__cup--leather" aria-hidden="true"></div>
     <div class="glasses__cup glasses__cup--brass" aria-hidden="true"></div>
@@ -346,6 +347,11 @@
   </div>
 
   <button class="glasses__lower" id="glassLower" type="button">Lower glasses</button>
+  <!-- The rulebook's spine, peeking in at the right. Opens the book beside the glasses. -->
+  <button class="book-spine" id="glassBook" type="button"
+          aria-label="Rulebook: open it beside the glasses">
+    <span class="book-spine__title">RULEBOOK</span>
+  </button>
 </div>
 
 <!-- The slip off the teleprinter, picked up and held close enough to read -->
@@ -354,9 +360,9 @@
   <pre class="signal__sheet" id="signalSheet"></pre>
   <button class="signal__back" id="signalBack" type="button">Put it down</button>
   <!-- The rulebook's spine, peeking in at the right. Opens the book beside the slip. -->
-  <button class="signal__book" id="signalBook" type="button"
+  <button class="book-spine" id="signalBook" type="button"
           aria-label="Rulebook: open it beside the signal">
-    <span class="signal__book-title">RULEBOOK</span>
+    <span class="book-spine__title">RULEBOOK</span>
   </button>
 </div>
 
@@ -667,6 +673,7 @@
   let peerX      = 0;
   let peerY      = 0;
   let sceneW     = 0;
+  let glassScale = 1;        // eyepieces' size against full screen; 1 unless the book is open beside them
   let sceneH     = 0;
   let hintTimer  = 0;
   let glassRun   = 0;        // metres made good along the line you're looking,
@@ -696,6 +703,7 @@
     world:  document.getElementById('glassWorld'),
     air:    document.getElementById('glassAir'),
     surface: surface(document.getElementById('glassSurface')),
+    probe:  document.getElementById('glassProbe'),
     plate:  document.getElementById('glassPlate'),
     hint:   document.getElementById('glassHint'),
     ask:    document.getElementById('glassAsk'),
@@ -880,6 +888,7 @@
     ppd = horizonW / FOV;
     sceneW = gl.scene.clientWidth;
     sceneH = gl.scene.clientHeight;
+    glassScale = gl.probe.clientWidth / (gl.probe.clientHeight || 1) || 1;
     fitSurface(el.surface, horizonW, horizonH);
     fitSurface(gl.surface, sceneW, sceneH);
   }
@@ -1387,7 +1396,7 @@
     lookRel = arc(0, lookRel);
     pitch   = clamp(pitch, PITCH_MIN, PITCH_MAX);
 
-    const z = ppd * mag;                         // pixels per degree through the glass
+    const z = ppd * mag * glassScale;            // pixels per degree through the glass
     const cx = sceneW / 2;
     const cy = sceneH / 2;
     const look = norm(heading + lookRel);
@@ -1596,6 +1605,7 @@
 
   function lowerGlasses() {
     if (!glassesUp) return;
+    if (gl.root.classList.contains('is-with-book')) rooms[0].hide();   // the book goes down with them
     glassesUp = false;
     if (plane && plane.asking) unspotAircraft();
     peering = false;
@@ -1623,7 +1633,7 @@
 
   gl.field.addEventListener('pointermove', ev => {
     if (!peering) return;
-    const z = ppd * mag;
+    const z = ppd * mag * glassScale;
     lookRel -= (ev.clientX - peerX) / z;
     pitch   += (ev.clientY - peerY) / z;
     peerX = ev.clientX;
@@ -1654,7 +1664,11 @@
 
   window.addEventListener('keydown', ev => {
     if (!glassesUp) return;
-    if (ev.key === 'Escape') { lowerGlasses(); return; }
+    if (ev.key === 'Escape') {
+      // With the rulebook open beside them, Escape closes only the book.
+      if (!gl.root.classList.contains('is-with-book')) lowerGlasses();
+      return;
+    }
     if (ev.key === '+' || ev.key === '=') mag = clamp(mag * 1.12, MAG_MIN, MAG_MAX);
     if (ev.key === '-' || ev.key === '_') mag = clamp(mag / 1.12, MAG_MIN, MAG_MAX);
     if (KEYS[ev.key]) { held.add(KEYS[ev.key]); ev.preventDefault(); }
@@ -1862,8 +1876,9 @@
   // ---- Rulebook -----------------------------------------------------------
   // The book is its own page in its own folder (../Rulebook Demo), shown in
   // a frame over the helm. It loads the first time it's opened and is kept,
-  // so the reader's place isn't lost. Opened from the telex, it's shown with
-  // the slip beside it (see signalBook below).
+  // so the reader's place isn't lost. Opened from the telex it's shown with
+  // the slip beside it, and from the glasses it shares the screen with them
+  // (see signalBook and glassBook below).
   function room(ids, { focusInside = false } = {}) {
     const r = {
       open:  document.getElementById(ids.open),
@@ -1875,6 +1890,7 @@
     };
     const backLabel = r.back.textContent;
     let opener = r.open;
+    let closed = null;
 
     // Put the keyboard inside the frame, so the arrow keys turn the book's pages
     const settle = () => {
@@ -1882,12 +1898,15 @@
       else r.back.focus({ preventScroll: true });
     };
 
-    // beside: text to show next to the frame; from: where focus goes back to
-    r.show = ({ beside = '', from = r.open, backLabel: label = backLabel } = {}) => {
+    // beside: text to show next to the frame; half: take only the right of the
+    // screen; from: where focus goes back to; onClose: called when it's closed
+    r.show = ({ beside = '', half = false, from = r.open, backLabel: label = backLabel, onClose = null } = {}) => {
       if (r.up) return;
       r.up = true;
       opener = from;
+      closed = onClose;
       r.root.classList.toggle('room--with-aside', !!beside);
+      r.root.classList.toggle('room--beside', half);
       if (r.aside) { r.aside.textContent = beside; r.aside.scrollTop = 0; }
       r.back.textContent = label;
       if (!r.frame.getAttribute('src')) {
@@ -1904,6 +1923,7 @@
       r.up = false;
       r.root.classList.remove('is-open');
       r.root.setAttribute('aria-hidden', 'true');
+      if (closed) { const done = closed; closed = null; done(); }
       opener.focus({ preventScroll: true });
     };
 
@@ -1924,6 +1944,20 @@
     from: signalBook,
     backLabel: 'Close rulebook'
   }));
+
+  // The spine beside the glasses opens the book in the right of the screen; the
+  // glasses move over to the left and keep working. Closing it gives them it all back.
+  const glassBook = document.getElementById('glassBook');
+  glassBook.addEventListener('click', () => {
+    gl.root.classList.add('is-with-book');
+    layout();
+    rooms[0].show({
+      half: true,
+      from: glassBook,
+      backLabel: 'Close rulebook',
+      onClose: () => { gl.root.classList.remove('is-with-book'); layout(); }
+    });
+  });
 
   // Escape while focus is out here on the helm page
   window.addEventListener('keydown', ev => {
