@@ -519,7 +519,7 @@
 </template>
 
 <!-- DEBUG: where the goal on the beach is. Remove once it needn't be seen. -->
-<pre class="debug" id="debugGoal" aria-hidden="true"></pre>
+<!--<pre class="debug" id="debugGoal" aria-hidden="false"></pre> -->
 
 <script>
 (() => {
@@ -727,7 +727,7 @@
     plate:   document.getElementById('headingPlate'),
     posX:    document.getElementById('posX'),
     posY:    document.getElementById('posY'),
-    debug:   document.getElementById('debugGoal'),
+    //debug:   document.getElementById('debugGoal'),
     rudder:  document.getElementById('rudderNeedle'),
     logHand: document.getElementById('logNeedle'),
     logText: document.getElementById('logCounter')
@@ -968,7 +968,7 @@
 
   // DEBUG: a flag on the goal, drawn over the land at a fixed size so it shows
   // at any range. Remove it, and drawDebug(), once the goal needn't be seen.
-  function drawGoalMarker(ctx, v) {
+  /*function drawGoalMarker(ctx, v) {
     const dx = goal.x - boatX;
     const dy = goal.y - boatY;
     const range = Math.hypot(dx, dy);
@@ -1001,7 +1001,7 @@
     ctx.fillStyle = ctx.strokeStyle;
     ctx.fillText(label, x, y - 53);
     ctx.restore();
-  }
+  }*/
 
   // Land colour at range, going over to the haze
   function tint(rgb, d, alpha) {
@@ -1017,7 +1017,7 @@
     drawSkyline(s.ctx, v);
     drawWaves(s.ctx, v);
     drawCoast(s.ctx, v);
-    drawGoalMarker(s.ctx, v);   // DEBUG
+    //drawGoalMarker(s.ctx, v);   // DEBUG
   }
 
   // The horizon isn't a ruled line: the far swell lifts and settles along it.
@@ -1328,7 +1328,7 @@
     flyAircraft(dt);
     drawWorld();
     drawStation(rudder);
-    drawDebug();   // DEBUG
+    //drawDebug();   // DEBUG
     if (glassesUp) drawGlasses(dt);
     requestAnimationFrame(frame);
   }
@@ -1748,7 +1748,7 @@
 
   // DEBUG: the goal in the position indicator's terms, and how to steer for it.
   // Remove with #debugGoal and drawGoalMarker().
-  function drawDebug() {
+  /* function drawDebug() {
     const dx = goal.x - boatX;
     const dy = goal.y - boatY;
     const brg = norm(Math.atan2(dx, dy) * DEG);
@@ -1762,7 +1762,7 @@
       (goal.reached ? 'REACHED' : 'reached within ' + GOAL_REACH + ' m');
     if (el.debug.textContent !== text) el.debug.textContent = text;
     el.debug.classList.toggle('is-reached', goal.reached);
-  }
+  } */
 
   // ---- Teleprinter --------------------------------------------------------
   // The machine never moves. Every so often a signal comes in: the lamp
