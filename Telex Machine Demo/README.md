@@ -12,6 +12,7 @@ index.html          markup — the prop is one block you can lift out
 telex.css           everything visual
 telex.js            the machine — you shouldn't need to edit this
 config.js           ship name, wrap width, how many slips to keep
+course.js           the route to the beach, and the courses the signals give
 signals/
   manifest.js       which signal files load, in what order
   01-sailing-orders.js
@@ -19,7 +20,7 @@ signals/
   03-the-beaches.js
   04-air-attack.js
   05-homeward.js
-  06-recall.js      not in the manifest — delivered mid-game instead
+  06-recall.js      the last leg, in to the beach
   07-weather.js
   08-kwinte-key.js      key    ┐ Vigenère pair, indicator KWINTE
   09-kwinte-cipher.js   cipher ┘
@@ -181,16 +182,61 @@ TELEX.on('file', sig => { … })   // 'print' | 'read' | 'file' | 'select'
 (`telex.js`) doesn't handle them yet: it prints a cipher's body in clear.
 
 Any header the machine doesn't recognise is still parsed and handed to your
-code. `03-the-beaches.js` carries `ANSWER: 190`, which never reaches the
-paper but arrives as `sig.answer`. Useful for keeping a puzzle's solution
-next to the clue that states it.
+code. `03-the-beaches.js` carries `UNLOCKS: 04-air-attack.js`, which never
+reaches the paper but arrives as `sig.unlocks`. Useful for keeping puzzle
+data next to the clue it belongs to.
+
+### Courses
+
+Signals 01 to 06 don't carry fixed courses. They carry marks that are
+filled in as the slip prints, from where the boat is and which way she's
+heading:
+
+| Mark | Prints as |
+| --- | --- |
+| `{HELM}` | the wheel order: *Turn 55 degrees to starboard. Put the wheel over to the right and hold it there until the compass reads 055, then bring the wheel back to the middle.* |
+| `{TURN}` | the turn on its own: *55 degrees to starboard*, or *no turn* |
+| `{COURSE}` | the course for the next mark, in three figures: *055* |
+| `{MARK}` | the next mark's name: *the North Goodwin light vessel* |
+| `{WHY}` | one sentence on why this leg runs the way it does |
+| `{POSITION}` | where the mark lies on the position indicator: *X +0400 Y +1850* |
+| `{MINUTES}` | roughly how long that leg takes: *about 2 minutes* |
+
+The route is in `course.js`: a chain of named marks, in metres as the
+ship's position indicator reads them. It zig-zags up the swept channel
+(000, 070, 333, 076, 333, then 065 for the beach, mark to mark) rather than
+running straight at the goal, which lies at about 030. Each leg turns the
+other way from the last, and each mark carries the reason for its leg, so
+every change of course says plainly why, as the rulebook's fifth check
+expects. The last mark is the goal itself. Move a mark and every signal
+follows, but keep the run short enough for the full game's ten minutes.
+
+**In the full game** (`Script/`), 01 to 06 are the true orders. The Script
+sends 01 at the start and each of the others as the boat reaches the mark
+before its leg, gives each the next serial number and a fresh time of origin,
+and wins the voyage when she reaches the beach. It also sends a replay of an
+earlier order and a tampered copy of 06, both built from what was printed.
+A `STEER: 150` header makes `{HELM}`, `{COURSE}` and `{TURN}` use that course
+instead of the route's, which is how the forgeries copy a true order's look.
+
+On its own, the helm hands signals out in its own order, so none is tied to a leg.
+Whichever prints gives the leg the boat is on. Once she reaches a mark, or
+goes past it, the next signal gives the next leg from wherever she
+actually is, which also corrects her if she has drifted. Opened on its
+own, this machine has no boat to read, so each print assumes the last
+order was steered exactly and moves on one leg. Printing from the operator
+panel walks you through the whole route.
+
+The figures are worked out once, when the slip prints, and written into
+the signal, so the enlarged sheet and the log read the same as the slip.
+They also arrive on the signal as `sig.plot`, for puzzle code.
 
 ## Driving it from puzzle code
 
 ```js
 TELEX.incoming()                  // flash the lamp; Receive picks at random
 TELEX.sendId('02-route-x')        // flash the lamp for one specific signal
-TELEX.sendFile('06-recall.js')    // load a file on demand and queue it
+TELEX.sendFile('13-something.js') // load a file left out of the manifest, and queue it
 TELEX.send('SERIAL: NR 999\n---\nInline text, no file needed.')
 
 TELEX.receive()                   // print now, without waiting for a click
@@ -201,7 +247,9 @@ TELEX.on('printend', sig => {     // 'alert' | 'printstart' | 'printend'
   if (sig.id === '03-the-beaches') openTheChartDrawer();
 });                               // 'open' | 'close' | 'tear'
 
-TELEX.get('03-the-beaches').answer   // '190'
+TELEX.get('03-the-beaches').unlocks  // '04-air-attack.js'
+TELEX.get('03-the-beaches').plot     // once printed: { leg, course: '027', turn, mark, ... }
+TELEX_COURSE.plot({ x, y, heading })  // the next leg from anywhere, without printing
 TELEX.waiting()                      // is the lamp flashing?
 ```
 
@@ -213,8 +261,8 @@ The full list is commented at the bottom of `telex.js`.
 `index.html`, or set `hideOperatorPanel: true` in `config.js`.
 
 **Check how long a signal takes.** Print speed is fixed at 40 characters a
-second in `telex.js`. With headers and rules, a signal of this length runs
-to about 700 characters, so the machine clatters for roughly 17 seconds
+second in `telex.js`. With headers, rules and a filled-in `{HELM}`, signals
+01 to 06 run to about 800 characters, so the machine clatters for roughly 20 seconds
 before the slip is finished. That's a long beat if the player is waiting on
 it and a good one if they're steering meanwhile. To shorten it, cut the
 body rather than the speed — or drop `columns` in `config.js`, which
