@@ -165,12 +165,11 @@
   </button>
 
   <!-- Teleprinter, stood on the dash top to starboard. It stays put: when a signal
-       comes in the lamp flashes and it prints a slip. Click the slip to read it;
-       drag it up to tear it off, and the next signal follows some time after. -->
+       comes in the lamp flashes and it prints a slip. Click the slip to read it. -->
   <div class="telex" id="telex">
     <div class="telex__feed">
       <button class="telex__slip" id="telexSlip" type="button" hidden disabled
-              aria-label="Signal slip: pick it up to read it, or drag it up (or press Up) to tear it off">
+              aria-label="Signal slip: pick it up to read it">
         <span class="telex__type" id="telexType"></span>
       </button>
     </div>
@@ -320,9 +319,6 @@
     </svg>
   </button>
 
-  <!-- Slips torn off the teleprinter, left wherever the player put them down -->
-  <div class="strewn" id="strewn"></div>
-
   <div class="gloom" aria-hidden="true"></div>
 </div>
 
@@ -435,7 +431,7 @@
   <button class="room__back" id="bookBack" type="button">Close the book</button>
 </div>
 
-<!-- <template id="art-lighthouse">
+<template id="art-lighthouse">
   <svg class="art art--lighthouse" viewBox="0 0 44 130" preserveAspectRatio="none">
     <path class="art__rock" d="M0 130 L5 114 L39 114 L44 130 Z"/>
     <path class="art__tower" d="M15 116 L17 38 L27 38 L29 116 Z"/>
@@ -443,7 +439,7 @@
     <rect class="art__lantern" x="14" y="24" width="16" height="14" rx="2"/>
     <path class="art__cap" d="M12 24 L22 12 L32 24 Z"/>
   </svg>
-</template> -->
+</template>
 
 <template id="art-buoy-port">
   <svg class="art art--buoy art--port" viewBox="0 0 26 78" preserveAspectRatio="none">
@@ -471,7 +467,7 @@
   </svg>
 </template>
 
-<!--<template id="art-freighter">
+<template id="art-freighter">
   <svg class="art art--freighter" viewBox="0 0 300 84" preserveAspectRatio="none">
     <path class="art__hull" d="M6 54 L294 54 L276 76 L24 76 Z"/>
     <rect class="art__box" x="54" y="36" width="42" height="18"/>
@@ -480,7 +476,7 @@
     <rect class="art__house" x="212" y="18" width="46" height="36"/>
     <rect class="art__stack" x="230" y="4" width="12" height="16"/>
   </svg>
-</template> -->
+</template>
 
 <!-- Things up in the sky, only made out through the glasses -->
 <template id="art-gull">
@@ -585,9 +581,6 @@
   </svg>
 </template>
 
-<!-- DEBUG: where the goal on the beach is. Remove once it needn't be seen. -->
-<!--<pre class="debug" id="debugGoal" aria-hidden="false"></pre> -->
-
 <script>
 (() => {
   'use strict';
@@ -621,9 +614,8 @@
   // ---- Teleprinter --------------------------------------------------------
   const TELEX_DIR    = '../Telex Machine Demo/';  // signal files and config.js
   const SIGNAL_FIRST = [8, 20];    // seconds before the first signal comes in
-  const SIGNAL_GAP   = [40, 120];  // seconds after one is torn off before the next
+  const SIGNAL_GAP   = [40, 120];  // seconds after one is put down before the next
   const LINE_FEED    = 0.16;       // seconds per line as the slip feeds out
-  const TEAR_PULL    = 30;         // px the slip must be pulled away before it tears
 
   // Sky colour by elevation, horizon to zenith
   const SKY_STOPS = [
@@ -668,14 +660,6 @@
     beach: [226, 210, 166],
     haze:  [200, 214, 216]
   };
-
-  // ---- The goal -----------------------------------------------------------
-  // A fixed spot on the beach, ten minutes' straight run at SPEED from the
-  // start. The shoals keep her COAST_OFF metres out, so coming within
-  // GOAL_REACH of it counts.
-  const GOAL_ALONG = 4505;             // metres north along the shore
-  const GOAL_UP    = 30;               // metres up the sand from the waterline
-  const GOAL_REACH = COAST_OFF + 150;  // metres
 
   // ---- Wavelets -----------------------------------------------------------
   // Drawn in bands by range, each band a lattice of small crests. Further out
@@ -734,7 +718,6 @@
   let sailing    = true;     // false while the Script holds the game still (title, intro, endings)
   const scripted = { signals: false, aircraft: false };   // the Script decides when these come
   const origin   = { x: boatX, y: boatY };  // (0, 0) on the position indicator
-  let goal       = null;     // { x, y, reached } in metres, like boatX and boatY; see placeGoal()
   const marks    = [];
   const skyClouds = [];      // the low clouds, as seen through the windscreen
 
@@ -798,7 +781,6 @@
     plate:   document.getElementById('headingPlate'),
     posX:    document.getElementById('posX'),
     posY:    document.getElementById('posY'),
-    //debug:   document.getElementById('debugGoal'),
     rudder:  document.getElementById('rudderNeedle'),
     logHand: document.getElementById('logNeedle'),
     logText: document.getElementById('logCounter')
@@ -1027,54 +1009,6 @@
     return Math.min(d, 60000);
   }
 
-  // ---- The goal -----------------------------------------------------------
-  function placeGoal() {
-    return { x: coastX(GOAL_ALONG) + GOAL_UP, y: GOAL_ALONG, reached: false };
-  }
-
-  function checkGoal() {
-    if (goal.reached || Math.hypot(goal.x - boatX, goal.y - boatY) > GOAL_REACH) return;
-    goal.reached = true;
-    console.info('[goal] reached');
-  }
-
-  // DEBUG: a flag on the goal, drawn over the land at a fixed size so it shows
-  // at any range. Remove it, and drawDebug(), once the goal needn't be seen.
-  /*function drawGoalMarker(ctx, v) {
-    const dx = goal.x - boatX;
-    const dy = goal.y - boatY;
-    const range = Math.hypot(dx, dy);
-    const rel = arc(v.look, Math.atan2(dx, dy) * DEG);
-    const x = v.cx + rel * v.z;
-    if (Math.abs(rel) > 90 || x < -60 || x > v.w + 60) return;
-    const y = v.horizonY + subtendH(EYE, range) * v.z;
-
-    ctx.save();
-    ctx.strokeStyle = ctx.fillStyle = goal.reached ? '#2bd65a' : '#ff2bd6';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.ellipse(x, y, 8, 2.5, 0, 0, Math.PI * 2);
-    ctx.moveTo(x, y);
-    ctx.lineTo(x, y - 46);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y - 46);
-    ctx.lineTo(x + 18, y - 40);
-    ctx.lineTo(x, y - 34);
-    ctx.closePath();
-    ctx.fill();
-
-    const label = 'GOAL ' + Math.round(range) + ' m';
-    ctx.font = '12px ui-monospace, Menlo, monospace';
-    ctx.textAlign = 'center';
-    const tw = ctx.measureText(label).width;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-    ctx.fillRect(x - tw / 2 - 4, y - 66, tw + 8, 17);
-    ctx.fillStyle = ctx.strokeStyle;
-    ctx.fillText(label, x, y - 53);
-    ctx.restore();
-  }*/
-
   // Land colour at range, going over to the haze
   function tint(rgb, d, alpha) {
     const t = Math.pow(clamp(d / LAND_HAZE, 0, 1), 0.6);
@@ -1089,7 +1023,6 @@
     drawSkyline(s.ctx, v);
     drawWaves(s.ctx, v);
     drawCoast(s.ctx, v);
-    //drawGoalMarker(s.ctx, v);   // DEBUG
   }
 
   // The horizon isn't a ruled line: the far swell lifts and settles along it.
@@ -1394,14 +1327,12 @@
       aground = warned;
       el.shoal.classList.toggle('is-shown', warned);
     }
-    checkGoal();
 
     for (const c of clouds) c.b = norm(c.b + WIND * dt);
 
     flyAircraft(sail);
     drawWorld();
     drawStation(rudder);
-    //drawDebug();   // DEBUG
     if (glassesUp) drawGlasses(dt);
     requestAnimationFrame(frame);
   }
@@ -1834,24 +1765,6 @@
       'rotate(' + ((miles % 1) * 360).toFixed(1) + ' 65 65)');
     el.logText.textContent = miles.toFixed(2);
   }
-
-  // DEBUG: the goal in the position indicator's terms, and how to steer for it.
-  // Remove with #debugGoal and drawGoalMarker().
-  /* function drawDebug() {
-    const dx = goal.x - boatX;
-    const dy = goal.y - boatY;
-    const brg = norm(Math.atan2(dx, dy) * DEG);
-    const off = arc(heading, brg);
-    const steer = Math.abs(off) < 1 ? 'dead ahead'
-      : Math.round(Math.abs(off)) + '° to ' + (off < 0 ? 'port' : 'starboard');
-    const text =
-      'GOAL  X ' + signed(goal.x - origin.x) + '  Y ' + signed(goal.y - origin.y) + '\n' +
-      Math.round(Math.hypot(dx, dy)) + ' m, bearing ' +
-      String(Math.round(brg) % 360).padStart(3, '0') + '° (' + steer + ')\n' +
-      (goal.reached ? 'REACHED' : 'reached within ' + GOAL_REACH + ' m');
-    if (el.debug.textContent !== text) el.debug.textContent = text;
-    el.debug.classList.toggle('is-reached', goal.reached);
-  } */
 
   // ---- Teleprinter --------------------------------------------------------
   // The machine never moves. Every so often a signal comes in: the lamp
@@ -2336,202 +2249,6 @@
     else if (browsing) closeLog();
   });
 
-  // Tearing the slip off. Until it tears it only strains against the machine,
-  // lifting and leaning toward the hand; past TEAR_PULL it comes away with a
-  // ragged edge and follows the hand. Let go, it lies where it was dropped,
-  // to be picked up and read, or dragged somewhere else.
-  function raggedEdge() {
-    const teeth = 14;
-    const pts = ['0 0', '100% 0'];
-    for (let i = teeth; i >= 0; i--) {
-      const bite = i % 2 ? between([2, 4]) : between([0, 1]);
-      pts.push((i / teeth * 100).toFixed(1) + '% calc(100% - ' + bite.toFixed(1) + 'px)');
-    }
-    return 'polygon(' + pts.join(', ') + ')';
-  }
-
-  // The torn-off piece: a copy of the slip, loose over the helm where it was
-  function tearOff() {
-    tx.slip.classList.remove('is-pulled');
-    tx.slip.style.transform = '';
-    const box  = tx.slip.getBoundingClientRect();
-    const deck = tx.strewn.getBoundingClientRect();
-
-    const piece = document.createElement('button');
-    piece.type = 'button';
-    piece.className = 'telex__torn is-held';
-    piece.setAttribute('aria-label',
-      'Torn-off signal: pick it up to read it, or drag it (or use the arrow keys) to move it');
-    // Placed and sized against the helm, so it stays put when the window changes
-    piece.style.left   = ((box.left - deck.left) / deck.width * 100).toFixed(2) + '%';
-    piece.style.top    = ((box.top - deck.top) / deck.height * 100).toFixed(2) + '%';
-    piece.style.height = (box.height / deck.height * 100).toFixed(2) + '%';
-    piece.style.aspectRatio = box.width.toFixed(1) + ' / ' + box.height.toFixed(1);
-    piece.style.zIndex = ++topSlip;
-    piece._text = printed;
-    piece._lean = piece._held = 0;
-
-    const paper = document.createElement('span');
-    paper.className = 'telex__slip';
-    paper.style.clipPath = raggedEdge();
-    const type = tx.type.cloneNode(true);
-    type.removeAttribute('id');
-    paper.appendChild(type);
-    piece.appendChild(paper);
-    tx.strewn.appendChild(piece);
-    strew(piece);
-
-    // Kept in place, only unseen, so it holds on to the pointer until let go
-    tx.slip.classList.add('is-torn');
-    if (unread) {
-      unread = false;
-      tx.root.classList.remove('is-calling');
-    }
-    return piece;
-  }
-
-  // In the hand: offset from where it was picked up, leaning with the drag
-  function holdPiece(piece, dx, dy) {
-    piece._held = clamp(piece._lean + dx * 0.12, -15, 15);
-    piece.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(' + piece._held.toFixed(1) + 'deg)';
-  }
-
-  // Put down anywhere on the helm below the deckhead, at the angle it was held
-  function layPiece(piece, left, top) {
-    const W = tx.strewn.clientWidth;
-    const H = tx.strewn.clientHeight;
-    left = clamp(left, 0, W - piece.offsetWidth);
-    top  = clamp(top, tx.roof.offsetHeight, H - piece.offsetHeight);
-    piece._lean = piece._held;
-    piece.classList.remove('is-held');
-    piece.style.left = (left / W * 100).toFixed(2) + '%';
-    piece.style.top  = (top / H * 100).toFixed(2) + '%';
-    piece.style.transform = 'rotate(' + piece._lean.toFixed(1) + 'deg)';
-  }
-
-  function dropPiece(piece, dx, dy) {
-    layPiece(piece, piece.offsetLeft + dx, piece.offsetTop + dy);
-  }
-
-  // The machine is empty again: start waiting for the next signal
-  function slipGone() {
-    tx.slip.hidden = true;
-    tx.slip.disabled = true;
-    tx.slip.classList.remove('is-torn');
-    printed = '';
-    expectSignal(SIGNAL_GAP);
-  }
-
-  // A drag that's barely moved is a click; one that has isn't
-  function startPull(ev, target, piece) {
-    pull = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, dx: 0, dy: 0, moved: false, piece };
-    justPulled = false;
-    target.setPointerCapture(ev.pointerId);
-  }
-
-  function pullMoved(ev) {
-    if (!pull || ev.pointerId !== pull.id) return false;
-    pull.dx = ev.clientX - pull.x;
-    pull.dy = ev.clientY - pull.y;
-    if (!pull.moved && Math.hypot(pull.dx, pull.dy) < 4) return false;
-    pull.moved = true;
-    return true;
-  }
-
-  function endPull(ev, target) {
-    if (!pull || ev.pointerId !== pull.id) return null;
-    const done = pull;
-    pull = null;
-    if (target.hasPointerCapture(ev.pointerId)) target.releasePointerCapture(ev.pointerId);
-    if (done.moved) {
-      justPulled = true;
-      setTimeout(() => { justPulled = false; }, 0);
-    }
-    return done;
-  }
-
-  tx.slip.addEventListener('pointerdown', ev => {
-    if (tx.slip.disabled || reading || pull || ev.button > 0) return;
-    startPull(ev, tx.slip, null);
-  });
-
-  tx.slip.addEventListener('pointermove', ev => {
-    if (!pullMoved(ev)) return;
-    const { dx, dy } = pull;
-    if (!pull.piece) {
-      const away = Math.hypot(dx, Math.min(0, dy));         // it won't push back into the machine
-      if (away < TEAR_PULL) {
-        const strain = away / TEAR_PULL;
-        tx.slip.classList.add('is-pulled');
-        tx.slip.style.transform = 'translateY(' + (-3 * strain).toFixed(1) + 'px) rotate(' +
-          clamp(dx * 0.3, -8, 8).toFixed(1) + 'deg)';
-        return;
-      }
-      pull.piece = tearOff();
-    }
-    holdPiece(pull.piece, dx, dy);
-  });
-
-  const letGoOfSlip = ev => {
-    const done = endPull(ev, tx.slip);
-    if (!done) return;
-    if (done.piece) {
-      dropPiece(done.piece, done.dx, done.dy);
-      slipGone();
-      done.piece.focus({ preventScroll: true });
-    } else if (done.moved) {
-      tx.slip.classList.remove('is-pulled');                 // springs back into place
-      tx.slip.style.transform = '';
-    }
-  };
-  tx.slip.addEventListener('pointerup', letGoOfSlip);
-  tx.slip.addEventListener('pointercancel', letGoOfSlip);
-
-  // From the keyboard, Up tears it straight off and lays it beside the machine
-  tx.slip.addEventListener('keydown', ev => {
-    if (ev.key !== 'ArrowUp' || tx.slip.disabled || pull) return;
-    ev.preventDefault();
-    const piece = tearOff();
-    piece._held = between([-8, 8]);
-    dropPiece(piece, -piece.offsetWidth * 1.8, piece.offsetHeight * 0.5);
-    slipGone();
-    piece.focus({ preventScroll: true });
-  });
-
-  // A slip that's been put down: click to read it, drag or arrow keys to move it
-  function strew(piece) {
-    piece.addEventListener('click', () => pickUpSlip(piece));
-
-    piece.addEventListener('pointerdown', ev => {
-      if (reading || pull || ev.button > 0) return;
-      piece.style.zIndex = ++topSlip;                        // the one picked up lies on top
-      startPull(ev, piece, piece);
-    });
-
-    piece.addEventListener('pointermove', ev => {
-      if (!pullMoved(ev)) return;
-      piece.classList.add('is-held');
-      holdPiece(piece, pull.dx, pull.dy);
-    });
-
-    const letGo = ev => {
-      const done = endPull(ev, piece);
-      if (done && done.moved) dropPiece(piece, done.dx, done.dy);
-    };
-    piece.addEventListener('pointerup', letGo);
-    piece.addEventListener('pointercancel', letGo);
-
-    const NUDGE = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
-    piece.addEventListener('keydown', ev => {
-      const step = NUDGE[ev.key];
-      if (!step || reading || pull) return;
-      ev.preventDefault();
-      const d = piece.offsetHeight * 0.25;
-      piece.style.zIndex = ++topSlip;
-      layPiece(piece, piece.offsetLeft + step[0] * d, piece.offsetTop + step[1] * d);
-    });
-  }
-
   // ---- Rulebook -----------------------------------------------------------
   // The book is its own page in its own folder (../Rulebook Demo), shown in
   // a frame over the helm. It loads the first time it's opened and is kept,
@@ -2753,12 +2470,9 @@
 
   loadScript(TELEX_DIR + 'config.js')
     .catch(() => {})
-    .then(() => loadScript(TELEX_DIR + 'course.js'))
-    .catch(e => console.error('[telex] could not load ' + e.message))
     .then(() => loadScript(TELEX_DIR + 'signals/manifest.js'))
     .catch(e => console.error('[telex] could not load ' + e.message));
 
-  goal = placeGoal();
   buildWorld(el.world, marks);
   buildWorld(gl.world, glassMarks);
   buildSky();

@@ -11,13 +11,9 @@ SERIAL:   NR 097
 PRIORITY: MOST IMMEDIATE
 TIME:     0902Z/31 MAY 40
 ---
-Dynamo closing. The last lift from the beaches is at 0300
-tomorrow. Small craft still on passage are to make this
-their last run in, then withdraw with whatever troops
-they have embarked.
+Dynamo closing. Last lift from the eastern mole at 0300
+tomorrow. All small craft still on the beaches to withdraw
+after this tide whatever their state of loading.
 
-{HELM}
-
-Hold {COURSE} for about {MINUTES} to reach {MARK}. Do not
-wait for stragglers. Do not return for a second trip.
+Do not wait for stragglers. Do not return.
 `);
