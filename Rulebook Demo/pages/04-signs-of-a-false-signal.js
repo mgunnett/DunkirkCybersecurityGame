@@ -1,3 +1,4 @@
+rulebookPage(String.raw`
 # Signs of a False Signal
 
 The enemy is careful and he is patient. His signals are not full of mistakes. Usually there is one thing wrong, placed where a tired man will not look. These are the tricks he is known to use.
@@ -25,3 +26,4 @@ Dover does change its orders, but it always says why. A signal that cancels your
 ## Unfamiliar forms
 
 Wrong priority words, times written in local hours instead of Z, courses given as words or points of the compass instead of three figures, and odd spellings of places are all signs that the writer has only studied our signals, not sent them.
+`);

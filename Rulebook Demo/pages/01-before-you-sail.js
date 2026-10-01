@@ -1,3 +1,4 @@
+rulebookPage(String.raw`
 # Before You Sail
 
 You have volunteered your vessel and yourself to bring the army home. You will not be told the whole of the plan, and you will not be told your destination in advance. Every course you steer will reach you by teleprinter, one signal at a time, from the Vice-Admiral at Dover.
@@ -15,3 +16,4 @@ Chapter Two shows how an honest signal is laid out, line by line. Chapter Three 
 ## Keep your own record
 
 Note the serial number and time of every signal you receive and act upon. The record is your best defence: most false signals are caught not by what they say, but because they do not fit with what came before.
+`);

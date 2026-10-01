@@ -1,10 +1,10 @@
 /* ==================================================================
    RULEBOOK — the book
    ------------------------------------------------------------------
-   Reads the chapters named in pages/contents.txt, sets them onto
+   Reads the chapters named in pages/contents.js, sets them onto
    pages that never overflow, and turns them two at a time.
 
-   To change what the book says, edit the .txt files in pages/.
+   To change what the book says, edit the .js files in pages/.
    You shouldn't need to touch this file. See README.md for the
    formatting rules.
    ================================================================== */
@@ -13,10 +13,10 @@
   'use strict';
 
   const PAGES     = 'pages/';
-  const CONTENTS  = 'contents.txt';
+  const CONTENTS  = 'contents.js';
   const TURN_MS   = 650;     // keep in step with --turn in rulebook.css
   const MIN_WORDS = 5;       // never strand fewer words than this at the top or foot of a page
-  const MIN_LINES = 2;       // the same, for ``` telex blocks
+  const MIN_LINES = 2;       // the same, for ~~~ telex blocks
 
   const $ = id => document.getElementById(id);
   const el = {
@@ -54,7 +54,7 @@
 
   // ---- Reading a chapter file ---------------------------------------------
   // Blank line: new paragraph. # heading, ## subheading, - list item,
-  // > boxed note, ``` telex block, === page break, // a note to yourself.
+  // > boxed note, ~~~ (or ```) telex block, === page break, // a note to yourself.
   // **bold** and *italic* inside any line.
   function parse(text, file) {
     const chapter = { file, title: '', titlePage: false, blocks: [] };
@@ -67,11 +67,11 @@
       let m;
 
       if (fence) {
-        if (/^```/.test(line)) { chapter.blocks.push(fence); fence = null; }
+        if (/^(```|~~~)/.test(line)) { chapter.blocks.push(fence); fence = null; }
         else fence.lines.push(line);
         continue;
       }
-      if (/^```/.test(line))       { flush(); fence = { type: 'pre', lines: [] }; continue; }
+      if (/^(```|~~~)/.test(line)) { flush(); fence = { type: 'pre', lines: [] }; continue; }
       if (line.trim() === '')      { flush(); continue; }
       if (/^\/\//.test(line))      { continue; }
       if (line === '@title-page')  { chapter.titlePage = true; continue; }
@@ -354,28 +354,31 @@
   });
 
   // ---- Loading the pages ---------------------------------------------------
-  async function getText(name) {
-    const res = await fetch(PAGES + name, { cache: 'no-cache' });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return res.text();
+  // Each file in pages/ is a script that hands its text to rulebookPage(),
+  // and contents.js hands over the list to rulebookContents(). Scripts load
+  // even from a page opened straight from disk, so no web server is needed.
+  const texts = new Map();                 // script URL -> the text it gave
+  let contentsList = null;
+  window.rulebookPage     = text => { texts.set(document.currentScript.src, String(text)); };
+  window.rulebookContents = list => { contentsList = list; };
+
+  // Resolves with the script's full URL once it has run; rejects if it
+  // couldn't be found.
+  function runScript(name) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = PAGES + name;
+      s.onload  = () => resolve(s.src);
+      s.onerror = () => reject(new Error('not found'));
+      document.head.appendChild(s);
+    });
   }
 
   // Problems are printed in the book itself, where you'll see them.
-  const cannotOpen = err => location.protocol === 'file:' ? `
+  const cannotOpen = () => `
 # The pages won't open
 
-This book reads its pages from the text files in the **pages** folder, and browsers don't let a page opened straight from your disk read other files.
-
-Open the game through a local web server instead:
-
-- In VS Code, install the **Live Server** extension, right-click the HTML file and choose **Open with Live Server**.
-- Or run **python -m http.server** in the project folder and visit **localhost:8000**.
-
-Once the game is hosted online this goes away by itself.
-` : `
-# The pages won't open
-
-The list of chapters, **pages/${CONTENTS}**, couldn't be read (${err.message}). Check the file is there and the name matches exactly.
+The list of chapters, **pages/${CONTENTS}**, couldn't be read. Check the file is there, that the name matches exactly, and that its list is wrapped in **rulebookContents([ ... ]);** with each name in quotes and a comma after it.
 `;
 
   const missing = name => `
@@ -384,18 +387,27 @@ The list of chapters, **pages/${CONTENTS}**, couldn't be read (${err.message}). 
 The contents list names **pages/${name}**, but that file couldn't be read. Check it exists and that the name in **${CONTENTS}** matches exactly, capitals included.
 `;
 
+  const broken = name => `
+# Chapter won't read
+
+**pages/${name}** was found, but its text didn't come through. The whole chapter must sit between the two backticks of **rulebookPage(String.raw\` ... \`);** and must not contain a backtick of its own. Use ~~~ rather than three backticks for a telex block.
+`;
+
   async function load() {
-    let list;
     try {
-      list = await getText(CONTENTS);
-    } catch (err) {
-      chapters = [parse(cannotOpen(err), CONTENTS)];
+      await runScript(CONTENTS);
+    } catch (err) { /* reported below */ }
+    if (!Array.isArray(contentsList)) {
+      chapters = [parse(cannotOpen(), CONTENTS)];
       return finish();
     }
 
-    const files = list.split(/\r?\n/).map(s => s.trim()).filter(s => s && !s.startsWith('#'));
+    const files = contentsList.map(s => String(s).trim()).filter(Boolean);
     chapters = await Promise.all(files.map(name =>
-      getText(name).then(t => parse(t, name)).catch(() => parse(missing(name), name))
+      runScript(name).then(
+        src => texts.has(src) ? parse(texts.get(src), name) : parse(broken(name), name),
+        () => parse(missing(name), name)
+      )
     ));
 
     const cover = chapters.find(c => c.titlePage && c.title);

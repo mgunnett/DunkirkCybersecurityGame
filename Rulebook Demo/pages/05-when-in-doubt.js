@@ -1,3 +1,4 @@
+rulebookPage(String.raw`
 # When in Doubt
 
 There will be times when you are not sure. The light is bad, the boat is rolling, and there are men in the water. Follow these rules.
@@ -15,3 +16,4 @@ If you find you have been following a false signal, do not panic and do not turn
 > Remember: the enemy's aim is not always to sink you. It is enough for him if you are late, lost, or in the wrong place when the men on the beach are waiting.
 
 Good luck, and God speed.
+`);

@@ -1,3 +1,4 @@
+rulebookPage(String.raw`
 # Glossary
 
 **Acknowledge by lamp.** Reply to a signal by flashing a signal lamp to the nearest naval vessel, never by wireless.
@@ -21,3 +22,4 @@
 **V.A. Dover.** Vice-Admiral, Dover: the only authority that sends you orders.
 
 **Wireless silence.** No radio transmissions of any kind. Transmitting gives your position away to the enemy.
+`);
