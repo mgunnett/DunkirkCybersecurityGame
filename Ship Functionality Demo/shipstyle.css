@@ -1155,12 +1155,13 @@ body {
 /* --- The slip, picked up and held close enough to read -------------------- */
 
 .signal {
+  --spine-w: clamp(40px, 4.6vw, 72px);   /* the rulebook peeking in at the right */
   position: fixed;
   inset: 0;
   z-index: 20;
   display: grid;
   place-items: center;
-  padding: 7vh 4vw;
+  padding: 7vh calc(var(--spine-w) + 4vw) 7vh 4vw;
   background: rgba(8, 4, 2, 0.72);
   opacity: 0;
   visibility: hidden;
@@ -1196,7 +1197,7 @@ body {
 /* Same brass fitting as the one that lowers the glasses */
 .signal__back {
   position: absolute;
-  right: 2.2vw;
+  right: calc(var(--spine-w) + 2.2vw);
   top: 2.2vh;
   padding: 0.45rem 0.9rem;
   font-family: var(--serif);
@@ -1216,6 +1217,58 @@ body {
   filter: brightness(1.1) drop-shadow(0 0 6px rgba(227, 198, 132, 0.6));
   transform: translateY(-1px);
   outline: none;
+}
+
+/* The rulebook's spine, the full height of the screen at its right edge, as if
+   the book were lying just beside the slip. Same leather as the book. */
+.signal__book {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--spine-w);
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-left: 1px solid #1f0806;
+  border-radius: 6px 0 0 6px;
+  background:
+    /* raised bands across the spine, near the head and the tail */
+    linear-gradient(180deg,
+      transparent 7%, #6a2a1b 7%, #2e0d08 8.2%, transparent 8.2%,
+      transparent 11%, #6a2a1b 11%, #2e0d08 12.2%, transparent 12.2%,
+      transparent 87.8%, #6a2a1b 87.8%, #2e0d08 89%, transparent 89%,
+      transparent 91.8%, #6a2a1b 91.8%, #2e0d08 93%, transparent 93%),
+    /* rounded, so lit down the middle */
+    linear-gradient(90deg, #2e0d08 0%, #5a2116 22%, #6a2a1b 45%, #4a1a12 75%, #2e0d08 100%);
+  box-shadow: -10px 0 22px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(227, 198, 132, 0.12);
+  cursor: pointer;
+  transform: translateX(100%);
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1), filter 0.2s ease;
+}
+
+.signal.is-open .signal__book { transform: translateX(0); }
+
+.signal.is-open .signal__book:hover,
+.signal.is-open .signal__book:focus-visible {
+  transform: translateX(-8px);
+  filter: brightness(1.12) drop-shadow(0 0 8px rgba(227, 198, 132, 0.35));
+  outline: none;
+}
+
+/* Title in gilt, running down the spine between two gilt rules */
+.signal__book-title {
+  writing-mode: vertical-rl;
+  padding: 1.2em 0;
+  border-top: 1px solid var(--brass-lit);
+  border-bottom: 1px solid var(--brass-lit);
+  font-family: var(--serif);
+  font-size: clamp(14px, calc(var(--spine-w) * 0.4), 26px);
+  letter-spacing: 0.35em;
+  color: var(--brass-lit);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+  pointer-events: none;
 }
 
 /* --- Rulebook, on the dash face to starboard of the wheel ----------------- */
@@ -1283,6 +1336,30 @@ body {
 
 .room--book .room__frame { background: transparent; }
 
+/* Opened from the telex: the slip on the left, the book beside it */
+.room__aside { display: none; }
+
+.room--with-aside {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  padding-left: 4vw;
+}
+
+.room--with-aside .room__aside {
+  display: block;
+  flex: 0 1 auto;
+  max-width: 40vw;
+  font-size: clamp(10px, min(2.1vh, 0.85vw), 16px);   /* leave the book room on smaller screens */
+  transition: none;
+}
+
+.room--with-aside .room__frame {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+
 /* Same brass fitting as the one that lowers the glasses */
 .room__back {
   position: absolute;
@@ -1313,6 +1390,7 @@ body {
   .telex.is-calling .tx__lamp { animation: none; fill: #ff7a33; }
   .signal__sheet { transition: none; }
   .room__frame { transition: none; transform: none; }
+  .signal__book { transition: none; }
   .art--gull,
   .art--plane .airscrew { animation: none; }
   .glasses__optic { transition: none; filter: none; }
@@ -1332,6 +1410,9 @@ body {
   .dial--stbd { right: 3%; }
   .wheel    { width: 80vw; bottom: -8%; }
   .speedplate { display: none; }
+  .signal   { --spine-w: 30px; }
+  .room--with-aside { flex-direction: column; align-items: stretch; padding: 7vh 4vw 0; }
+  .room--with-aside .room__aside { max-width: none; max-height: 30vh; font-size: 11px; }
 }
 
 /* Narrower than about 6:5 there's no room on the dash top between the binnacle

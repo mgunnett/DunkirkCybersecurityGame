@@ -353,12 +353,19 @@
      aria-label="Signal" aria-hidden="true">
   <pre class="signal__sheet" id="signalSheet"></pre>
   <button class="signal__back" id="signalBack" type="button">Put it down</button>
+  <!-- The rulebook's spine, peeking in at the right. Opens the book beside the slip. -->
+  <button class="signal__book" id="signalBook" type="button"
+          aria-label="Rulebook: open it beside the signal">
+    <span class="signal__book-title">RULEBOOK</span>
+  </button>
 </div>
 
 <!-- Reading the rulebook. The book stays in its own folder (../Rulebook Demo)
      and is loaded here the first time it's opened. -->
 <div class="room room--book" id="bookroom" role="dialog" aria-modal="true"
      aria-label="Reading the rulebook" aria-hidden="true">
+  <!-- A copy of the slip, shown beside the book when it's opened from the telex -->
+  <pre class="signal__sheet room__aside" id="bookSignal" aria-label="Signal"></pre>
   <iframe class="room__frame" id="bookFrame" title="Rulebook"
           data-src="../Rulebook Demo/index.html"></iframe>
   <button class="room__back" id="bookBack" type="button">Close the book</button>
@@ -1847,22 +1854,27 @@
   tx.slip.addEventListener('click', pickUpSlip);
   tx.back.addEventListener('click', putSlipDown);
   tx.view.addEventListener('click', ev => { if (ev.target === tx.view) putSlipDown(); });
+  // With the rulebook open over the slip, Escape closes only the book.
   window.addEventListener('keydown', ev => {
-    if (reading && ev.key === 'Escape') putSlipDown();
+    if (reading && ev.key === 'Escape' && !document.getElementById('bookroom').classList.contains('is-open')) putSlipDown();
   });
 
   // ---- Rulebook -----------------------------------------------------------
   // The book is its own page in its own folder (../Rulebook Demo), shown in
   // a frame over the helm. It loads the first time it's opened and is kept,
-  // so the reader's place isn't lost.
+  // so the reader's place isn't lost. Opened from the telex, it's shown with
+  // the slip beside it (see signalBook below).
   function room(ids, { focusInside = false } = {}) {
     const r = {
       open:  document.getElementById(ids.open),
       root:  document.getElementById(ids.root),
       frame: document.getElementById(ids.frame),
       back:  document.getElementById(ids.back),
+      aside: ids.aside ? document.getElementById(ids.aside) : null,
       up:    false
     };
+    const backLabel = r.back.textContent;
+    let opener = r.open;
 
     // Put the keyboard inside the frame, so the arrow keys turn the book's pages
     const settle = () => {
@@ -1870,9 +1882,14 @@
       else r.back.focus({ preventScroll: true });
     };
 
-    r.show = () => {
+    // beside: text to show next to the frame; from: where focus goes back to
+    r.show = ({ beside = '', from = r.open, backLabel: label = backLabel } = {}) => {
       if (r.up) return;
       r.up = true;
+      opener = from;
+      r.root.classList.toggle('room--with-aside', !!beside);
+      if (r.aside) { r.aside.textContent = beside; r.aside.scrollTop = 0; }
+      r.back.textContent = label;
       if (!r.frame.getAttribute('src')) {
         r.frame.addEventListener('load', settle, { once: true });
         r.frame.src = r.frame.dataset.src;
@@ -1887,17 +1904,26 @@
       r.up = false;
       r.root.classList.remove('is-open');
       r.root.setAttribute('aria-hidden', 'true');
-      r.open.focus({ preventScroll: true });
+      opener.focus({ preventScroll: true });
     };
 
-    r.open.addEventListener('click', r.show);
+    r.open.addEventListener('click', () => r.show());
     r.back.addEventListener('click', r.hide);
     return r;
   }
 
   const rooms = [
-    room({ open: 'rulebook', root: 'bookroom', frame: 'bookFrame', back: 'bookBack' }, { focusInside: true })
+    room({ open: 'rulebook', root: 'bookroom', frame: 'bookFrame', back: 'bookBack', aside: 'bookSignal' }, { focusInside: true })
   ];
+
+  // The spine peeking in beside the slip opens the book with the slip next to it.
+  // Closing the book goes back to the slip.
+  const signalBook = document.getElementById('signalBook');
+  signalBook.addEventListener('click', () => rooms[0].show({
+    beside: tx.sheet.textContent,
+    from: signalBook,
+    backLabel: 'Close rulebook'
+  }));
 
   // Escape while focus is out here on the helm page
   window.addEventListener('keydown', ev => {
