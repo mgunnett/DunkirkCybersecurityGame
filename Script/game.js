@@ -147,7 +147,7 @@
     if (debug.on) buttons.push(['Skip the intro', toVoyage, true]);
     setCard({
       kicker: 'Operation Dynamo · May 1940',
-      title: 'Dunkirk Telex',
+      title: 'Dunkirk',
       sub: 'Sail the Kestrel from Ramsgate to the beaches of Dunkirk. Your orders come by telex. Some of them are false.',
       buttons
     });
