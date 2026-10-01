@@ -139,10 +139,7 @@ function compose(sig) {
   if (sign) foot.push(sign);
   foot.push('NNNN');
 
-  /* Course marks such as {COURSE} are filled in now, as it prints.
-     There's no ship here, so course.js works from its own pretend boat. */
-  const body = window.TELEX_COURSE ? TELEX_COURSE.fill(sig.body || '') : sig.body || '';
-  const out = head.concat(wrap(body, w)).concat(foot).join('\n');
+  const out = head.concat(wrap(sig.body || '', w)).concat(foot).join('\n');
   return truthy(sig.raw) ? out : out.toUpperCase();
 }
 
