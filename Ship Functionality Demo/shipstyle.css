@@ -1269,8 +1269,12 @@ body {
 /* --- Rulebook, on the dash face to starboard of the wheel ----------------- */
 /* Same leather and gilt as the book it opens, in Rulebook Demo/rulebook.css */
 
+/* Centred in the gap between the wheel's rim and the patent log. The wheel is
+   centred and min(56vh, 62vw) wide, its grips 0.472 of that out from the hub;
+   the log sits 6vw from the right and is clamp(80px, 17vh, 140px) wide; the
+   book is 15vh tall at 150:200, so 11.25vh wide. */
 .rulebook {
-  right: 14%;
+  right: calc(28vw - 0.236 * min(56vh, 62vw) + clamp(80px, 17vh, 140px) / 2 - 5.625vh);
   bottom: 5%;
   height: 15%;
   aspect-ratio: 150 / 200;
