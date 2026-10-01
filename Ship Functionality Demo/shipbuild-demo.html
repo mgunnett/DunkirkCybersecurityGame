@@ -1827,7 +1827,8 @@
     return out;
   }
 
-  // Set a signal in teleprinter form, with the defaults from config.js
+  // Set a signal in teleprinter form, with the defaults from config.js.
+  // Course marks such as {COURSE} are worked out from where she is now (course.js).
   function compose(sig) {
     const cfg = Object.assign({
       ship: 'M.Y. KESTREL', callsign: 'GBKW', station: 'V.A. DOVER (DYNAMO)',
@@ -1844,7 +1845,13 @@
     head.push(bar);
     const sign = sig.sign !== undefined ? sig.sign : cfg.sign;
     const foot = sign ? [bar, sign, 'NNNN'] : [bar, 'NNNN'];
-    const out = head.concat(wrapText(sig.body || '', cfg.columns), foot).join('\n');
+    const body = window.TELEX_COURSE
+      ? TELEX_COURSE.fill(sig.body || '', {
+          x: boatX - origin.x, y: boatY - origin.y, heading,
+          goal: { x: goal.x - origin.x, y: goal.y - origin.y }
+        })
+      : sig.body || '';
+    const out = head.concat(wrapText(body, cfg.columns), foot).join('\n');
     const raw = typeof sig.raw === 'string' ? !/^(no|false|off|0|)$/i.test(sig.raw.trim()) : !!sig.raw;
     return raw ? out : out.toUpperCase();
   }
@@ -2223,6 +2230,8 @@
 
   loadScript(TELEX_DIR + 'config.js')
     .catch(() => {})
+    .then(() => loadScript(TELEX_DIR + 'course.js'))
+    .catch(e => console.error('[telex] could not load ' + e.message))
     .then(() => loadScript(TELEX_DIR + 'signals/manifest.js'))
     .catch(e => console.error('[telex] could not load ' + e.message));
 
