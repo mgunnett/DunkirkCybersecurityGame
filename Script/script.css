@@ -1,0 +1,314 @@
+/* ==========================================================================
+   DUNKIRK — the story's screens: dialogue box, title / intro / ending stage,
+   clock plate, debug panel, and the two marks it puts on the water.
+   Uses the helm's own colours and type from shipstyle.css (--brass etc.).
+
+   Stacking, front to back:
+     40  dialogue box     over everything, even the glasses and the book
+     30  debug panel
+     20  the helm's own views (glasses, telex slip, rulebook)
+     19  the stage        so the rulebook can open over the intro
+      9  clock plate
+   ========================================================================== */
+
+/* --- The dialogue box: a sheet of paper, like the telex slip ------------- */
+
+.story-line {
+  position: fixed;
+  left: 2.2vw;
+  bottom: calc(2.2vh + 3rem);           /* clear of the speed plate */
+  z-index: 40;
+  width: min(30rem, calc(100vw - 32px));
+  margin: 0;
+  padding: 0.85rem 1.1rem 0.95rem;
+  font-family: var(--serif);
+  font-size: clamp(15px, 1.9vh, 18px);
+  line-height: 1.45;
+  color: var(--ink);
+  background:
+    repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0 1px, rgba(0, 0, 0, 0) 1px 6px),
+    linear-gradient(90deg, #d6c79f 0%, #e8dcbe 5%, #efe5ca 50%, #e8dcbe 95%, #d6c79f 100%);
+  border-left: 4px solid var(--vermilion);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 14px 30px rgba(0, 0, 0, 0.55);
+}
+
+.story-line[hidden] { display: none; }
+.story-line.is-clickable { cursor: pointer; }
+
+.story-line__who {
+  margin: 0 0 0.2rem;
+  font-size: 0.72em;
+  font-variant: small-caps;
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+  color: var(--vermilion);
+}
+
+.story-line__text {
+  margin: 0;
+  min-height: 1.45em;
+  white-space: pre-line;
+}
+/* Narration: no speaker, set in italic */
+.story-line.is-narration { border-left-color: var(--brass-deep); }
+.story-line.is-narration .story-line__text { font-style: italic; }
+
+/* The whole line at once, for screen readers only */
+.story-line__said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.story-line__more {
+  margin: 0.35rem 0 0;
+  font-size: 0.7em;
+  letter-spacing: 0.06em;
+  text-align: right;
+  color: #7a6a4a;
+}
+
+.story-line__more[hidden] { display: none; }
+
+.story-line__choices {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+.story-line__choices:empty { display: none; }
+
+.story-line__choice {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(58, 44, 18, 0.35);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.story-line__choice span {
+  font-size: 0.75em;
+  font-weight: 700;
+  color: var(--vermilion);
+}
+
+.story-line__choice:hover,
+.story-line__choice:focus-visible {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: var(--brass-deep);
+  outline: none;
+}
+
+/* On the intro and ending screens: centre stage, a little larger */
+.story-line.is-staged {
+  left: 50%;
+  bottom: 9vh;
+  width: min(40rem, calc(100vw - 32px));
+  transform: translateX(-50%);
+  font-size: clamp(16px, 2.3vh, 21px);
+  padding: 1.1rem 1.4rem 1.2rem;
+}
+
+/* --- The stage: title, intro scenes, endings ---------------------------- */
+
+.story-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  padding: 18vh 16px 0;
+  background: rgba(10, 5, 3, 0.86);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.story-stage[hidden] { display: none; }
+
+.story-stage.is-title {
+  align-content: center;
+  padding-top: 0;
+}
+
+.story-stage__card {
+  max-width: 34rem;
+  text-align: center;
+  visibility: hidden;
+}
+
+.story-stage.has-card .story-stage__card { visibility: visible; }
+
+.story-stage__kicker {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(14px, 2vh, 17px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--brass-lit);
+}
+
+.story-stage__title {
+  margin: 0.4em 0 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(34px, 7vh, 64px);
+  line-height: 1.05;
+  color: var(--ivory);
+}
+
+.story-stage__title:empty,
+.story-stage__sub:empty { display: none; }
+
+.story-stage__sub {
+  margin: 1rem auto 0;
+  max-width: 28rem;
+  font-family: var(--serif);
+  font-size: clamp(15px, 2.1vh, 19px);
+  line-height: 1.5;
+  color: rgba(240, 231, 210, 0.82);
+}
+
+.story-stage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+  margin-top: 2rem;
+}
+
+.story-stage__actions:empty { display: none; }
+
+/* Same brass fitting as the helm's own buttons */
+.story-button {
+  padding: 0.6rem 1.4rem;
+  font-family: var(--serif);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: #3a2c12;
+  background: linear-gradient(180deg, var(--brass-lit), var(--brass));
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.story-button:hover,
+.story-button:focus-visible {
+  filter: brightness(1.1) drop-shadow(0 0 6px rgba(227, 198, 132, 0.6));
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.story-button--quiet {
+  color: var(--brass-lit);
+  background: transparent;
+  box-shadow: none;
+}
+
+/* --- The in-game clock ---------------------------------------------------- */
+
+.story-clock {
+  position: fixed;
+  top: 2.2vh;
+  left: 2.2vw;
+  z-index: 9;
+  margin: 0;
+  padding: 0.3rem 0.8rem;
+  font-family: var(--serif);
+  font-size: clamp(15px, 2.2vh, 20px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: #3a2c12;
+  background: linear-gradient(180deg, var(--brass-lit), var(--brass));
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.story-clock[hidden] { display: none; }
+
+/* --- Debug panel ---------------------------------------------------------- */
+
+.story-debug {
+  position: fixed;
+  top: calc(2.2vh + 3rem);
+  left: 2.2vw;
+  z-index: 30;
+  padding: 0.5rem 0.6rem;
+  font: 12px/1.4 var(--mono);
+  color: #e8e0cf;
+  background: rgba(8, 8, 8, 0.82);
+  border: 1px solid #555;
+  border-radius: 3px;
+}
+
+.story-debug[hidden] { display: none; }
+
+.story-debug__head {
+  margin: 0 0 0.3rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e3c684;
+}
+
+.story-debug__row {
+  display: flex;
+  gap: 0.3rem;
+  margin: 0 0 0.3rem;
+}
+
+.story-debug button,
+.story-debug input {
+  font: inherit;
+  color: inherit;
+  background: #222;
+  border: 1px solid #666;
+  border-radius: 2px;
+  padding: 0.1rem 0.45rem;
+}
+
+.story-debug button { cursor: pointer; }
+.story-debug button.is-on { background: #6a5320; border-color: #e3c684; }
+
+.story-debug__state {
+  margin: 0.2rem 0 0;
+  font: inherit;
+  white-space: pre;
+}
+
+/* --- Marks the story puts on the water -------------------------------------- */
+
+.lv__hull    { fill: #a3241c; }
+.lv__house   { fill: #e8e0cf; }
+.lv__mast    { fill: #3a3733; }
+.lv__lantern { fill: #2d2a26; stroke: var(--brass-lit); stroke-width: 2; }
+.lv__name    { fill: #f0e7d2; font: 700 15px sans-serif; letter-spacing: 1px; text-anchor: middle; }
+
+.kw__top,
+.kw__body    { fill: var(--starboard); }
+.kw__cage    { fill: #3a3733; }
+.kw__band    { fill: #f0e7d2; }
+.kw__name    { fill: #22454f; font: 700 7.5px sans-serif; text-anchor: middle; }
+
+/* --- Narrow screens ------------------------------------------------------- */
+
+@media (max-width: 620px) {
+  .story-line { left: 16px; bottom: calc(2.2vh + 2.6rem); }
+  .story-line.is-staged { left: 50%; bottom: 4vh; }
+  .story-stage { padding-top: 10vh; }
+}

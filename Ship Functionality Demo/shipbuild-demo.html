@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shipbuild Demo</title>
 <link rel="stylesheet" href="shipstyle.css">
+<link rel="stylesheet" href="../Script/script.css">
 </head>
 <body>
 
@@ -21,11 +22,14 @@
 
       <div class="horizon" id="horizon">
         <div class="sky"></div>
+        <div class="horizon__clouds" id="clouds"></div>
         <div class="air" id="air"></div>
         <div class="haze"></div>
         <div class="sea"></div>
         <div class="swell" id="swell"></div>
+        <canvas class="surface" id="surface"></canvas>
         <div class="world" id="world"></div>
+        <div class="air" id="air"></div>
       </div>
 
       <svg class="foredeck" viewBox="0 0 1000 260" preserveAspectRatio="none" aria-hidden="true">
@@ -85,6 +89,42 @@
     <rect class="brass" x="56" y="386" width="128" height="16" rx="3"/>
   </svg>
 
+  <!-- Position indicator, stood beside the binnacle. Reads metres from where she
+       started, which is (0, 0): X is east, Y is north. Same enamel as the telex. -->
+  <svg class="position" viewBox="0 0 170 120" role="img"
+       aria-label="Position indicator: metres from the start, X east and Y north">
+    <defs>
+      <linearGradient id="posEnamel" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="#4a5142"/>
+        <stop offset="0.4" stop-color="#33382f"/>
+        <stop offset="1" stop-color="#1e211c"/>
+      </linearGradient>
+    </defs>
+    <ellipse class="tx__shadow pos__footing" cx="85" cy="113" rx="80" ry="7"/>
+    <!-- Straps it hangs from on narrow screens, where it moves up to the deckhead -->
+    <g class="pos__hanger">
+      <rect class="brass" x="36" y="-140" width="7" height="158" rx="2"/>
+      <rect class="brass" x="127" y="-140" width="7" height="158" rx="2"/>
+    </g>
+
+    <path class="pos__shell" d="M18 14 L152 14 L164 106 L6 106 Z"/>
+    <path class="tx__edge" d="M21 17 L149 17"/>
+
+    <rect class="tx__plate" x="53" y="21" width="64" height="13" rx="2"/>
+    <text class="tx__letter" x="85" y="30.5">POSITION</text>
+
+    <rect class="pos__window" x="24" y="40" width="122" height="58" rx="3"/>
+    <text class="pos__axis" x="34" y="63">X</text>
+    <text class="pos__value" id="posX" x="136" y="64">+0000</text>
+    <path class="pos__rule" d="M30 71 L140 71"/>
+    <text class="pos__axis" x="34" y="89">Y</text>
+    <text class="pos__value" id="posY" x="136" y="90">+0000</text>
+    <path class="pos__sheen" d="M28 44 L70 44 L56 94 L28 94 Z"/>
+
+    <rect class="tx__foot" x="14" y="104" width="24" height="7" rx="2"/>
+    <rect class="tx__foot" x="132" y="104" width="24" height="7" rx="2"/>
+  </svg>
+
   <!-- Binoculars, stood on the dash top to port of the binnacle. Click to raise them. -->
   <button class="prop binoculars" id="binoculars" type="button"
           aria-label="Binoculars: raise them to look out" data-label="Binoculars">
@@ -125,10 +165,31 @@
     </svg>
   </button>
 
-  <!-- Teleprinter, stood on the dash top to starboard. Click to go to it.
-       The machine itself lives in ../Telex Machine Demo and opens over the helm. -->
-  <button class="prop telex" id="telex" type="button"
-          aria-label="Teleprinter: go to it to read signals" data-label="Teleprinter">
+  <!-- Teleprinter, stood on the dash top to starboard. It stays put: when a signal
+       comes in the lamp flashes and it prints a slip. Click the slip to read it. -->
+  <div class="telex" id="telex">
+    <div class="telex__feed">
+      <button class="telex__slip" id="telexSlip" type="button" hidden disabled
+              aria-label="Signal slip: pick it up to read it">
+        <span class="telex__type" id="telexType"></span>
+      </button>
+    </div>
+
+    <!-- The signal log. Read slips are filed in here. -->
+    <button class="telex__log" id="telexLog" type="button" aria-label="Signal log: nothing filed">
+      <svg viewBox="0 0 120 64" aria-hidden="true">
+        <ellipse class="log__shadow" cx="60" cy="58" rx="58" ry="5"/>
+        <path class="log__back" d="M14 14 L106 14 L116 56 L4 56 Z"/>
+        <path class="log__tabshape" d="M20 14 L22 8 L46 8 L48 14 Z"/>
+        <path class="log__flimsy" d="M20 10 L98 11 L104 50 L14 50 Z"/>
+        <path class="log__flimsy log__flimsy--2" d="M24 6 L92 8 L96 46 L20 46 Z"/>
+        <path class="log__cover" d="M10 22 L110 22 L118 58 L2 58 Z"/>
+        <rect class="log__label" x="42" y="30" width="36" height="10" rx="1"/>
+        <text class="log__letter" x="60" y="37.6">SIGNALS</text>
+        <use class="log__stamp" href="#sleuth" x="84" y="36" width="20" height="20"/>
+      </svg>
+      <span class="telex__count" id="telexCount" hidden>0</span>
+    </button>
     <svg viewBox="0 0 200 150" aria-hidden="true">
       <defs>
         <linearGradient id="txEnamel" x1="0" x2="0" y1="0" y2="1">
@@ -138,9 +199,6 @@
         </linearGradient>
       </defs>
       <ellipse class="tx__shadow" cx="100" cy="142" rx="96" ry="8"/>
-
-      <path class="tx__paper" d="M72 4 L128 4 L130 52 L70 52 Z"/>
-      <path class="tx__type" d="M78 13 L118 13 M78 20 L122 20 M78 27 L110 27 M78 34 L120 34 M78 41 L104 41"/>
 
       <path class="tx__lid" d="M34 46 L166 46 L172 64 L28 64 Z"/>
       <rect class="tx__platen" x="52" y="48" width="96" height="10" rx="5"/>
@@ -163,7 +221,7 @@
       <rect class="tx__foot" x="14" y="130" width="26" height="8" rx="2"/>
       <rect class="tx__foot" x="160" y="130" width="26" height="8" rx="2"/>
     </svg>
-  </button>
+  </div>
 
   <!-- Dash face with the working instruments -->
   <div class="dashface">
@@ -197,6 +255,7 @@
     </svg>
 
     <p class="speedplate">Half ahead &middot; 15 knots</p>
+    <p class="shoalplate" id="shoalPlate" role="status">Shoal water &middot; bear away to port</p>
   </div>
 
   <!-- Nearest thing to the eye: the wheel in your hands -->
@@ -224,12 +283,50 @@
     </g>
   </svg>
 
+  <!-- Rulebook, hung on the dash face to starboard of the wheel. Click to open it.
+       The book itself lives in ../Rulebook Demo; its pages are .js files there. -->
+  <button class="prop rulebook" id="rulebook" type="button"
+          aria-label="Rulebook: open it to read the rules" data-label="Rulebook">
+    <svg viewBox="0 0 150 200" aria-hidden="true">
+      <defs>
+        <linearGradient id="rbLeather" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#6a2a1b"/>
+          <stop offset="0.55" stop-color="#4a1a12"/>
+          <stop offset="1" stop-color="#2e0d08"/>
+        </linearGradient>
+      </defs>
+      <ellipse class="rb__shadow" cx="76" cy="193" rx="68" ry="6"/>
+
+      <path class="rb__pages" d="M24 14 L134 14 Q140 14 140 20 L140 180 Q140 186 134 186 L24 186 Z"/>
+      <path class="rb__leaves" d="M136 20 L136 180 M138 22 L138 178"/>
+
+      <rect class="rb__cover" x="10" y="8" width="124" height="176" rx="5"/>
+      <rect class="rb__spine" x="10" y="8" width="20" height="176" rx="4"/>
+      <path class="rb__band" d="M12 38 L28 38 M12 78 L28 78 M12 118 L28 118 M12 158 L28 158"/>
+      <path class="rb__sheen" d="M34 12 L60 12 L44 180 L34 180 Z"/>
+
+      <rect class="rb__gilt" x="38" y="20" width="84" height="152" rx="2"/>
+      <rect class="rb__gilt" x="42" y="24" width="76" height="144" rx="1"/>
+      <text class="rb__title" x="80" y="66">RULES</text>
+      <path class="rb__gilt" d="M60 76 L100 76"/>
+      <!-- A fouled anchor -->
+      <path class="rb__emblem" d="M80 94 L80 136 M70 102 L90 102 M66 124 Q68 138 80 138 Q92 138 94 124 M62 128 L66 122 L72 127 M98 128 L94 122 L88 127"/>
+      <circle class="rb__emblem" cx="80" cy="90" r="4"/>
+
+      <path class="brass" d="M134 8 L134 26 L118 8 Z"/>
+      <path class="brass" d="M134 184 L134 166 L118 184 Z"/>
+
+      <path class="rb__ribbon" d="M96 184 L96 198 L100 194 L104 198 L104 184 Z"/>
+    </svg>
+  </button>
+
   <div class="gloom" aria-hidden="true"></div>
 </div>
 
 <!-- Looking through the binoculars. Same sea, same heading, much closer. -->
 <div class="glasses" id="glasses" role="dialog" aria-modal="true"
      aria-label="Looking through the binoculars" aria-hidden="true">
+  <div class="glasses__probe" id="glassProbe" aria-hidden="true"></div>
   <div class="glasses__optic">
     <div class="glasses__cup glasses__cup--leather" aria-hidden="true"></div>
     <div class="glasses__cup glasses__cup--brass" aria-hidden="true"></div>
@@ -242,6 +339,7 @@
         <div class="glasses__clouds" id="glassClouds"></div>
         <div class="glasses__sea" id="glassSea"><div class="swell" id="glassSwell"></div></div>
         <div class="glasses__haze" id="glassHaze"></div>
+        <canvas class="surface" id="glassSurface"></canvas>
         <div class="world" id="glassWorld"></div>
         <div class="glasses__air" id="glassAir"></div>
       </div>
@@ -267,29 +365,80 @@
   </div>
 
   <button class="glasses__lower" id="glassLower" type="button">Lower glasses</button>
+  <!-- The rulebook's spine, peeking in at the right. Opens the book beside the glasses. -->
+  <button class="book-spine" id="glassBook" type="button"
+          aria-label="Rulebook: open it beside the glasses">
+    <span class="book-spine__title">RULEBOOK</span>
+  </button>
 </div>
 
-<!-- At the teleprinter. The machine stays in its own folder and is loaded here
-     as it stands, the first time you go to it, then kept so slips aren't lost. -->
-<div class="telexroom" id="telexroom" role="dialog" aria-modal="true"
-     aria-label="At the teleprinter" aria-hidden="true">
-  <iframe class="telexroom__frame" id="telexFrame" title="Teleprinter"
-          data-src="../Telex Machine Demo/index.html"></iframe>
-  <button class="telexroom__back" id="telexBack" type="button">Back to the helm</button>
+<!-- The slip off the teleprinter, picked up and held close enough to read -->
+<div class="signal" id="signal" role="dialog" aria-modal="true"
+     aria-label="Signal" aria-hidden="true">
+  <pre class="signal__sheet" id="signalSheet"></pre>
+  <button class="signal__back" id="signalBack" type="button">File it away</button>
 </div>
+
+<!-- The signal log: every slip that's been read and filed. Key and cipher
+     traffic is marked with the sleuth; picking a cipher lays its key beside it. -->
+<div class="log" id="log" role="dialog" aria-modal="true"
+     aria-labelledby="logTitle" aria-hidden="true">
+  <div class="log__folder">
+    <header class="log__head">
+      <h2 class="log__title" id="logTitle">Signal log</h2>
+      <p class="log__count" id="logCount">Nothing filed</p>
+      <div class="log__tabs" role="group" aria-label="Show">
+        <button class="log__tab" type="button" data-show="all" aria-pressed="true">All</button>
+        <button class="log__tab" type="button" data-show="plain" aria-pressed="false">Plain</button>
+        <button class="log__tab" type="button" data-show="cipher" aria-pressed="false">
+          <svg class="sleuth" aria-hidden="true"><use href="#sleuth"/></svg>Cipher
+        </button>
+      </div>
+    </header>
+    <div class="log__body">
+      <ol class="log__list" id="logList"></ol>
+      <div class="log__desk" id="logDesk"></div>
+    </div>
+  </div>
+  <button class="signal__back" id="logClose" type="button">Close the log</button>
+</div>
+
+<!-- The sleuth: marks key and cipher traffic in the log -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="sleuth" viewBox="0 0 64 64">
+    <path d="M8 27 C14 23 50 22 57 26 C52 29.5 13 30 8 27 Z"/>
+    <path d="M19 25 C18 17 21 10 26 8 C30 10.5 35 10.5 39 8 C44 10 46 17 45 25 Z"/>
+    <path style="fill:var(--sleuth-band, transparent)" d="M19.2 20.6 C28 19 37 19 44.8 20.6 L45 23.6 C37 22.2 28 22.2 19.1 23.6 Z"/>
+    <path d="M24 29 L22.4 33 L19.6 35.8 L22.4 36.8 L22 39.4 C23 42.4 27 43.4 31 43.4 L40 43.4 L42 29 Z"/>
+    <path d="M4 64 C5 53 11 47 20 44.5 L22 37 L30.5 46.5 L33.5 46.5 L42 37 L44.5 44.5 C54 47 59 53 60 64 Z"/>
+    <path style="fill:var(--sleuth-band, transparent)" d="M31.4 48 L32.6 48 L32.6 64 L31.4 64 Z"/>
+  </symbol>
+</svg>
 
 <!-- Artwork for things outside the window. Shapes here, colours in the stylesheet. -->
-<template id="art-land">
-  <svg class="art art--land" viewBox="0 0 600 120" preserveAspectRatio="none">
-    <path d="M0 120 L0 117 L44 104 L96 72 L152 88 L214 46 L268 70 L330 38 L392 72 L448 56 L508 86 L556 106 L600 117 L600 120 Z"/>
-  </svg>
-</template>
-
 <template id="art-island">
   <svg class="art art--island" viewBox="0 0 240 90" preserveAspectRatio="none">
     <path d="M0 90 L0 87 L38 76 L92 28 L140 58 L188 46 L240 87 L240 90 Z"/>
   </svg>
 </template>
+  <button class="signal__back" id="signalBack" type="button">Put it down</button>
+  <!-- The rulebook's spine, peeking in at the right. Opens the book beside the slip. -->
+  <button class="book-spine" id="signalBook" type="button"
+          aria-label="Rulebook: open it beside the signal">
+    <span class="book-spine__title">RULEBOOK</span>
+  </button>
+</div>
+
+<!-- Reading the rulebook. The book stays in its own folder (../Rulebook Demo)
+     and is loaded here the first time it's opened. -->
+<div class="room room--book" id="bookroom" role="dialog" aria-modal="true"
+     aria-label="Reading the rulebook" aria-hidden="true">
+  <!-- A copy of the slip, shown beside the book when it's opened from the telex -->
+  <pre class="signal__sheet room__aside" id="bookSignal" aria-label="Signal"></pre>
+  <iframe class="room__frame" id="bookFrame" title="Rulebook"
+          data-src="../Rulebook Demo/index.html"></iframe>
+  <button class="room__back" id="bookBack" type="button">Close the book</button>
+</div>
 
 <template id="art-lighthouse">
   <svg class="art art--lighthouse" viewBox="0 0 44 130" preserveAspectRatio="none">
@@ -471,6 +620,12 @@
   const CLOUDS     = 120;
   const SUN        = { bearing: 128, elev: 26, size: 10 };
 
+  // ---- Teleprinter --------------------------------------------------------
+  const TELEX_DIR    = '../Telex Machine Demo/';  // signal files and config.js
+  const SIGNAL_FIRST = [8, 20];    // seconds before the first signal comes in
+  const SIGNAL_GAP   = [40, 120];  // seconds after one is put down before the next
+  const LINE_FEED    = 0.16;       // seconds per line as the slip feeds out
+
   // Sky colour by elevation, horizon to zenith
   const SKY_STOPS = [
     [0,  [220, 232, 233]],
@@ -491,10 +646,44 @@
     { art: 'lighthouse',     x: -520, y:   900, w:  12, h:  42 },
     { art: 'freighter',      x: 1400, y: -1500, w: 180, h:  40 },
     { art: 'island',         x:  900, y:  1300, w: 700, h: 130 },
-    { art: 'island',         x:-1500, y:  -900, w: 600, h:  90 },
-    { art: 'land',           x:-1450, y:  1250, w:2000, h: 185 },
-    { art: 'land',           x:  500, y: -1750, w:2200, h: 175 }
+    { art: 'island',         x:-1500, y:  -900, w: 600, h:  90 }
+    //{ art: 'lighthouse',     x: -520, y:   900, w:  12, h:  42 },
+    //{ art: 'freighter',      x: 1400, y: -1500, w: 180, h:  40 },
   ];
+
+  // ---- The coast ----------------------------------------------------------
+  // The French shore, away to the east, running north and south out of sight.
+  // It isn't part of the repeating sea, and it can't be reached: the shoals
+  // hold you COAST_OFF metres off, and nothing out on the water stands on it.
+  const COAST_X    = 2600;   // metres east, give or take the bays
+  const COAST_OFF  = 450;    // how close the shoals let you come
+  const SHOAL_WARN = 250;    // metres short of that when the plate lights
+  const WOODS      = 900;    // the belt of trees behind the dunes, metres inland
+  const INLAND     = 3200;   // the ridge of hills behind that
+  const TOWN       = { from: 2900, to: 4700 };  // along the shore, metres north
+  const SMOKE      = { y: 3900, inland: 260, height: 1100 };  // the town is burning
+  const LAND_HAZE  = 16000;  // metres at which the land is lost in the haze
+  const EARTH      = 2 * 7.4e6;  // twice the earth's radius, with a little refraction
+  const LAND = {
+    hills: [96, 118, 108],
+    woods: [72, 90, 62],
+    dunes: [172, 160, 120],
+    grass: [118, 128, 90],
+    town:  [116, 108, 100],
+    beach: [226, 210, 166],
+    haze:  [200, 214, 216]
+  };
+
+  // ---- Wavelets -----------------------------------------------------------
+  // Drawn in bands by range, each band a lattice of small crests. Further out
+  // the rows close up and the crests shrink, so the sea reads as perspective.
+  const WAVE_ROW   = 15;     // px between rows where a band begins
+  const WAVE_GAP   = 80;     // px between crests along a row, near to
+  const WAVE_FAR   = 2600;   // metres; past this the sea is too fine to pick out
+  const WAVE_SET   = 0.35;   // metres a second the crests drift down-wind
+  const SKYLINE    = 0.07;   // degrees the far swell lifts the horizon, at most
+  const SEA_FAR    = [76, 124, 134];   // the sea's colour at the horizon (--sea-far)
+  const MIST       = [232, 240, 240];  // and the haze lying over it
 
   // ---- The sky, by true bearing and elevation in degrees ------------------
   // Too far off to shift as the boat moves. w and h are angular sizes.
@@ -538,7 +727,12 @@
   let horizonW   = 0;
   let horizonH   = 0;
   let roll       = 0;        // degrees, shared by the windscreen and the glasses
+  let aground    = false;    // up against the shoals
+  let sailing    = true;     // false while the Script holds the game still (title, intro, endings)
+  const scripted = { signals: false, aircraft: false };   // the Script decides when these come
+  const origin   = { x: boatX, y: boatY };  // (0, 0) on the position indicator
   const marks    = [];
+  const skyClouds = [];      // the low clouds, as seen through the windscreen
 
   let glassesUp  = false;
   let lookRel    = 0;        // degrees off the bow you're looking
@@ -548,8 +742,11 @@
   let peerX      = 0;
   let peerY      = 0;
   let sceneW     = 0;
+  let glassScale = 1;        // eyepieces' size against full screen; 1 unless the book is open beside them
   let sceneH     = 0;
   let hintTimer  = 0;
+  let glassRun   = 0;        // metres made good along the line you're looking,
+  let glassSlide = 0;        // and across it, so the water moves right in the glasses
   const held     = new Set();
   const glassMarks = [];
   const clouds   = [];
@@ -574,6 +771,8 @@
     haze:   document.getElementById('glassHaze'),
     world:  document.getElementById('glassWorld'),
     air:    document.getElementById('glassAir'),
+    surface: surface(document.getElementById('glassSurface')),
+    probe:  document.getElementById('glassProbe'),
     plate:  document.getElementById('glassPlate'),
     hint:   document.getElementById('glassHint'),
     ask:    document.getElementById('glassAsk'),
@@ -588,8 +787,13 @@
     world:   document.getElementById('world'),
     air:     document.getElementById('air'),
     swell:   document.getElementById('swell'),
+    clouds:  document.getElementById('clouds'),
+    surface: surface(document.getElementById('surface')),
+    shoal:   document.getElementById('shoalPlate'),
     card:    document.getElementById('compassCard'),
     plate:   document.getElementById('headingPlate'),
+    posX:    document.getElementById('posX'),
+    posY:    document.getElementById('posY'),
     rudder:  document.getElementById('rudderNeedle'),
     logHand: document.getElementById('logNeedle'),
     logText: document.getElementById('logCounter')
@@ -598,7 +802,12 @@
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const norm  = d => ((d % 360) + 360) % 360;
   const DEG   = 180 / Math.PI;
+  const within = ([lo, hi]) => lo + Math.random() * (hi - lo);   // seconds; between() below is ms
   const between = ([lo, hi]) => lo + Math.random() * (hi - lo);
+  const signed = v => {                          // -12.4 -> "−0012", for the position indicator
+    const n = Math.round(v);
+    return (n < 0 ? '−' : '+') + String(Math.abs(n)).padStart(4, '0');
+  };
 
   const hide = thing => {
     if (thing.shown) { thing.el.style.display = 'none'; thing.shown = false; }
@@ -665,11 +874,19 @@
       const e = 1 + Math.pow(rnd(), 2.2) * 36;   // most sit low
       const far = clamp(0.3 + e / 15, 0.35, 1);  // low clouds are further off
       const w = (3 + rnd() * 8) * far;
-      clouds.push({
+      const cloud = {
         el: node, shown: true,
         b: rnd() * 360, e,
         w, h: w * (0.26 + rnd() * 0.18) * clamp(e / 8, 0.45, 1)
-      });
+      };
+      clouds.push(cloud);
+
+      // The low ones show over the windscreen's horizon too
+      if (e < 16) {
+        const twin = node.cloneNode(true);
+        el.clouds.appendChild(twin);
+        skyClouds.push({ el: twin, shown: true, cloud });
+      }
     }
 
     SKY.forEach((item, i) => {
@@ -741,6 +958,321 @@
     ppd = horizonW / FOV;
     sceneW = gl.scene.clientWidth;
     sceneH = gl.scene.clientHeight;
+    glassScale = gl.probe.clientWidth / (gl.probe.clientHeight || 1) || 1;
+    fitSurface(el.surface, horizonW, horizonH);
+    fitSurface(gl.surface, sceneW, sceneH);
+  }
+
+  // ---- The sea surface and the coast --------------------------------------
+  // One canvas in the windscreen and one in the glasses, drawn with the same
+  // projection as the marks: `z` pixels per degree, the horizon at `horizonY`.
+
+  function surface(canvas) {
+    return { el: canvas, ctx: canvas.getContext('2d'), w: 0, h: 0 };
+  }
+
+  function fitSurface(s, w, h) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    s.w = w;
+    s.h = h;
+    s.el.width  = Math.max(1, Math.round(w * dpr));
+    s.el.height = Math.max(1, Math.round(h * dpr));
+    s.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  // Repeatable scatter, 0..1, from three whole numbers
+  function hash(a, b, c) {
+    let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(c | 0, 1274126177);
+    h = Math.imul(h ^ (h >>> 13), 1103515245);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+
+  // Smooth repeatable noise, 0..1, for the lie of the land
+  function noise(t, seed) {
+    const i = Math.floor(t);
+    const f = t - i;
+    const s = f * f * (3 - 2 * f);
+    return hash(i, seed, 0) * (1 - s) + hash(i + 1, seed, 0) * s;
+  }
+
+  // Where the shore runs, metres east, at `y` metres north
+  const coastX = y => COAST_X + 160 * Math.sin(y / 1100) + 70 * Math.sin(y / 430 + 2);
+
+  // How much of the town stands at `y`, 0..1, feathered at the ends
+  const townAt = y => clamp(Math.min(y - TOWN.from, TOWN.to - y) / 250, 0, 1);
+
+  // Height of the dunes, or the town's roofs, standing on the shore
+  function shoreH(y, town) {
+    const dune = 9 + 10 * noise(y / 260, 1) + 4 * noise(y / 60, 2);
+    if (town <= 0) return dune;
+    const lot = Math.floor(y / 26);
+    let roof = 6 + 14 * Math.pow(hash(lot, 3, 0), 1.5);
+    if (hash(lot, 4, 0) > 0.965) roof = 30 + 14 * hash(lot, 5, 0);   // belfries, cranes
+    return dune + (Math.max(dune, roof) - dune) * town;
+  }
+
+  const hillH  = y => 55 + 95 * noise(y / 1700, 5) + 25 * noise(y / 450, 6);
+  const woodsH = y => 16 + 10 * noise(y / 40, 7) + 5 * noise(y / 11, 8);   // lumpy, like treetops
+
+  // Range along a bearing to the shore, or to the hills `off` metres inland
+  function reach(sinB, cosB, off) {
+    let d = (COAST_X + off - boatX) / sinB;
+    if (sinB > 0.3) {                            // steep enough for the bays to settle
+      for (let k = 0; k < 3; k++) d = (coastX(boatY + d * cosB) + off - boatX) / sinB;
+    }
+    return Math.min(d, 60000);
+  }
+
+  // Land colour at range, going over to the haze
+  function tint(rgb, d, alpha) {
+    const t = Math.pow(clamp(d / LAND_HAZE, 0, 1), 0.6);
+    const c = rgb.map((v, k) => Math.round(v + (LAND.haze[k] - v) * t));
+    return alpha === undefined ? 'rgb(' + c + ')' : 'rgba(' + c + ',' + alpha.toFixed(3) + ')';
+  }
+
+  const mix = (a, b, t) => a.map((v, k) => v + (b[k] - v) * t);
+
+  function drawSurface(s, v) {
+    s.ctx.clearRect(0, 0, s.w, s.h);
+    drawSkyline(s.ctx, v);
+    drawWaves(s.ctx, v);
+    drawCoast(s.ctx, v);
+  }
+
+  // The horizon isn't a ruled line: the far swell lifts and settles along it.
+  // Tied to true bearing, so it slides by as you turn; in degrees, so the
+  // glasses show the same swell, only bigger.
+  function drawSkyline(ctx, v) {
+    const t = stillness.matches ? 0 : clock;
+    const STEP = 4;
+    ctx.beginPath();
+    ctx.moveTo(-STEP, v.horizonY + 1);
+    for (let x = -STEP; x <= v.w + STEP; x += STEP) {
+      const b = v.lookU + (x - v.cx) / v.z;
+      const lift = 1 +
+        0.55 * Math.sin(b * 0.9 + t * 0.45) +
+        0.30 * Math.sin(b * 2.3 - t * 0.7 + 1.3) +
+        0.15 * Math.sin(b * 5.1 + t * 1.1 + 4);
+      ctx.lineTo(x, v.horizonY - lift * SKYLINE * v.z);
+    }
+    ctx.lineTo(v.w + STEP, v.horizonY + 1);
+    ctx.closePath();
+    ctx.fillStyle = 'rgb(' + mix(SEA_FAR, MIST, v.mist).map(Math.round) + ')';
+    ctx.fill();
+  }
+
+  // Small crests, catching the light, rolling towards you as she makes way.
+  // Rows lie across the line of sight; each band of range has its own lattice,
+  // and the bands overlap a little so one hands over to the next unseen.
+  function drawWaves(ctx, v) {
+    const f = v.z * DEG;                         // pixels per radian
+    const fq = Math.pow(2, Math.round(Math.log2(f)));   // zoom in steps so the pattern holds
+    const dipMax = (v.h - v.horizonY) / v.z;
+    if (dipMax <= 0) return;
+    const uNear = EYE / Math.tan(Math.min(dipMax, 60) / DEG);
+    const still = stillness.matches;
+    const lookRad = v.lookU / DEG;
+    const spanRad = v.span / DEG;
+    const paths = new Map();
+    const path = key => {
+      let p = paths.get(key);
+      if (!p) paths.set(key, p = { light: new Path2D(), dark: new Path2D() });
+      return p;
+    };
+    const foam = new Path2D();
+
+    for (let b = 0; b < 13; b++) {
+      const u0 = Math.pow(2, b);                 // this band starts u0 metres off
+      const u1 = u0 * 2;
+      const uEnd = u1 * 1.25;
+      if (uEnd < uNear || u0 > WAVE_FAR) continue;
+
+      const du = WAVE_ROW * u0 * u0 / (EYE * fq);                     // metres between rows
+      const dA = WAVE_GAP / fq * Math.sqrt(16 * fq / 1024 / u0);      // radians between crests
+      const nLo = Math.ceil((Math.max(u0, uNear * 0.9) + v.travel) / du);
+      const nHi = Math.floor((Math.min(uEnd, WAVE_FAR) + v.travel) / du);
+
+      for (let n = nLo; n <= nHi; n++) {
+        const uRow = n * du - v.travel;
+        let fade = 1;
+        if (b > 0 && uRow < u0 * 1.25) fade = (uRow - u0) / (u0 * 0.25);
+        if (uRow > u1) fade = Math.min(fade, (uEnd - uRow) / (u1 * 0.25));
+        if (fade <= 0.02) continue;
+
+        const far = clamp(1.15 - Math.log2(uRow / 20) / 7, 0.15, 1);
+        const drift = ((still ? 0 : WAVE_SET * clock) + v.slide) / uRow;
+        const jLo = Math.floor((lookRad - spanRad - drift) / dA);
+        const jHi = Math.ceil((lookRad + spanRad - drift) / dA);
+
+        for (let j = jLo; j <= jHi; j++) {
+          const r1 = hash(b, n, j * 6);
+          const r2 = hash(b, n, j * 6 + 1);
+          const r3 = hash(b, n, j * 6 + 2);
+          const r4 = hash(b, n, j * 6 + 3);
+
+          const ang = (j + (r1 - 0.5) * 0.8) * dA + drift;            // radians, true
+          const u = uRow + (r2 - 0.5) * 0.9 * du;
+          const x = v.cx + (ang - lookRad) * f;
+          const y = v.horizonY + subtendH(EYE, u) * v.z;
+          if (y > v.h + 4) continue;
+
+          const W = clamp(dA * f * (0.3 + 0.35 * r3) * (u0 * 1.1 / u), 1.5, 90);
+          const A = Math.min(Math.max(0.5, W * 0.9 * EYE / u), W * 0.25);
+
+          const swell = still ? 0.8 : 0.55 + 0.45 * Math.sin(clock * (0.9 + 1.3 * r4) + r1 * 40);
+          const sun = Math.exp(-Math.pow(arc(SUN.bearing, ang * DEG) / 9, 2));
+          const alpha = Math.min(1, 0.55 * far * fade * swell * swell * (1 + 1.6 * sun));
+          const level = Math.min(5, Math.floor(alpha * 6));
+          if (level < 1) continue;
+
+          const p = path(level * 2 + (W > 24 ? 1 : 0));
+          p.light.moveTo(x - W / 2, y);
+          p.light.quadraticCurveTo(x, y - A * 2, x + W / 2, y);
+          if (W > 8) {                           // a trough under it, where there's room to see one
+            p.dark.moveTo(x - W * 0.4, y + A + 0.6);
+            p.dark.quadraticCurveTo(x, y + A * 0.2, x + W * 0.4, y + A + 0.6);
+          }
+
+          // Now and then one breaks: a fleck of white
+          if (r3 < 0.05 && u < 300 && swell > 0.9) {
+            foam.moveTo(x + W * 0.3, y - A);
+            foam.ellipse(x, y - A, W * 0.3, Math.max(0.7, A * 0.9), 0, 0, Math.PI * 2);
+          }
+        }
+      }
+    }
+
+    for (const [key, p] of paths) {
+      const a = ((key >> 1) + 0.5) / 6;
+      ctx.lineWidth = key & 1 ? 1.8 : 1.1;
+      ctx.strokeStyle = 'rgba(12, 40, 50, ' + (a * 0.5).toFixed(3) + ')';
+      ctx.stroke(p.dark);
+      ctx.strokeStyle = 'rgba(236, 246, 246, ' + a.toFixed(3) + ')';
+      ctx.stroke(p.light);
+    }
+    ctx.fillStyle = 'rgba(245, 250, 250, 0.75)';
+    ctx.fill(foam);
+  }
+
+  // The coast, sampled across the view a few pixels at a time: hills furthest
+  // back, the smoke over the town, the woods, then dunes and roofs, the beach
+  // and the surf.
+  function drawCoast(ctx, v) {
+    const STEP = 3;
+    const stretches = [];
+    let open = null;
+
+    for (let x = -STEP; x <= v.w + STEP; x += STEP) {
+      const b = (v.look + (x - v.cx) / v.z) / DEG;
+      const sinB = Math.sin(b);
+      const cosB = Math.cos(b);
+      if (sinB < 0.005) { open = null; continue; }  // not looking towards the land
+
+      const d  = reach(sinB, cosB, 0);
+      const dW = reach(sinB, cosB, WOODS);
+      const d2 = reach(sinB, cosB, INLAND);
+      const y  = boatY + d * cosB;
+      const town = townAt(y);
+      const water = v.horizonY + subtendH(EYE, d) * v.z;
+      // Far along the shore the land sinks over the curve of the earth,
+      // so the coast tapers away into the horizon rather than stopping dead.
+      const above = (h, r) => subtendH(Math.max(0, h - r * r / EARTH), r) * v.z;
+      const standing = (h, r) => v.horizonY + subtendH(EYE, r) * v.z - above(h, r);
+      const col = {
+        x, d, dW, d2, town, water,
+        shore: water - above(shoreH(y, town), d),
+        beach: water - above(2.4, d),
+        woods: standing(woodsH(boatY + dW * cosB), dW),
+        hill:  standing(hillH(boatY + d2 * cosB), d2)
+      };
+      if (!open) stretches.push(open = []);
+      open.push(col);
+    }
+
+    const band = (cols, top, bottom, fill) => {
+      ctx.beginPath();
+      ctx.moveTo(cols[0].x, top(cols[0]));
+      for (let i = 1; i < cols.length; i++) ctx.lineTo(cols[i].x, top(cols[i]));
+      for (let i = cols.length - 1; i >= 0; i--) ctx.lineTo(cols[i].x, bottom(cols[i]));
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+    };
+
+    const edge = (cols, at, stroke, width) => {
+      ctx.beginPath();
+      ctx.moveTo(cols[0].x, at(cols[0]));
+      for (let i = 1; i < cols.length; i++) ctx.lineTo(cols[i].x, at(cols[i]));
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = width;
+      ctx.stroke();
+    };
+
+    // Colours change slowly with range, so a stop every few columns will do
+    const across = (cols, colour) => {
+      const x0 = cols[0].x;
+      const x1 = Math.max(cols[cols.length - 1].x, x0 + 1);
+      const g = ctx.createLinearGradient(x0, 0, x1, 0);
+      for (let i = 0; i < cols.length; i += 6) g.addColorStop((cols[i].x - x0) / (x1 - x0), colour(cols[i]));
+      g.addColorStop(1, colour(cols[cols.length - 1]));
+      return g;
+    };
+
+    for (const cols of stretches) {
+      if (cols.length < 2) continue;
+      band(cols, c => c.hill, c => c.water, across(cols, c => tint(LAND.hills, c.d2)));
+    }
+
+    drawSmoke(ctx, v);
+
+    for (const cols of stretches) {
+      if (cols.length < 2) continue;
+      band(cols, c => c.woods, c => c.water, across(cols, c => tint(LAND.woods, c.dW)));
+      band(cols, c => c.shore, c => c.water,
+        across(cols, c => tint(mix(LAND.dunes, LAND.town, c.town), c.d)));
+
+      // Dune faces darken towards their feet, where the light doesn't reach
+      let top = Infinity, foot = -Infinity;
+      for (const c of cols) { top = Math.min(top, c.shore); foot = Math.max(foot, c.water); }
+      if (foot - top > 3) {
+        const shade = ctx.createLinearGradient(0, top, 0, foot);
+        shade.addColorStop(0, 'rgba(40, 34, 20, 0)');
+        shade.addColorStop(1, 'rgba(40, 34, 20, 0.22)');
+        band(cols, c => c.shore, c => c.water, shade);
+      }
+      edge(cols, c => c.shore, across(cols, c => tint(mix(LAND.grass, LAND.town, c.town), c.d)), 1.4);
+      band(cols, c => c.beach, c => c.water, across(cols, c => tint(LAND.beach, c.d)));
+      edge(cols, c => c.water,
+        across(cols, c => 'rgba(242, 248, 248, ' + (0.85 * (1 - clamp(c.d / 9000, 0, 1))).toFixed(3) + ')'), 1.2);
+    }
+  }
+
+  // Smoke from the town, leaning away down-wind over the water
+  function drawSmoke(ctx, v) {
+    const baseX = coastX(SMOKE.y) + SMOKE.inland;
+    const PUFFS = 16;
+    for (let i = PUFFS - 1; i >= 0; i--) {
+      const t = i / (PUFFS - 1);
+      const up = t * SMOKE.height;
+      const px = baseX - up * 0.9 - boatX;
+      const py = SMOKE.y - up * 0.3 - boatY;
+      const range = Math.hypot(px, py);
+      const rel = arc(v.look, Math.atan2(px, py) * DEG);
+      const r = subtendW(70 + up * 0.5, range) * v.z * (1 + 0.08 * Math.sin(clock * 0.3 + i));
+      if (Math.abs(rel) * v.z > v.w / 2 + r) continue;
+
+      const x = v.cx + rel * v.z;
+      const y = v.horizonY + (subtendH(EYE, range) - subtendH(up, range)) * v.z;
+      const a = 0.45 * (1 - t * 0.7) * (1 - 0.8 * clamp(range / LAND_HAZE, 0, 1));
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, 'rgba(52, 48, 46, ' + a.toFixed(3) + ')');
+      g.addColorStop(0.6, 'rgba(70, 66, 64, ' + (a * 0.55).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(90, 88, 86, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // ---- Steering: pointer only ---------------------------------------------
@@ -788,19 +1320,32 @@
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
     clock += dt;
+    const sail = sailing ? dt : 0;               // held still: she neither turns nor makes way
 
     const rudder = clamp(wheelAngle / (WHEEL_STOP / RUDDER_MAX), -RUDDER_MAX, RUDDER_MAX);
-    const turn = rudder * TURN_GAIN * dt;
+    const turn = rudder * TURN_GAIN * sail;
     heading = norm(heading + turn);
     swung  += turn;
 
     // She never stops: always a step forward along the current heading.
     const rad = heading / DEG;
-    boatX += Math.sin(rad) * SPEED * dt;
-    boatY += Math.cos(rad) * SPEED * dt;
-    run   += SPEED * dt;
+    boatX += Math.sin(rad) * SPEED * sail;
+    boatY += Math.cos(rad) * SPEED * sail;
+    run   += SPEED * sail;
 
+    // The shoals off the French coast: she slides along them and gets no closer
+    const limit = coastX(boatY) - COAST_OFF;
+    if (boatX > limit) boatX = limit;
+    const warned = boatX > limit - SHOAL_WARN;
+    if (warned !== aground) {
+      aground = warned;
+      el.shoal.classList.toggle('is-shown', warned);
+    }
+
+    for (const c of clouds) c.b = norm(c.b + WIND * dt);
     flyAircraft(dt);
+
+    flyAircraft(sail);
     drawWorld();
     drawStation(rudder);
     if (glassesUp) drawGlasses(dt);
@@ -811,8 +1356,9 @@
   // `scale` is pixels per degree; `edge` is how far off-centre is still in view.
   function placeMarks(list, look, scale, centre, waterline, edge) {
     for (const m of list) {
-      const dx = wrap(m.x - boatX);
+      let dx = wrap(m.x - boatX);
       const dy = wrap(m.y - boatY);
+      if (boatX + dx > coastX(boatY + dy) - 60) dx -= WORLD;   // never on the land: the copy out to sea
       const range = Math.max(Math.hypot(dx, dy), 12);
       const rel = arc(look, Math.atan2(dx, dy) * DEG);
       const angW = Math.min(subtendW(m.w, range), 150);
@@ -852,7 +1398,37 @@
   }
 
   function drawWorld() {
-    placeMarks(marks, heading, ppd, horizonW / 2, horizonH * 0.46, FOV / 2 + 4);
+    const cx = horizonW / 2;
+    const horizonY = horizonH * 0.54;           // from the top of the layer
+    placeMarks(marks, heading, ppd, cx, horizonH - horizonY, FOV / 2 + 4);
+
+    for (const s of skyClouds) {
+      const c = s.cloud;
+      const rel = arc(heading, c.b);
+      const y = horizonY - c.e * ppd;
+      if (Math.abs(rel) > FOV / 2 + c.w / 2 || y < -c.h * ppd) {
+        if (s.shown) { s.el.style.display = 'none'; s.shown = false; }
+        continue;
+      }
+      if (!s.shown) { s.el.style.display = 'block'; s.shown = true; }
+      s.el.style.left   = (cx + rel * ppd) + 'px';
+      s.el.style.top    = y + 'px';
+      s.el.style.width  = (c.w * ppd) + 'px';
+      s.el.style.height = (c.h * ppd) + 'px';
+    }
+
+    if (plane) {
+      hang(silhouette, heading, plane.b, plane.e, plane.type.w, plane.type.h,
+           ppd, cx, horizonY, FOV / 2, horizonH);
+    }
+
+    // Hidden behind the glasses when they're up, so spare the drawing
+    if (!glassesUp) {
+      drawSurface(el.surface, {
+        w: horizonW, h: horizonH, cx, horizonY, z: ppd, look: heading,
+        lookU: swung, span: FOV / 2 + 4, travel: run, slide: 0, mist: 0.24
+      });
+    }
 
     if (plane) {
       hang(silhouette, heading, plane.b, plane.e, plane.type.w, plane.type.h,
@@ -897,7 +1473,7 @@
     lookRel = arc(0, lookRel);
     pitch   = clamp(pitch, PITCH_MIN, PITCH_MAX);
 
-    const z = ppd * mag;                         // pixels per degree through the glass
+    const z = ppd * mag * glassScale;            // pixels per degree through the glass
     const cx = sceneW / 2;
     const cy = sceneH / 2;
     const look = norm(heading + lookRel);
@@ -924,10 +1500,7 @@
 
     place(sun, SUN.bearing, SUN.elev, SUN.size, SUN.size);
 
-    for (const c of clouds) {
-      c.b = norm(c.b + WIND * dt);
-      place(c, c.b, c.e, c.w, c.h);
-    }
+    for (const c of clouds) place(c, c.b, c.e, c.w, c.h);
 
     for (const f of flyers) {
       const it = f.item;
@@ -939,6 +1512,13 @@
     if (plane) place(plane.type, plane.b, plane.e, plane.type.w, plane.type.h);
 
     placeMarks(glassMarks, look, z, cx, sceneH - horizonY, spanX + 4);
+
+    glassRun   += SPEED * dt * Math.cos(lookRel / DEG);
+    glassSlide += SPEED * dt * Math.sin(lookRel / DEG);
+    drawSurface(gl.surface, {
+      w: sceneW, h: sceneH, cx, horizonY, z, look,
+      lookU: swung + lookRel, span: spanX + 2, travel: glassRun, slide: glassSlide, mist: 0.7
+    });
 
     // Held in the hand on a moving deck: a little tremor, and the boat's roll
     if (stillness.matches) {
@@ -961,16 +1541,17 @@
   // ---- Aircraft ------------------------------------------------------------
   // Send one over, German or British at random, in from just out of sight to one side.
   // It crosses ahead of the bow low over the horizon, where you can see it from the helm.
-  function launchAircraft() {
-    const type = sprites[Math.floor(Math.random() * sprites.length)];
+  function launchAircraft(art) {
+    const type = sprites.find(s => s.art === art) || sprites[Math.floor(Math.random() * sprites.length)];
     const side = Math.random() < 0.5 ? -1 : 1;
     plane = {
       type,
       b: norm(heading + side * PLANE_ENTER),
-      e: between(PLANE_ELEV),
+      e: within(PLANE_ELEV),
       dir: -side,
       flown: 0,
       spotted: false,
+      asking: false,
       hold: 0,
       fade: 0
     };
@@ -1047,13 +1628,17 @@
   for (const b of gl.answers) b.addEventListener('click', () => answerSide(b));
 
   function retireAircraft() {
+    gl.root.dispatchEvent(new CustomEvent('aircraftgone', {
+      bubbles: true,
+      detail: { aircraft: plane.type.art, spotted: plane.spotted }
+    }));
     closeAsk();
     for (const thing of [silhouette, plane.type]) {
       hide(thing);
       thing.el.classList.remove('is-target', 'is-spotted');
     }
     plane = null;
-    planeWait = between(PLANE_GAP);
+    planeWait = within(PLANE_GAP);
     delete gl.root.dataset.aircraft;
   }
 
@@ -1061,6 +1646,7 @@
   // a while later another comes over.
   function flyAircraft(dt) {
     if (!plane) {
+      if (scripted.aircraft) return;             // only when the Script sends one
       planeWait -= dt;
       if (planeWait <= 0) launchAircraft();
       return;
@@ -1102,6 +1688,7 @@
 
   function lowerGlasses() {
     if (!glassesUp) return;
+    if (gl.root.classList.contains('is-with-book')) rooms[0].hide();   // the book goes down with them
     glassesUp = false;
     if (plane && plane.asking) unspotAircraft();
     peering = false;
@@ -1129,7 +1716,7 @@
 
   gl.field.addEventListener('pointermove', ev => {
     if (!peering) return;
-    const z = ppd * mag;
+    const z = ppd * mag * glassScale;
     lookRel -= (ev.clientX - peerX) / z;
     pitch   += (ev.clientY - peerY) / z;
     peerX = ev.clientX;
@@ -1160,7 +1747,11 @@
 
   window.addEventListener('keydown', ev => {
     if (!glassesUp) return;
-    if (ev.key === 'Escape') { lowerGlasses(); return; }
+    if (ev.key === 'Escape') {
+      // With the rulebook open beside them, Escape closes only the book.
+      if (!gl.root.classList.contains('is-with-book')) lowerGlasses();
+      return;
+    }
     if (ev.key === '+' || ev.key === '=') mag = clamp(mag * 1.12, MAG_MIN, MAG_MAX);
     if (ev.key === '-' || ev.key === '_') mag = clamp(mag / 1.12, MAG_MIN, MAG_MAX);
     if (KEYS[ev.key]) { held.add(KEYS[ev.key]); ev.preventDefault(); }
@@ -1175,6 +1766,12 @@
     el.card.setAttribute('transform', 'rotate(' + (-heading).toFixed(2) + ' 120 254)');
     el.plate.textContent = String(Math.round(heading) % 360).padStart(3, '0') + '\u00B0';
 
+    // Whole metres from the start, signed; only touched when the figure changes
+    const posX = signed(boatX - origin.x);
+    const posY = signed(boatY - origin.y);
+    if (el.posX.textContent !== posX) el.posX.textContent = posX;
+    if (el.posY.textContent !== posY) el.posY.textContent = posY;
+
     el.rudder.setAttribute('transform',
       'rotate(' + (rudder * NEEDLE).toFixed(2) + ' 65 72)');
 
@@ -1185,40 +1782,815 @@
   }
 
   // ---- Teleprinter --------------------------------------------------------
-  // The machine is its own page (../Telex Machine Demo), shown in a frame.
+  // The machine never moves. Every so often a signal comes in: the lamp
+  // flashes and a slip feeds out, too small to read from the wheel. Click
+  // the slip to pick it up; it grows out of the machine to reading size.
+  // Filing it away tears it off the machine and puts it in the signal log.
+  // Signals are the files in ../Telex Machine Demo/signals, read the same way.
+  //
+  // Three kinds of traffic (the TYPE header):
+  //   plain   an ordinary signal, printed as written
+  //   key     the key to a later cipher, tied to it by INDICATOR
+  //   cipher  enciphered with its key and printed in five-letter groups;
+  //           it never comes in before its key has
+  // Signals are the files in ../Telex Machine Demo/signals, read the same way.
   const tx = {
-    open:  document.getElementById('telex'),
-    room:  document.getElementById('telexroom'),
-    frame: document.getElementById('telexFrame'),
-    back:  document.getElementById('telexBack')
+    root:  document.getElementById('telex'),
+    slip:  document.getElementById('telexSlip'),
+    type:  document.getElementById('telexType'),
+    view:  document.getElementById('signal'),
+    sheet: document.getElementById('signalSheet'),
+    back:  document.getElementById('signalBack'),
+    log:   document.getElementById('telexLog'),
+    count: document.getElementById('telexCount'),
+    book:  document.getElementById('log'),
+    list:  document.getElementById('logList'),
+    desk:  document.getElementById('logDesk'),
+    total: document.getElementById('logCount'),
+    tabs:  document.querySelectorAll('.log__tab'),
+    shut:  document.getElementById('logClose')
   };
-  let atTelex = false;
+  const signals   = [];
+  const delivered = new Set(); // every signal that has come in at least once
+  const filed     = [];        // the signal log, newest first
+  const listeners = {};
+  let lastSignal  = null;      // so the random pick doesn't repeat itself
+  let current     = null;      // the signal on the slip in the machine
+  let printed     = '';        // and its text
+  let unread      = false;     // lamp stays on until it's picked up
+  let reading     = false;
+  let browsing    = false;     // the log is open
+  let showing     = 'all';     // log filter
+  let chosen      = null;      // signal picked in the log
+  let signalTimer = 0;
+  let loadingFile = null;      // the signal file being read, for its id
 
-  function goToTelex() {
-    if (atTelex) return;
-    atTelex = true;
-    if (!tx.frame.getAttribute('src')) tx.frame.src = tx.frame.dataset.src;
-    tx.room.classList.add('is-open');
-    tx.room.setAttribute('aria-hidden', 'false');
-    tx.back.focus({ preventScroll: true });
-  }
+  const SLEUTH = '<svg class="sleuth" aria-hidden="true"><use href="#sleuth"/></svg>';
 
-  function leaveTelex() {
-    if (!atTelex) return;
-    atTelex = false;
-    tx.room.classList.remove('is-open');
-    tx.room.setAttribute('aria-hidden', 'true');
-    tx.open.focus({ preventScroll: true });
-  }
-
-  tx.open.addEventListener('click', goToTelex);
-  tx.back.addEventListener('click', leaveTelex);
-
-  // Escape inside the frame belongs to the telex (it closes an enlarged slip),
-  // so this only fires while focus is out here on the helm page.
-  window.addEventListener('keydown', ev => {
-    if (atTelex && ev.key === 'Escape') leaveTelex();
+  const emit = (name, payload) => (listeners[name] || []).forEach(fn => {
+    try { fn(payload); } catch (e) { console.error('[telex]', e); }
   });
+
+  // A signal file is a header block, a --- rule, then the message.
+  // Unknown headers are kept under lower_snake_case keys, as in telex.js.
+  function parseSignal(text) {
+    const lines = String(text).replace(/\r\n?/g, '\n').split('\n');
+    const sig = {};
+    const body = [];
+    let inHeader = true;
+    for (const line of lines) {
+      if (inHeader) {
+        if (/^-{3,}\s*$/.test(line.trim())) { inHeader = false; continue; }
+        const m = line.match(/^([A-Za-z][A-Za-z0-9 _-]*):[ \t]*(.*)$/);
+        if (m) { sig[m[1].trim().toLowerCase().replace(/[ -]+/g, '_')] = m[2].trim(); continue; }
+        if (!line.trim()) continue;
+        inHeader = false;                        // no rule given; the body starts here
+      }
+      body.push(line);
+    }
+    sig.body = body.join('\n').trim();
+    sig.type = /^(key|cipher)$/i.test(sig.type || '') ? sig.type.toLowerCase() : 'plain';
+    if (sig.indicator) sig.indicator = sig.indicator.toUpperCase();
+    if (sig.type === 'cipher') sig.plain = sig.body;   // what it says, for puzzle code to check
+    return sig;
+  }
+
+  function wrapText(text, width) {
+    const out = [];
+    text.split(/\n{2,}/).forEach((para, n) => {
+      if (n) out.push('');
+      let line = '';
+      para.replace(/\s+/g, ' ').trim().split(' ').forEach(word => {
+        if (!line) line = word;
+        else if ((line + ' ' + word).length <= width) line += ' ' + word;
+        else { out.push(line); line = word; }
+      });
+      if (line) out.push(line);
+    });
+    return out;
+  }
+
+  const truthy = v => typeof v === 'string' ? !/^(no|false|off|0|)$/i.test(v.trim()) : !!v;
+
+  // The key that opens a cipher, by indicator
+  const keyFor = sig => sig.type === 'cipher' && sig.indicator
+    ? signals.find(s => s.type === 'key' && s.indicator === sig.indicator) || null
+    : null;
+  // And the cipher a key opens
+  const cipherFor = sig => sig.type === 'key'
+    ? signals.find(s => s.type === 'cipher' && s.indicator === sig.indicator) || null
+    : null;
+
+  // Encipher the letters of a cipher's plain text. The method and its setting
+  // come from the cipher's own headers, or failing that from its key's:
+  //   CIPHER: caesar    SHIFT: 7
+  //   CIPHER: vigenere  KEYWORD: DYNAMO
+  //   CIPHER: atbash
+  // With no CIPHER header the body is taken to be enciphered already.
+  // Anything that isn't a letter passes through unchanged.
+  function encipher(sig, text) {
+    const key = keyFor(sig) || {};
+    const method = (sig.cipher || key.cipher || '').toLowerCase();
+    text = text.toUpperCase();
+    const shiftBy = (ch, k) => String.fromCharCode((ch.charCodeAt(0) - 65 + k + 26) % 26 + 65);
+    if (method === 'caesar') {
+      const k = (parseInt(sig.shift || key.shift, 10) || 0) % 26;
+      return text.replace(/[A-Z]/g, ch => shiftBy(ch, k));
+    }
+    if (method === 'vigenere') {
+      const word = (sig.keyword || key.keyword || '').toUpperCase().replace(/[^A-Z]/g, '');
+      if (!word) return text;
+      let n = 0;
+      return text.replace(/[A-Z]/g, ch => shiftBy(ch, word.charCodeAt(n++ % word.length) - 65));
+    }
+    if (method === 'atbash') return text.replace(/[A-Z]/g, ch => String.fromCharCode(155 - ch.charCodeAt(0)));
+    return text;
+  }
+
+  // Cipher traffic goes out in five-letter groups. The plain text is run
+  // together and padded out with X before it's enciphered, as it would be
+  // by hand, so the padding reads back as X.
+  const runTogether = text => {
+    const run = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return run + 'X'.repeat((5 - run.length % 5) % 5);
+  };
+
+  function toGroups(text, cols) {
+    const groups = text.match(/.{5}/g) || [];
+    const perLine = Math.max(1, Math.floor((cols + 1) / 6));
+    const lines = [];
+    for (let i = 0; i < groups.length; i += perLine) lines.push(groups.slice(i, i + perLine).join(' '));
+    return { lines, count: groups.length };
+    back:  document.getElementById('signalBack')
+  };
+  const signals   = [];
+  let lastSignal  = null;      // so the random pick doesn't repeat itself
+  let printed     = '';        // the text on the slip in the machine
+  let unread      = false;     // lamp stays on until it's picked up
+  let reading     = false;
+  let signalTimer = 0;
+
+  // A signal file is a header block, a --- rule, then the message.
+  // Unknown headers are kept under lower_snake_case keys, as in telex.js.
+  function parseSignal(text) {
+    const lines = String(text).replace(/\r\n?/g, '\n').split('\n');
+    const sig = {};
+    const body = [];
+    let inHeader = true;
+    for (const line of lines) {
+      if (inHeader) {
+        if (/^-{3,}\s*$/.test(line.trim())) { inHeader = false; continue; }
+        const m = line.match(/^([A-Za-z][A-Za-z0-9 _-]*):[ \t]*(.*)$/);
+        if (m) { sig[m[1].trim().toLowerCase().replace(/[ -]+/g, '_')] = m[2].trim(); continue; }
+        if (!line.trim()) continue;
+        inHeader = false;                        // no rule given; the body starts here
+      }
+      body.push(line);
+    }
+    sig.body = body.join('\n').trim();
+    return sig;
+  }
+
+  function wrapText(text, width) {
+    const out = [];
+    text.split(/\n{2,}/).forEach((para, n) => {
+      if (n) out.push('');
+      let line = '';
+      para.replace(/\s+/g, ' ').trim().split(' ').forEach(word => {
+        if (!line) line = word;
+        else if ((line + ' ' + word).length <= width) line += ' ' + word;
+        else { out.push(line); line = word; }
+      });
+      if (line) out.push(line);
+    });
+    return out;
+  }
+
+  // Set a signal in teleprinter form, with the defaults from config.js
+  function compose(sig) {
+    const cfg = Object.assign({
+      ship: 'M.Y. KESTREL', callsign: 'GBKW', station: 'V.A. DOVER (DYNAMO)',
+      sign: 'ACKNOWLEDGE BY LAMP ON SIGHT.', columns: 38
+    }, window.TELEX_CONFIG || {});
+    const bar = '='.repeat(cfg.columns);
+    const head = [
+      ('ZCZC ' + cfg.callsign + ' ' + (sig.serial || '')).trim(),
+      'FM  ' + (sig.from || cfg.station),
+      'TO  ' + (sig.to || cfg.ship),
+      'PRI ' + (sig.priority || 'ROUTINE')
+    ];
+    if (sig.time) head.push('TOO ' + sig.time);
+    head.push(bar);
+
+    let body, sign;
+    if (sig.type === 'cipher') {
+      const grouped = truthy(sig.groups === undefined ? 'yes' : sig.groups);
+      const set = grouped
+        ? toGroups(encipher(sig, runTogether(sig.body)), cfg.columns)
+        : { lines: wrapText(encipher(sig, sig.body), cfg.columns) };
+      body = ['CIPHER  INDICATOR ' + (sig.indicator || '-----')];
+      if (grouped) body.push('GROUPS ' + String(set.count).padStart(3, '0'));
+      body = body.concat('', set.lines);
+      sign = sig.sign !== undefined ? sig.sign : '';
+    } else if (sig.type === 'key') {
+      body = ['KEY  INDICATOR ' + (sig.indicator || '-----'), ''].concat(wrapText(sig.body || '', cfg.columns));
+      sign = sig.sign !== undefined ? sig.sign : 'RETAIN FOR LATER TRAFFIC.';
+    } else {
+      body = wrapText(sig.body || '', cfg.columns);
+      sign = sig.sign !== undefined ? sig.sign : cfg.sign;
+    }
+
+    const foot = sign ? [bar, sign, 'NNNN'] : [bar, 'NNNN'];
+    const out = head.concat(body, foot).join('\n');
+    return truthy(sig.raw) && sig.type !== 'cipher' ? out : out.toUpperCase();
+  }
+
+  // Which signal comes in next. Each one arrives once before any repeats.
+  // A cipher waits until its key is in, and won't follow its key
+  // straight off while there's other traffic to send. Once everything
+  // has been through, plain signals come round again at random.
+  function pickSignal() {
+    const ready = s => s.type !== 'cipher' || !keyFor(s) || delivered.has(keyFor(s));
+    const fresh = signals.filter(s => !delivered.has(s) && ready(s));
+    let pool = fresh.filter(s => !(keyFor(s) && keyFor(s) === lastSignal));
+    if (!pool.length) pool = fresh;
+    if (!pool.length) pool = signals.filter(s => s.type === 'plain' && s !== lastSignal);
+    if (!pool.length) pool = signals.filter(s => s.type === 'plain');
+    if (!pool.length) return null;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  const between = ([lo, hi]) => (lo + Math.random() * (hi - lo)) * 1000;
+
+  function expectSignal(range) {
+    clearTimeout(signalTimer);
+    signalTimer = setTimeout(() => incoming(), between(range));
+  }
+
+  // A signal comes in: a fresh slip feeds out. From the helm it's only rows
+  // of type, one bar per printed line. Pass a signal (or its id) to send that
+  // one rather than a pick.
+  function incoming(which) {
+    const sig = typeof which === 'string' ? signals.find(s => s.id === which)
+              : which || pickSignal();
+    if (!sig) return;
+    if (reading) putSlipDown();
+    if (current && unread) file(current);        // a slip nobody picked up still gets filed
+    clearTimeout(signalTimer);
+
+    current = sig;
+    printed = compose(sig);
+    delivered.add(sig);
+    lastSignal = sig;
+    const sign = sig.sign !== undefined ? sig.sign : cfg.sign;
+    const foot = sign ? [bar, sign, 'NNNN'] : [bar, 'NNNN'];
+    const out = head.concat(wrapText(sig.body || '', cfg.columns), foot).join('\n');
+    const raw = typeof sig.raw === 'string' ? !/^(no|false|off|0|)$/i.test(sig.raw.trim()) : !!sig.raw;
+    return raw ? out : out.toUpperCase();
+  }
+
+  function pickSignal() {
+    if (!signals.length) return null;
+    let sig, guard = 0;
+    do sig = signals[Math.floor(Math.random() * signals.length)];
+    while (signals.length > 1 && sig === lastSignal && ++guard < 25);
+    lastSignal = sig;
+    return sig;
+  }
+
+  function expectSignal(range) {
+    clearTimeout(signalTimer);
+    if (scripted.signals) return;                // the Script sends them instead
+    signalTimer = setTimeout(() => incoming(), between(range) * 1000);   // range is in seconds
+  }
+
+  // A signal comes in: the last slip is torn off and a fresh one feeds out.
+  // From the helm it's only rows of type, one bar per printed line.
+  function incoming(sig = pickSignal()) {
+    if (!sig) return;
+    printed = compose(sig);
+    const lines = printed.split('\n');
+    const cols = Math.max(...lines.map(l => l.length));
+
+    tx.type.textContent = '';
+    for (const line of lines) {
+      const row = document.createElement('i');
+      row.style.width = (line.trimEnd().length / cols * 100).toFixed(1) + '%';
+      tx.type.appendChild(row);
+    }
+
+    unread = true;
+    tx.root.classList.add('is-calling');
+    tx.slip.classList.remove('is-torn');
+    tx.slip.hidden = false;
+    tx.slip.disabled = true;
+    tx.slip.style.setProperty('--lines', lines.length);
+    tx.slip.style.setProperty('--feed-time', (lines.length * LINE_FEED).toFixed(2) + 's');
+    tx.slip.classList.remove('is-feeding');
+    void tx.slip.offsetWidth;                    // restart the feed
+    tx.slip.classList.add('is-feeding');
+    if (stillness.matches) slipFed();
+    tx.root.dispatchEvent(new CustomEvent('signalarrived', { bubbles: true, detail: { signal: sig, printed } }));
+    emit('print', sig);
+    return sig;
+  }
+
+  function slipFed() {
+    tx.slip.classList.remove('is-feeding');
+    tx.slip.disabled = false;
+  }
+
+  tx.slip.addEventListener('animationend', ev => {
+    if (ev.animationName === 'feed') slipFed();
+    if (ev.animationName === 'tear') tx.slip.hidden = true;
+  });
+
+  // Transform that lays a sheet over something on the desk, so it can grow
+  // out of it or shrink back into it
+  function over(target, sheet) {
+    const from = target.getBoundingClientRect();
+    const to = sheet.getBoundingClientRect();
+  tx.slip.addEventListener('animationend', slipFed);
+
+  // Transform that lays the reading sheet over the slip on the desk
+  function overSlip(to) {
+    const from = tx.slip.getBoundingClientRect();
+    return 'translate(' + (from.left - to.left) + 'px,' + (from.top - to.top) + 'px) ' +
+           'scale(' + (from.width / to.width) + ',' + (from.height / to.height) + ')';
+  }
+
+  // Put the printed text on a sheet: type only, as the machine struck it
+  function setSheet(sheet, sig) {
+    sheet.textContent = compose(sig);
+  }
+
+  function pickUpSlip() {
+    if (reading || tx.slip.disabled || !current) return;
+  function pickUpSlip() {
+    if (reading || tx.slip.disabled) return;
+    reading = true;
+    if (unread) {
+      unread = false;
+      tx.root.classList.remove('is-calling');
+    }
+    setSheet(tx.sheet, current);
+    tx.sheet.textContent = printed;
+    tx.sheet.scrollTop = 0;
+    tx.view.classList.add('is-open');
+    tx.view.setAttribute('aria-hidden', 'false');
+
+    if (!stillness.matches) {
+      tx.sheet.style.transition = 'none';
+      tx.sheet.style.transform = '';
+      tx.sheet.style.transform = over(tx.slip, tx.sheet);
+      tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
+      void tx.sheet.offsetWidth;
+      tx.sheet.style.transition = '';
+      tx.sheet.style.transform = '';
+    }
+    tx.back.focus({ preventScroll: true });
+    tx.root.dispatchEvent(new CustomEvent('signalread', { bubbles: true, detail: { printed } }));
+    emit('read', current);
+  }
+
+  // Filing it away: the slip is torn off the machine and the sheet goes
+  // down into the signal log
+  function putSlipDown() {
+    if (!reading) return;
+    reading = false;
+    if (!stillness.matches) tx.sheet.style.transform = over(tx.log, tx.sheet);
+    tx.view.classList.remove('is-open');
+    tx.view.setAttribute('aria-hidden', 'true');
+    tearOff();
+    tx.log.focus({ preventScroll: true });
+    expectSignal(SIGNAL_GAP);
+  }
+
+  function tearOff() {
+    const sig = current;
+    current = null;
+    tx.slip.disabled = true;
+    if (stillness.matches) tx.slip.hidden = true;
+    else tx.slip.classList.add('is-torn');
+    file(sig);
+  }
+
+  // ---- The signal log -----------------------------------------------------
+
+  function file(sig) {
+    if (!sig) return;
+    const was = filed.findIndex(e => e.sig === sig);
+    if (was >= 0) filed.splice(was, 1);          // a repeat moves back to the top
+    filed.unshift({ sig, text: compose(sig), read: !unread || sig !== current });
+    tx.log.classList.remove('is-filing');
+    void tx.log.offsetWidth;
+    tx.log.classList.add('is-filing');
+    refreshLog();
+    emit('file', sig);
+  }
+
+  const KIND = { plain: 'Plain', key: 'Key', cipher: 'Cipher' };
+
+  function refreshLog() {
+    const n = filed.length;
+    const secret = filed.filter(e => e.sig.type !== 'plain').length;
+    tx.count.hidden = !n;
+    tx.count.textContent = n;
+    tx.log.classList.toggle('has-cipher', secret > 0);
+    tx.log.setAttribute('aria-label', 'Signal log: ' + (n ? n + ' filed' : 'nothing filed'));
+    tx.total.textContent = n
+      ? n + ' filed' + (secret ? ' · ' + secret + ' key & cipher' : '')
+      : 'Nothing filed';
+    if (browsing) drawList();
+  }
+
+  // First line of the message, for the log's index
+  function gist(entry) {
+    const lines = entry.text.split('\n');
+    const bar = lines.findIndex(l => /^=+$/.test(l));
+    const body = lines.slice(bar + 1).filter(l => l.trim() && !/^(CIPHER|KEY|GROUPS) /.test(l));
+    return body[0] || '';
+  }
+
+  function drawList() {
+    tx.list.textContent = '';
+    const shown = filed.filter(e => showing === 'all' ||
+      (showing === 'plain' ? e.sig.type === 'plain' : e.sig.type !== 'plain'));
+
+    if (!shown.length) {
+      const li = document.createElement('li');
+      li.className = 'log__none';
+      li.textContent = filed.length ? 'Nothing of that kind filed.' : 'No signals filed yet. Read a slip off the teleprinter and file it away.';
+      tx.list.appendChild(li);
+    }
+
+    for (const entry of shown) {
+      const sig = entry.sig;
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'log__entry log__entry--' + sig.type;
+      b.setAttribute('aria-pressed', String(entry === chosen));
+      if (!entry.read) b.classList.add('is-unread');
+
+      let note = '';
+      if (sig.type === 'cipher') {
+        const key = keyFor(sig);
+        note = key && filed.some(e => e.sig === key) ? 'key on file' : 'key not on file';
+      } else if (sig.type === 'key') {
+        const c = cipherFor(sig);
+        note = c && filed.some(e => e.sig === c) ? 'cipher on file' : 'awaiting cipher';
+      }
+
+      b.innerHTML =
+        '<span class="log__icon">' + (sig.type === 'plain' ? '<i class="log__slipicon"></i>' : SLEUTH) + '</span>' +
+        '<span class="log__line">' +
+          '<b class="log__serial"></b><span class="log__time"></span>' +
+        '</span>' +
+        '<span class="log__line log__line--sub">' +
+          '<span class="log__kind"></span><span class="log__gist"></span>' +
+        '</span>';
+      b.querySelector('.log__serial').textContent = (sig.serial || sig.id || 'No serial').toUpperCase();
+      b.querySelector('.log__time').textContent = (sig.time || '').toUpperCase();
+      b.querySelector('.log__kind').textContent = KIND[sig.type] +
+        (sig.indicator && sig.type !== 'plain' ? ' · ' + sig.indicator : '') + (note ? ' · ' + note : '');
+      b.querySelector('.log__gist').textContent = gist(entry);
+      b.addEventListener('click', () => choose(entry));
+      li.appendChild(b);
+      tx.list.appendChild(li);
+    }
+  }
+
+  // Lay the chosen signal on the desk. A cipher brings its key out beside it
+  // if the key is on file; a key brings out the cipher it opens.
+  function choose(entry) {
+    chosen = entry;
+    tx.desk.textContent = '';
+    if (!entry) {
+      const p = document.createElement('p');
+      p.className = 'log__hint';
+      p.textContent = filed.length ? 'Pick a signal from the log to read it.' : 'The log is empty.';
+      tx.desk.appendChild(p);
+      drawList();
+      return;
+    }
+
+    entry.read = true;
+    const sig = entry.sig;
+    const partner = sig.type === 'cipher' ? keyFor(sig) : sig.type === 'key' ? cipherFor(sig) : null;
+    const partnerFiled = partner && filed.find(e => e.sig === partner);
+    const pair = [sig];
+    if (partnerFiled) pair[sig.type === 'cipher' ? 'unshift' : 'push'](partner);   // key on the left
+
+    for (const s of pair) {
+      const pre = document.createElement('pre');
+      pre.className = 'signal__sheet log__sheet';
+      setSheet(pre, s);
+      if (s !== sig) pre.classList.add('is-partner');
+      tx.desk.appendChild(pre);
+    }
+
+    if (sig.type !== 'plain' && !partnerFiled) {
+      const p = document.createElement('p');
+      p.className = 'log__hint';
+      p.textContent = sig.type === 'cipher'
+        ? 'The key for indicator ' + (sig.indicator || '?') + ' is not on file.'
+        : 'Keep this. Traffic under indicator ' + (sig.indicator || '?') + ' will need it.';
+      tx.desk.appendChild(p);
+    }
+    tx.desk.scrollTop = 0;
+    drawList();
+    emit('select', sig);
+  }
+
+  function openLog() {
+    if (browsing) return;
+    if (reading) putSlipDown();
+    browsing = true;
+    if (chosen && !filed.includes(chosen)) chosen = null;
+    choose(chosen || filed[0] || null);
+    tx.book.classList.add('is-open');
+    tx.book.setAttribute('aria-hidden', 'false');
+    const pressed = tx.list.querySelector('[aria-pressed="true"]');
+    (pressed || tx.shut).focus({ preventScroll: true });
+  }
+
+  function closeLog() {
+    if (!browsing) return;
+    browsing = false;
+    tx.book.classList.remove('is-open');
+    tx.book.setAttribute('aria-hidden', 'true');
+    tx.log.focus({ preventScroll: true });
+  }
+
+  tx.tabs.forEach(tab => tab.addEventListener('click', () => {
+    showing = tab.dataset.show;
+    tx.tabs.forEach(t => t.setAttribute('aria-pressed', String(t === tab)));
+    drawList();
+  }));
+
+  tx.slip.addEventListener('click', pickUpSlip);
+  tx.back.addEventListener('click', putSlipDown);
+  tx.view.addEventListener('click', ev => { if (ev.target === tx.view) putSlipDown(); });
+  tx.log.addEventListener('click', openLog);
+  tx.shut.addEventListener('click', closeLog);
+  tx.book.addEventListener('click', ev => { if (ev.target === tx.book) closeLog(); });
+  window.addEventListener('keydown', ev => {
+    if (ev.key !== 'Escape') return;
+    if (reading) putSlipDown();
+    else if (browsing) closeLog();
+  function putSlipDown() {
+    if (!reading) return;
+    reading = false;
+    if (!stillness.matches) tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
+    tx.view.classList.remove('is-open');
+    tx.view.setAttribute('aria-hidden', 'true');
+    tx.slip.focus({ preventScroll: true });
+    expectSignal(SIGNAL_GAP);
+    tx.root.dispatchEvent(new CustomEvent('signalputdown', { bubbles: true }));
+  }
+
+  tx.slip.addEventListener('click', pickUpSlip);
+  tx.back.addEventListener('click', putSlipDown);
+  tx.view.addEventListener('click', ev => { if (ev.target === tx.view) putSlipDown(); });
+  // With the rulebook open over the slip, Escape closes only the book.
+  window.addEventListener('keydown', ev => {
+    if (reading && ev.key === 'Escape' && !document.getElementById('bookroom').classList.contains('is-open')) putSlipDown();
+  });
+
+  // ---- Rulebook -----------------------------------------------------------
+  // The book is its own page in its own folder (../Rulebook Demo), shown in
+  // a frame over the helm. It loads the first time it's opened and is kept,
+  // so the reader's place isn't lost. Opened from the telex it's shown with
+  // the slip beside it, and from the glasses it shares the screen with them
+  // (see signalBook and glassBook below).
+  function room(ids, { focusInside = false } = {}) {
+    const r = {
+      open:  document.getElementById(ids.open),
+      root:  document.getElementById(ids.root),
+      frame: document.getElementById(ids.frame),
+      back:  document.getElementById(ids.back),
+      aside: ids.aside ? document.getElementById(ids.aside) : null,
+      up:    false
+    };
+    const backLabel = r.back.textContent;
+    let opener = r.open;
+    let closed = null;
+
+    // Put the keyboard inside the frame, so the arrow keys turn the book's pages
+    const settle = () => {
+      if (focusInside) r.frame.focus({ preventScroll: true });
+      else r.back.focus({ preventScroll: true });
+    };
+
+    // beside: text to show next to the frame; half: take only the right of the
+    // screen; from: where focus goes back to; onClose: called when it's closed
+    r.show = ({ beside = '', half = false, from = r.open, backLabel: label = backLabel, onClose = null } = {}) => {
+      if (r.up) return;
+      r.up = true;
+      opener = from;
+      closed = onClose;
+      r.root.classList.toggle('room--with-aside', !!beside);
+      r.root.classList.toggle('room--beside', half);
+      if (r.aside) { r.aside.textContent = beside; r.aside.scrollTop = 0; }
+      r.back.textContent = label;
+      if (!r.frame.getAttribute('src')) {
+        r.frame.addEventListener('load', settle, { once: true });
+        r.frame.src = r.frame.dataset.src;
+      }
+      r.root.classList.add('is-open');
+      r.root.setAttribute('aria-hidden', 'false');
+      settle();
+    };
+
+    r.hide = () => {
+      if (!r.up) return;
+      r.up = false;
+      r.root.classList.remove('is-open');
+      r.root.setAttribute('aria-hidden', 'true');
+      if (closed) { const done = closed; closed = null; done(); }
+      opener.focus({ preventScroll: true });
+    };
+
+    r.open.addEventListener('click', () => r.show());
+    r.back.addEventListener('click', r.hide);
+    return r;
+  }
+
+  const rooms = [
+    room({ open: 'rulebook', root: 'bookroom', frame: 'bookFrame', back: 'bookBack', aside: 'bookSignal' }, { focusInside: true })
+  ];
+
+  // The spine peeking in beside the slip opens the book with the slip next to it.
+  // Closing the book goes back to the slip.
+  const signalBook = document.getElementById('signalBook');
+  signalBook.addEventListener('click', () => rooms[0].show({
+    beside: tx.sheet.textContent,
+    from: signalBook,
+    backLabel: 'Close rulebook'
+  }));
+
+  // The spine beside the glasses opens the book in the right of the screen; the
+  // glasses move over to the left and keep working. Closing it gives them it all back.
+  const glassBook = document.getElementById('glassBook');
+  glassBook.addEventListener('click', () => {
+    gl.root.classList.add('is-with-book');
+    layout();
+    rooms[0].show({
+      half: true,
+      from: glassBook,
+      backLabel: 'Close rulebook',
+      onClose: () => { gl.root.classList.remove('is-with-book'); layout(); }
+    });
+  });
+
+  // Escape while focus is out here on the helm page
+  window.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape') rooms.forEach(r => r.hide());
+  });
+
+  // The rulebook asks to be closed when Escape is pressed inside it.
+  window.addEventListener('message', ev => {
+    const r = rooms.find(x => x.up && ev.source === x.frame.contentWindow);
+    if (r && ev.data && ev.data.rulebook === 'close') r.hide();
+  });
+
+  // The signal files call TELEX.signal(text); the manifest calls TELEX.load(names).
+  const loadScript = src => new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error(src));
+    document.head.appendChild(s);
+  });
+
+  // Tell whoever writes the signals when a key and its cipher don't match up
+  function checkPairs() {
+    for (const s of signals) {
+      if (s.type === 'cipher' && !keyFor(s))
+        console.warn('[telex] ' + s.id + ': no key signal with INDICATOR ' + (s.indicator || '(none)') + '; it will print whenever it is picked');
+      if (s.type === 'key' && !s.indicator)
+        console.warn('[telex] ' + s.id + ': a key needs an INDICATOR to match it to its cipher');
+    }
+  }
+
+  window.TELEX = {
+    signal: text => {
+      const sig = parseSignal(text);
+      let id = sig.id || (loadingFile || 'signal-' + signals.length).replace(/\.js$/, '');
+      while (signals.some(s => s.id === id)) id += '+';
+      sig.id = id;
+      signals.push(sig);
+      return sig;
+    },
+    load: async names => {
+      for (const name of names) {
+        loadingFile = name;
+        try { await loadScript(TELEX_DIR + 'signals/' + name); }
+        catch (e) { console.error('[telex] could not load ' + e.message); }
+        loadingFile = null;
+      }
+      checkPairs();
+      expectSignal(SIGNAL_FIRST);
+    },
+    incoming,                                    // bring a signal in now: a pick, or one by id
+    openLog,
+    closeLog,
+    get:     id => signals.find(s => s.id === id),
+    signals: () => signals.slice(),
+    log:     () => filed.map(e => e.sig),        // what's been filed, newest first
+    on:      (name, fn) => { (listeners[name] = listeners[name] || []).push(fn); }
+                                                 // 'print' | 'read' | 'file' | 'select'
+  window.TELEX = {
+    signal: text => { const sig = parseSignal(text); signals.push(sig); return sig; },
+    load: async names => {
+      for (const name of names) {
+        try { await loadScript(TELEX_DIR + 'signals/' + name); }
+        catch (e) { console.error('[telex] could not load ' + e.message); }
+      }
+      expectSignal(SIGNAL_FIRST);
+    },
+    incoming                                     // bring a signal in now, from code
+  };
+
+  // ---- For the Script (../Script) ------------------------------------------
+  // Read-only views of the helm, and a few levers for running the story. None
+  // of this changes how anything works; left alone, the helm runs as before.
+  // Events go out on the props themselves and bubble to document:
+  //   signalarrived {signal, printed}, signalread, signalputdown  (from the telex)
+  //   aircraftspotted, aircraftidentified {correct...}, aircraftgone {spotted}
+  const extra = [];                              // sea marks the Script has added
+  let markIds = 0;
+  window.SHIP = {
+    get heading()   { return heading; },
+    get position()  { return { x: boatX, y: boatY }; },
+    get glassesUp() { return glassesUp; },
+    get reading()   { return reading; },
+
+    // Hold the boat still (true) or let her sail (false)
+    hold(on) { sailing = !on; },
+
+    // Stop the random arrivals so the Script can send its own
+    script({ signals = scripted.signals, aircraft = scripted.aircraft } = {}) {
+      scripted.signals = !!signals;
+      scripted.aircraft = !!aircraft;
+      if (scripted.signals) clearTimeout(signalTimer);
+    },
+
+    // Print this signal now, written as a signal file is (headers, ---, message)
+    sendSignal(text) { incoming(parseSignal(text)); },
+
+    // Send this aircraft over now: 'stuka' or 'spitfire'. False if one is already up.
+    sendAircraft(art) {
+      if (plane) return false;
+      launchAircraft(art);
+      return true;
+    },
+
+    // Put a thing on the water, from a <template id="art-NAME">. Returns an id.
+    addMark({ art, x, y, w, h }) {
+      const id = ++markIds;
+      const pair = [[el.world, marks], [gl.world, glassMarks]].map(([box, list]) => {
+        const holder = artwork(art, 'mark');
+        box.appendChild(holder);
+        const m = { el: holder, x, y, w, h, shown: true };
+        list.push(m);
+        return [list, m];
+      });
+      extra.push({ id, pair });
+      return id;
+    },
+
+    removeMark(id) {
+      const i = extra.findIndex(e => e.id === id);
+      if (i < 0) return;
+      for (const [list, m] of extra[i].pair) {
+        m.el.remove();
+        list.splice(list.indexOf(m), 1);
+      }
+      extra.splice(i, 1);
+    },
+
+    // Is this point on the water well inside the binoculars' view just now?
+    inGlasses(x, y) {
+      if (!glassesUp) return false;
+      const dx = wrap(x - boatX), dy = wrap(y - boatY);
+      const range = Math.hypot(dx, dy);
+      if (range > HAZE) return false;
+      const z = ppd * mag * glassScale;
+      const rel = arc(norm(heading + lookRel), Math.atan2(dx, dy) * DEG);
+      const elev = -subtendH(EYE, range);
+      return Math.abs(rel) < sceneW / 2 / z * 0.8 && Math.abs(elev - pitch) < sceneH / 2 / z * 0.8;
+    },
+
+    openRulebook()  { rooms[0].show(); },
+    closeRulebook() { rooms[0].hide(); }
+  };
+
+  loadScript(TELEX_DIR + 'config.js')
+    .catch(() => {})
+    .then(() => loadScript(TELEX_DIR + 'signals/manifest.js'))
+    .catch(e => console.error('[telex] could not load ' + e.message));
 
   buildWorld(el.world, marks);
   buildWorld(gl.world, glassMarks);
@@ -1230,6 +2602,13 @@
   requestAnimationFrame(frame);
 })();
 </script>
+
+<!-- The story: clock, dialogue, scripted telexes and sightings, endings. See ../Script/README.md -->
+<script src="../Script/dialogue.js"></script>
+<script src="../Script/clock.js"></script>
+<script src="../Script/dialogue-manager.js"></script>
+<script src="../Script/voyage.js"></script>
+<script src="../Script/game.js"></script>
 
 </body>
 </html>
