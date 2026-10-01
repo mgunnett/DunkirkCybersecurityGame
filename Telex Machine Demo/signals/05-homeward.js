@@ -4,9 +4,13 @@ PRIORITY: IMMEDIATE
 TIME:     0540Z/31 MAY 40
 SIGN:     REPORT NUMBERS EMBARKED ON ARRIVAL.
 ---
-When loaded to capacity proceed independently. Steer 035
-degrees to clear the Zuydcoote Pass, thence 310 degrees for
-the North Goodwin. Ramsgate will take you.
+Loaded ships are coming home along the swept channel.
+Keep to the starboard side of the channel and pass them
+port to port.
 
-Wounded first up the ladder. Well done.
+{HELM}
+
+{COURSE} brings you to {MARK} in about {MINUTES}. Hold it.
+Do not leave the swept water to make room for other
+ships. Wounded first up the ladder when you load.
 `);

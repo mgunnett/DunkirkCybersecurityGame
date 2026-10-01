@@ -12,6 +12,7 @@ index.html          markup — the prop is one block you can lift out
 telex.css           everything visual
 telex.js            the machine — you shouldn't need to edit this
 config.js           ship name, wrap width, how many slips to keep
+course.js           the route to the beach, and the courses the signals give
 signals/
   manifest.js       which signal files load, in what order
   01-sailing-orders.js
@@ -181,9 +182,35 @@ TELEX.on('file', sig => { … })   // 'print' | 'read' | 'file' | 'select'
 (`telex.js`) doesn't handle them yet: it prints a cipher's body in clear.
 
 Any header the machine doesn't recognise is still parsed and handed to your
-code. `03-the-beaches.js` carries `ANSWER: 190`, which never reaches the
-paper but arrives as `sig.answer`. Useful for keeping a puzzle's solution
-next to the clue that states it.
+code. `03-the-beaches.js` carries `UNLOCKS: 04-air-attack.js`, which never
+reaches the paper but arrives as `sig.unlocks`. Useful for keeping puzzle
+data next to the clue it belongs to.
+
+### Courses
+
+Signals don't carry fixed courses. They carry marks that are filled in as
+the slip prints, from where the boat is and which way she's heading:
+
+| Mark | Prints as |
+| --- | --- |
+| `{HELM}` | the full helm order: *Turn 40 degrees to starboard. Put the wheel over to the right and hold it until the compass reads 062, then centre the wheel.* |
+| `{COURSE}` | the course for the next mark, in three figures: *062* |
+| `{MARK}` | the next mark's name: *the Kwinte Buoy* |
+| `{MINUTES}` | roughly how long that leg takes: *3 minutes* |
+
+The route is in `course.js`: a chain of named marks, in metres as the
+ship's position indicator reads them. It zig-zags up the swept channel
+(000, 339, 059, 355, then 062 for the beach) rather than running straight
+at the goal. The last mark is the goal itself, and the ship passes its
+real position in. Move a mark and every signal follows.
+
+The ship hands signals out at random, so none is tied to a leg. Whichever
+prints gives the leg the boat is on. Once she reaches a mark, or goes past
+it, the next signal gives the next leg, from wherever she actually is. That
+also corrects her if she has drifted. Opened on its own, this machine has
+no boat to read, so each print assumes the last order was steered exactly
+and moves on one leg. Printing from the operator panel walks you through
+the whole route.
 
 ## Driving it from puzzle code
 
@@ -201,7 +228,8 @@ TELEX.on('printend', sig => {     // 'alert' | 'printstart' | 'printend'
   if (sig.id === '03-the-beaches') openTheChartDrawer();
 });                               // 'open' | 'close' | 'tear'
 
-TELEX.get('03-the-beaches').answer   // '190'
+TELEX.get('03-the-beaches').unlocks  // '04-air-attack.js'
+TELEX_COURSE.plot({ x, y, heading })  // the next leg: { course, turn, mark, minutes, ... }
 TELEX.waiting()                      // is the lamp flashing?
 ```
 
