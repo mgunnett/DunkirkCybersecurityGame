@@ -167,7 +167,7 @@ Turns cost more in-game time at ×5, so check endings at ×1 or ×2.
 
 **Act 1**
 - [ ] T+0:03 and T+0:08: Tom's two lines.
-- [ ] T+0:15: TX-00 prints, Tom says to pick it up; reading it gives V-04; 00 ✓.
+- [ ] T+0:15: TX-00 prints, Tom notices it (V-03); reading it gives V-04; 00 ✓.
 - [ ] T+0:35: TX-01 (prints once TX-00 is put down). Reading it gives V-05; steering 072 gives V-05b; 01 ✓.
 - [ ] T+1:50: TX-02 from DOVRE. Reading gives V-07. Holding 072 for 20 s gives V-08 and 02 ✓.
 - [ ] Again with steering 180 after reading: V-09 and 02 ✗; 30 s on 180 ends **Lured off course**.
