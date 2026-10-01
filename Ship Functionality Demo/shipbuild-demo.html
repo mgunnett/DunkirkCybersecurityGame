@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shipbuild Demo</title>
 <link rel="stylesheet" href="shipstyle.css">
+<link rel="stylesheet" href="../Script/script.css">
 </head>
 <body>
 
@@ -727,6 +728,8 @@
   let horizonH   = 0;
   let roll       = 0;        // degrees, shared by the windscreen and the glasses
   let aground    = false;    // up against the shoals
+  let sailing    = true;     // false while the Script holds the game still (title, intro, endings)
+  const scripted = { signals: false, aircraft: false };   // the Script decides when these come
   const origin   = { x: boatX, y: boatY };  // (0, 0) on the position indicator
   const marks    = [];
   const skyClouds = [];      // the low clouds, as seen through the windscreen
@@ -1317,17 +1320,18 @@
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
     clock += dt;
+    const sail = sailing ? dt : 0;               // held still: she neither turns nor makes way
 
     const rudder = clamp(wheelAngle / (WHEEL_STOP / RUDDER_MAX), -RUDDER_MAX, RUDDER_MAX);
-    const turn = rudder * TURN_GAIN * dt;
+    const turn = rudder * TURN_GAIN * sail;
     heading = norm(heading + turn);
     swung  += turn;
 
     // She never stops: always a step forward along the current heading.
     const rad = heading / DEG;
-    boatX += Math.sin(rad) * SPEED * dt;
-    boatY += Math.cos(rad) * SPEED * dt;
-    run   += SPEED * dt;
+    boatX += Math.sin(rad) * SPEED * sail;
+    boatY += Math.cos(rad) * SPEED * sail;
+    run   += SPEED * sail;
 
     // The shoals off the French coast: she slides along them and gets no closer
     const limit = coastX(boatY) - COAST_OFF;
@@ -1341,7 +1345,7 @@
     for (const c of clouds) c.b = norm(c.b + WIND * dt);
     flyAircraft(dt);
 
-    flyAircraft(dt);
+    flyAircraft(sail);
     drawWorld();
     drawStation(rudder);
     if (glassesUp) drawGlasses(dt);
@@ -1537,8 +1541,8 @@
   // ---- Aircraft ------------------------------------------------------------
   // Send one over, German or British at random, in from just out of sight to one side.
   // It crosses ahead of the bow low over the horizon, where you can see it from the helm.
-  function launchAircraft() {
-    const type = sprites[Math.floor(Math.random() * sprites.length)];
+  function launchAircraft(art) {
+    const type = sprites.find(s => s.art === art) || sprites[Math.floor(Math.random() * sprites.length)];
     const side = Math.random() < 0.5 ? -1 : 1;
     plane = {
       type,
@@ -1624,6 +1628,10 @@
   for (const b of gl.answers) b.addEventListener('click', () => answerSide(b));
 
   function retireAircraft() {
+    gl.root.dispatchEvent(new CustomEvent('aircraftgone', {
+      bubbles: true,
+      detail: { aircraft: plane.type.art, spotted: plane.spotted }
+    }));
     closeAsk();
     for (const thing of [silhouette, plane.type]) {
       hide(thing);
@@ -1638,6 +1646,7 @@
   // a while later another comes over.
   function flyAircraft(dt) {
     if (!plane) {
+      if (scripted.aircraft) return;             // only when the Script sends one
       planeWait -= dt;
       if (planeWait <= 0) launchAircraft();
       return;
@@ -2051,13 +2060,13 @@
 
   function expectSignal(range) {
     clearTimeout(signalTimer);
-    signalTimer = setTimeout(incoming, between(range) * 1000);   // range is in seconds
+    if (scripted.signals) return;                // the Script sends them instead
+    signalTimer = setTimeout(() => incoming(), between(range) * 1000);   // range is in seconds
   }
 
   // A signal comes in: the last slip is torn off and a fresh one feeds out.
   // From the helm it's only rows of type, one bar per printed line.
-  function incoming() {
-    const sig = pickSignal();
+  function incoming(sig = pickSignal()) {
     if (!sig) return;
     printed = compose(sig);
     const lines = printed.split('\n');
@@ -2081,6 +2090,7 @@
     void tx.slip.offsetWidth;                    // restart the feed
     tx.slip.classList.add('is-feeding');
     if (stillness.matches) slipFed();
+    tx.root.dispatchEvent(new CustomEvent('signalarrived', { bubbles: true, detail: { signal: sig, printed } }));
     emit('print', sig);
     return sig;
   }
@@ -2139,6 +2149,7 @@
       tx.sheet.style.transform = '';
     }
     tx.back.focus({ preventScroll: true });
+    tx.root.dispatchEvent(new CustomEvent('signalread', { bubbles: true, detail: { printed } }));
     emit('read', current);
   }
 
@@ -2336,6 +2347,7 @@
     tx.view.setAttribute('aria-hidden', 'true');
     tx.slip.focus({ preventScroll: true });
     expectSignal(SIGNAL_GAP);
+    tx.root.dispatchEvent(new CustomEvent('signalputdown', { bubbles: true }));
   }
 
   tx.slip.addEventListener('click', pickUpSlip);
@@ -2501,6 +2513,80 @@
     incoming                                     // bring a signal in now, from code
   };
 
+  // ---- For the Script (../Script) ------------------------------------------
+  // Read-only views of the helm, and a few levers for running the story. None
+  // of this changes how anything works; left alone, the helm runs as before.
+  // Events go out on the props themselves and bubble to document:
+  //   signalarrived {signal, printed}, signalread, signalputdown  (from the telex)
+  //   aircraftspotted, aircraftidentified {correct...}, aircraftgone {spotted}
+  const extra = [];                              // sea marks the Script has added
+  let markIds = 0;
+  window.SHIP = {
+    get heading()   { return heading; },
+    get position()  { return { x: boatX, y: boatY }; },
+    get glassesUp() { return glassesUp; },
+    get reading()   { return reading; },
+
+    // Hold the boat still (true) or let her sail (false)
+    hold(on) { sailing = !on; },
+
+    // Stop the random arrivals so the Script can send its own
+    script({ signals = scripted.signals, aircraft = scripted.aircraft } = {}) {
+      scripted.signals = !!signals;
+      scripted.aircraft = !!aircraft;
+      if (scripted.signals) clearTimeout(signalTimer);
+    },
+
+    // Print this signal now, written as a signal file is (headers, ---, message)
+    sendSignal(text) { incoming(parseSignal(text)); },
+
+    // Send this aircraft over now: 'stuka' or 'spitfire'. False if one is already up.
+    sendAircraft(art) {
+      if (plane) return false;
+      launchAircraft(art);
+      return true;
+    },
+
+    // Put a thing on the water, from a <template id="art-NAME">. Returns an id.
+    addMark({ art, x, y, w, h }) {
+      const id = ++markIds;
+      const pair = [[el.world, marks], [gl.world, glassMarks]].map(([box, list]) => {
+        const holder = artwork(art, 'mark');
+        box.appendChild(holder);
+        const m = { el: holder, x, y, w, h, shown: true };
+        list.push(m);
+        return [list, m];
+      });
+      extra.push({ id, pair });
+      return id;
+    },
+
+    removeMark(id) {
+      const i = extra.findIndex(e => e.id === id);
+      if (i < 0) return;
+      for (const [list, m] of extra[i].pair) {
+        m.el.remove();
+        list.splice(list.indexOf(m), 1);
+      }
+      extra.splice(i, 1);
+    },
+
+    // Is this point on the water well inside the binoculars' view just now?
+    inGlasses(x, y) {
+      if (!glassesUp) return false;
+      const dx = wrap(x - boatX), dy = wrap(y - boatY);
+      const range = Math.hypot(dx, dy);
+      if (range > HAZE) return false;
+      const z = ppd * mag * glassScale;
+      const rel = arc(norm(heading + lookRel), Math.atan2(dx, dy) * DEG);
+      const elev = -subtendH(EYE, range);
+      return Math.abs(rel) < sceneW / 2 / z * 0.8 && Math.abs(elev - pitch) < sceneH / 2 / z * 0.8;
+    },
+
+    openRulebook()  { rooms[0].show(); },
+    closeRulebook() { rooms[0].hide(); }
+  };
+
   loadScript(TELEX_DIR + 'config.js')
     .catch(() => {})
     .then(() => loadScript(TELEX_DIR + 'signals/manifest.js'))
@@ -2516,6 +2602,13 @@
   requestAnimationFrame(frame);
 })();
 </script>
+
+<!-- The story: clock, dialogue, scripted telexes and sightings, endings. See ../Script/README.md -->
+<script src="../Script/dialogue.js"></script>
+<script src="../Script/clock.js"></script>
+<script src="../Script/dialogue-manager.js"></script>
+<script src="../Script/voyage.js"></script>
+<script src="../Script/game.js"></script>
 
 </body>
 </html>
