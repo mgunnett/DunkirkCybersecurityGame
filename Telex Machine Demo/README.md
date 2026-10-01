@@ -25,6 +25,12 @@ signals/
   05-homeward.js
   06-recall.js      not in the manifest — delivered mid-game instead
   07 … 11           the security drill — see "The cipher desk" below
+  07-weather.js
+  08-kwinte-key.js      key    ┐ Vigenère pair, indicator KWINTE
+  09-kwinte-cipher.js   cipher ┘
+  10-fuel-and-water.js
+  11-malo-key.js        key    ┐ Caesar pair, indicator MALO
+  12-malo-cipher.js     cipher ┘
 ```
 
 ## Fitting it into the ship
@@ -95,6 +101,89 @@ immediately followed by `{`. Both end the quoted block early.
 | `SIGN` | sign-off above the end mark; leave blank for none |
 | `ID` | how `TELEX.sendId()` refers to it — defaults to the filename |
 | `RAW` | `yes` keeps mixed case instead of upper-casing |
+
+### Plain, key and cipher traffic
+
+The helm (`Ship Functionality Demo/shipbuild-demo.html`) reads a `TYPE`
+header. Leave it out and the signal is `plain`. Cipher traffic comes in two
+slips, printed separately: a **key** first, then later the **cipher** it
+opens. The two are tied together by `INDICATOR`, which prints on both slips
+so the players can match them.
+
+```js
+// 08-kwinte-key.js
+TELEX.signal(`
+TYPE:      key
+INDICATOR: KWINTE
+CIPHER:    vigenere
+KEYWORD:   DYNAMO
+SERIAL:    NR 057
+---
+Traffic under indicator KWINTE is in Vigenere table.
+Keyword is the name of this operation.
+`);
+
+// 09-kwinte-cipher.js
+TELEX.signal(`
+TYPE:      cipher
+INDICATOR: KWINTE
+SERIAL:    NR 061
+---
+Hospital carrier sunk off the Kwinte buoy. Survivors in the
+water two miles north of the buoy.
+`);
+```
+
+Write the cipher's body in plain English. The machine enciphers it with the
+key's `CIPHER` settings and prints it in five-letter groups, padded out
+with X. `CIPHER` and its setting never reach the paper, so the key's body
+is the only clue the players get. Make it as plain or as cryptic as the
+puzzle needs.
+
+| `CIPHER` | Setting | Does |
+| --- | --- | --- |
+| `caesar` | `SHIFT: 7` | every letter moves forward that many places |
+| `vigenere` | `KEYWORD: DYNAMO` | running Vigenère on the keyword |
+| `atbash` | none | A↔Z, B↔Y and so on |
+| *(none)* | | the body is already enciphered; it's printed as written |
+
+Only letters are enciphered, so write numbers out as words. Put `GROUPS: no`
+on a cipher to keep its line breaks instead of grouping it. The plain text
+reaches puzzle code as `sig.plain`.
+
+How they come in: every signal arrives once before any of them repeats. A
+cipher never arrives before its key, and never straight after it while
+other traffic is waiting. Once everything has been through, only plain
+signals come round again. A cipher with no matching key logs a warning to
+the console.
+
+The paper itself is type only, like any teleprinter. Key and cipher
+traffic is marked in the log instead, with the sleuth: a detective in a
+fedora. The folder picks up the same mark once any cipher is filed.
+
+### The signal log
+
+After a slip has been read, **File it away** tears it off the machine and
+puts it in the manila folder beside the teleprinter. The red badge on the
+folder is the count. Click the folder to open the log: pick any signal to
+read it again. Filter by Plain or Cipher. Picking a cipher lays its key
+beside it if the key is on file; picking a key brings out its cipher. A
+slip that's still unread when the next signal comes in is filed and marked
+unread. The log lasts until the page is reloaded.
+
+Helm hooks:
+
+```js
+TELEX.incoming()                 // bring the next pick in now
+TELEX.incoming('09-kwinte-cipher')  // or a particular one, by id
+TELEX.openLog()  TELEX.closeLog()
+TELEX.log()                      // filed signals, newest first
+TELEX.get('09-kwinte-cipher').plain
+TELEX.on('file', sig => { … })   // 'print' | 'read' | 'file' | 'select'
+```
+
+`TYPE` and the log belong to the helm. The standalone prop in this folder
+(`telex.js`) doesn't handle them yet: it prints a cipher's body in clear.
 
 Any header the machine doesn't recognise is still parsed and handed to your
 code. `03-the-beaches.js` carries `ANSWER: 190`, which never reaches the

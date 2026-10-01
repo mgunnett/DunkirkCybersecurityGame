@@ -4,7 +4,7 @@ The book the player keeps by the wheel. Click it on the ship and it opens
 over the helm. The brass arrows either side (or the ← → keys, or a swipe)
 turn the pages. Esc or **Close the book** puts it away.
 
-Everything the book says is in plain `.txt` files in `pages/`. Edit those.
+Everything the book says is in the files in `pages/`. Edit those.
 You shouldn't need to touch the code.
 
 ```
@@ -12,32 +12,41 @@ index.html      the book
 rulebook.css    everything visual
 rulebook.js     reads the pages and lays them out
 pages/
-  contents.txt  which chapters are in the book, in order
-  00-title.txt  the title page
-  01-...txt     one file per chapter
+  contents.js   which chapters are in the book, in order
+  00-title.js   the title page
+  01-...js      one file per chapter
 ```
 
-## It needs a web server
+## No web server needed
 
-The book reads its `.txt` files with the browser, and browsers won't let a
-page opened straight from disk (a `file://` address) read other files. So
-open the game through a local server:
+Each page is a small script, so the book opens straight from disk: just
+double-click `index.html` (or `Ship Functionality Demo/shipbuild-demo.html`).
+It works the same hosted online.
 
-- **VS Code:** install the *Live Server* extension, right-click
-  `Ship Functionality Demo/shipbuild-demo.html` and choose
-  **Open with Live Server**.
-- **Or** in the project folder run `python -m http.server`, then visit
-  `http://localhost:8000/Ship%20Functionality%20Demo/shipbuild-demo.html`.
+## The shape of a chapter file
 
-Hosted online (GitHub Pages, say) it works as it is. If you do open it
-from disk, the book prints this same advice on its first page rather than
-showing nothing.
+A chapter file is ordinary text wrapped in one line of code at each end:
+
+```
+rulebookPage(String.raw`
+# Chapter Title
+
+The text of the chapter...
+`);
+```
+
+Keep the first and last lines exactly as they are and write everything
+in between. The text can't contain a backtick (`` ` ``) or `${`, since
+those would end the text early. That's why telex blocks use `~~~` rather
+than three backticks. If a file breaks, the book prints a "Chapter won't
+read" page naming it.
 
 ## Adding or reordering chapters
 
-Put a new `.txt` file in `pages/` and add its name to `pages/contents.txt`.
-The order of the lines in `contents.txt` is the order of the chapters.
-Lines starting with `#` there are notes and are skipped.
+Copy a chapter file in `pages/`, rename it, and add its name to the list
+in `pages/contents.js`, in quotes with a comma after it. The order of the
+list is the order of the chapters. Lines starting with `//` there are
+notes and are skipped.
 
 Each chapter starts on a new page. A name that doesn't match a file
 (watch the capitals: they matter once the game is online) prints a
@@ -57,7 +66,7 @@ window and it's laid out again. There's nothing to count.
 | `- item` | a bulleted item |
 | `> text` | a boxed note (several `>` lines in a row make one box) |
 | `**bold**`, `*italic*` | bold, italic |
-| ```` ``` ```` on a line before and after | a telex slip in typewriter type, line breaks kept |
+| `~~~` on a line before and after | a telex slip in typewriter type, line breaks kept |
 | `===` on its own line | start a new page here |
 | `// anything` | a note to yourself; never printed |
 | `@title-page` as the first line | lay the file out as a centred title page |
