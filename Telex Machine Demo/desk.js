@@ -13,6 +13,10 @@
        a key onto the message, or pull the key off its clip.
      · Drag pages to arrange them however you like; Tidy lays them
        out again. Arrow keys move a focused page, Enter reads it.
+     · Plain telegrams that are the same stack into one pile: the same
+       signal received again, or signals sharing a STACK name, such as
+       the helm's recon report replies. Reading a stack reads the whole
+       pile, newest first.
 
    Load after telex.js and before decoder.js, which works from the
    same records (TELEX.desk).
@@ -49,7 +53,9 @@ const store = {
   suspect:  new Set(),   // keys the player has judged forged
   work:     new Map(),   // message -> { key, unclipped, done: Set of letter indexes }
   verdicts: new Map(),   // signal  -> { choice, correct }
-  pages:    new Map()    // signal  -> filed page { sig, html, el, paper, x, y }
+  pages:    new Map(),   // signal  -> the page it is filed on
+  list:     []           // every page once, in filing order:
+                         //   { sig, html, items: [{ sig, html }], el, paper, x, y }
 };
 
 let filter = 'all';
@@ -84,7 +90,7 @@ function kind(sig) {
 
 /* A key is a loose page only while no filed message has it clipped. */
 function clippedSomewhere(key) {
-  for (const p of store.pages.values()) if (workFor(p.sig).key === key && kind(p.sig) === 'cipher') return true;
+  for (const p of store.list) if (workFor(p.sig).key === key && kind(p.sig) === 'cipher') return true;
   return false;
 }
 
@@ -133,17 +139,57 @@ function autoPair() {
 
 /* ---------- filing ---------------------------------------------- */
 
+/* Plain telegrams that are the same go on one stack: the same signal
+   again, or any sharing a STACK name. Keys and enciphered messages keep
+   a page each, since they are clipped together. */
+function stackKey(sig) {
+  if (kind(sig) !== 'plain') return null;
+  return sig.stack ? 'stack:' + norm(sig.stack) : sig;
+}
+
 function file(sig, html) {
-  if (store.pages.has(sig)) return store.pages.get(sig);
-  const page = { sig: sig, html: html, el: null, paper: null, x: null, y: null, keyShown: undefined };
-  store.pages.set(sig, page);
-  build(page);
+  const sk = stackKey(sig);
+  if (!sk && store.pages.has(sig)) return store.pages.get(sig);
+  let page = sk && store.list.find(p => p.stackKey === sk);
+  if (page) {
+    page.items.push({ sig: sig, html: html });
+    page.sig = sig;                  // the newest goes on top
+    page.html = html;
+    store.pages.set(sig, page);
+    fill(page);
+    page.el.style.zIndex = ++topZ;
+  } else {
+    page = { sig: sig, html: html, items: [{ sig: sig, html: html }], stackKey: sk,
+             el: null, paper: null, x: null, y: null, keyShown: undefined };
+    store.pages.set(sig, page);
+    store.list.push(page);
+    build(page);
+  }
   render();
   el.open.classList.remove('is-new');
   void el.open.offsetWidth;          // restart the flash
   el.open.classList.add('is-new');
   return page;
 }
+
+/* The top telegram shows on the desk; reading the stack reads them all,
+   newest first. */
+function fill(page) {
+  page.paper.innerHTML = page.html;
+  page.paper._signal = page.sig;     // so TELEX.open() can read it
+  const rule = LF + LF + '- - - - - - - - - - - - - - - - - - -' + LF + LF;
+  page.paper._html = page.items.length > 1
+    ? page.items.slice().reverse().map(i => i.html).join(rule)
+    : null;
+  if (page.paper._html) {
+    const t = document.createElement('div');
+    t.innerHTML = page.paper._html;
+    page.paper._text = t.textContent;
+  } else {
+    page.paper._text = null;
+  }
+}
+const LF = String.fromCharCode(10);
 
 function build(page) {
   const sig = page.sig;
@@ -154,14 +200,15 @@ function build(page) {
 
   page.keyEl = h('div', 'page__key');
   page.paper = h('div', 'page__paper slip');
-  page.paper.innerHTML = page.html;
-  page.paper._signal = sig;          // so TELEX.open() can read it
+  fill(page);
+  page.count = h('span', 'page__count');
   page.stamp = h('span', 'page__stamp');
   page.label = h('span', 'page__label');
 
   n.appendChild(page.keyEl);
   n.appendChild(page.paper);
   n.appendChild(h('span', 'page__clip'));
+  n.appendChild(page.count);
   n.appendChild(page.stamp);
   n.appendChild(page.label);
   n.addEventListener('click', () => read(page));
@@ -175,7 +222,7 @@ function build(page) {
 function render() {
   let cipher = 0, plain = 0, any = 0;
 
-  store.pages.forEach(page => {
+  store.list.forEach(page => {
     const sig = page.sig;
     const k = kind(sig);
     const w = k === 'cipher' ? workFor(sig) : null;
@@ -205,14 +252,21 @@ function render() {
     page.stamp.textContent = v ? (v.choice ? 'Genuine' : 'Suspect') : '';
     page.stamp.className = 'page__stamp' + (v ? (v.choice ? ' is-ok' : ' is-bad') : '');
 
-    let label = (sig.serial || sig.id || 'Signal') + ' · ';
+    const many = page.items.length;
+    page.count.textContent = many > 1 ? '×' + many : '';
+    page.el.classList.toggle('is-stack', many > 1);
+    let label = (many > 1 && sig.stack ? sig.stack : sig.serial || sig.id || 'Signal') + ' · ';
     if (k === 'key') label += 'key · ' + keyName(sig);
-    else if (k === 'plain') label += 'plain';
+    else if (k === 'plain') label += 'plain' + (many > 1 ? ' · stack of ' + many : '');
     else {
       const total = C.lines(sig).join('').replace(/[^A-Z]/g, '').length || 1;
       label += 'cipher';
       if (key) label += ' + ' + keyName(key);
-      if (w.done.size) label += ' · ' + Math.round(w.done.size / total * 100) + '% decoded';
+      if (key && w.done.size) {
+        if (C.letters(key.key) !== C.letters(sig.keyword)) label += ' · doesn’t read';
+        else if (w.done.size >= total) label += ' · decoded';
+        else label += ' · ' + Math.round(w.done.size / total * 100) + '% decoded';
+      }
     }
     page.label.textContent = label;
     page.el.setAttribute('aria-label', label + (v ? ', judged ' + page.stamp.textContent.toLowerCase() : '') +
@@ -228,7 +282,7 @@ function render() {
     b.querySelector('b').textContent = f === 'all' ? any : f === 'cipher' ? cipher : plain;
   });
 
-  const visible = Array.from(store.pages.values()).filter(p => !p.el.hidden);
+  const visible = store.list.filter(p => !p.el.hidden);
   el.empty.hidden = visible.length > 0;
   el.empty.textContent = any
     ? (filter === 'plain' ? 'No plain telegrams on the desk.' : 'No cipher telegrams on the desk.')
@@ -250,7 +304,7 @@ function place(page) {
   const width = el.surface.clientWidth - PAD * 2;
   const cols = Math.max(1, Math.floor((width + GAP) / (pw + GAP)));
   const bottoms = new Array(cols).fill(PAD);
-  store.pages.forEach(p => {
+  store.list.forEach(p => {
     if (p === page || p.el.hidden || p.x === null) return;
     const col = Math.min(cols - 1, Math.max(0, Math.round((p.x - PAD) / (pw + GAP))));
     bottoms[col] = Math.max(bottoms[col], p.y + p.el.offsetHeight + GAP);
@@ -262,7 +316,7 @@ function place(page) {
 }
 
 function tidy() {
-  const visible = Array.from(store.pages.values()).filter(p => !p.el.hidden);
+  const visible = store.list.filter(p => !p.el.hidden);
   visible.forEach(p => { p.x = null; });
   visible.forEach(place);
   el.surface.scrollTop = 0;
@@ -451,7 +505,7 @@ document.addEventListener('keydown', e => {
 /* Pages keep their place if the window narrows. */
 window.addEventListener('resize', () => {
   if (!isOpen()) return;
-  store.pages.forEach(p => { if (p.x !== null && !p.el.hidden) { clamp(p); position(p); } });
+  store.list.forEach(p => { if (p.x !== null && !p.el.hidden) { clamp(p); position(p); } });
 });
 
 /* ---------- wiring ---------------------------------------------- */
@@ -475,7 +529,7 @@ T.desk = {
   close:     closeDesk,
   isOpen:    isOpen,
   file:      file,
-  pages:     () => Array.from(store.pages.values(), p => p.sig),
+  pages:     () => store.list.map(p => p.items.map(i => i.sig)),   // one array per page or stack
   keys:      () => store.keys.slice(),
   verdicts:  () => Array.from(store.verdicts, ([signal, v]) =>
                 ({ signal: signal, choice: v.choice, correct: v.correct }))

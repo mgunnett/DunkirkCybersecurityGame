@@ -35,8 +35,9 @@ const ITA2 = {
 };
 
 const el = {
-  viewer: document.getElementById('viewer'),
-  wrap:   document.querySelector('#viewer .viewerwrap')
+  /* The enlarged sheet: telex.js's viewer, or the helm's reading sheet */
+  viewer: document.getElementById('viewer') || desk.closest('.signal') || desk.parentNode,
+  wrap:   document.querySelector('#viewer .viewerwrap') || desk.parentNode
 };
 
 const state = {
@@ -154,9 +155,9 @@ function decoder(sig) {
   bench.appendChild(ui.tray);
   sec.appendChild(bench);
 
-  /* The key telegram itself, clipped to this one, so both can be read */
+  /* The key telegram itself, clipped to this one, so both can be read.
+     It goes below the tape, so the tape stays near the top of the sheet. */
   ui.keypaper = h('div', 'keypaper');
-  sec.appendChild(ui.keypaper);
 
   /* The tape, one row per printed line, one cell per character. */
   ui.tape = h('div', 'tape');
@@ -181,6 +182,7 @@ function decoder(sig) {
         n:   ui.cells.length,
         ch:  ch,
         li:  letter ? li++ : -1,
+        row: ui.rows.length,
         key: h('span', 'cell__key'),
         out: h('span', 'cell__out')
       };
@@ -213,6 +215,12 @@ function decoder(sig) {
   sec.appendChild(h('h4', 'tools__sub', 'Decoded'));
   sec.appendChild(ui.read);
 
+  /* What the decode comes to: the order itself, or a way out if it doesn't read */
+  ui.outcome = h('div', 'outcome');
+  ui.outcome.setAttribute('aria-live', 'polite');
+  sec.appendChild(ui.outcome);
+  sec.appendChild(ui.keypaper);
+
   renderKeys();
   render();
   return sec;
@@ -242,14 +250,102 @@ function render() {
   const n = work.done.size;
   if (!k) {
     ui.status.textContent = state.keys.length
-      ? 'Drag a key from the tray into the slot, then drag across the tape.'
+      ? 'Drag a key from the tray into the slot, then click a word or drag across the tape.'
       : 'Your key tray is empty. Keys arrive as a signal of their own.';
   } else if (n >= ui.letters) {
     ui.status.textContent = 'Tape fully decoded under ' + keyName(work.key) + '.';
   } else {
     ui.status.textContent = n + ' of ' + ui.letters + ' letters decoded under ' +
-      keyName(work.key) + '. Drag across the tape to decode more.';
+      keyName(work.key) + '. Click a word to decode it, or drag from the first letter ' +
+      'to the last to decode the whole tape at once.';
   }
+  renderOutcome();
+}
+
+/* ---------- what the decode comes to ---------------------------- */
+/*
+   Right key, whole tape decoded: the order is set out in plain type
+   and a 'telexdecoded' event goes out for the game to act on.
+
+   Wrong key: as soon as a word or so has come out as nonsense, the
+   desk says so and offers two ways out, both clicks: clear the tape
+   and try another key, or ask the signals officer, who puts in the
+   key the CYP line names. Nonsense is never presented as an order.
+*/
+
+const WRONG_AFTER = 5;          // letters of nonsense before the desk speaks up
+
+function plaintext(sig) {
+  return C.decipher(C.lines(sig).join('\n'), sig.keyword);
+}
+
+function rightKey(sig, key) {
+  return !!key && C.letters(key.key) === C.letters(sig.keyword);
+}
+
+function renderOutcome() {
+  const sig = state.sig;
+  const work = workFor(sig);
+  const n = work.done.size;
+  ui.outcome.textContent = '';
+  ui.outcome.className = 'outcome';
+  if (!work.key || !n) return;
+
+  if (rightKey(sig, work.key)) {
+    if (n < ui.letters) return;
+    ui.outcome.classList.add('is-good');
+    ui.outcome.appendChild(h('h4', 'outcome__head', 'Decoded. The signal reads:'));
+    ui.outcome.appendChild(h('pre', 'outcome__text', plaintext(sig)));
+    ui.outcome.appendChild(h('p', 'outcome__note',
+      'It reads plainly under ' + keyName(work.key) + ', so it was written by someone ' +
+      'holding that key. Whether you trust that key is the next question.'));
+    if (!work.revealed) {
+      work.revealed = true;
+      document.dispatchEvent(new CustomEvent('telexdecoded', {
+        detail: { signal: sig, key: work.key, text: plaintext(sig) }
+      }));
+    }
+    return;
+  }
+
+  if (n < Math.min(WRONG_AFTER, ui.letters)) return;
+  ui.outcome.classList.add('is-bad');
+  ui.outcome.appendChild(h('h4', 'outcome__head', 'This tape doesn’t read.'));
+  ui.outcome.appendChild(h('p', 'outcome__note',
+    'Under ' + keyName(work.key) + ' it comes out as nonsense, so don’t act on anything in it. ' +
+    'Either this is the wrong key, or whoever sent the signal doesn’t hold this key.'));
+
+  const row = h('div', 'outcome__actions');
+  const retry = h('button', 'vbtn', 'Clear the tape and try another key');
+  retry.type = 'button';
+  retry.addEventListener('click', () => {
+    work.done.clear();
+    setKey(null);
+    D.refresh();
+  });
+  row.appendChild(retry);
+
+  const named = sig.key_name && state.keys.find(k => k.key_name &&
+    k.key_name.toUpperCase().trim() === sig.key_name.toUpperCase().trim());
+  const ask = h('button', 'vbtn', 'Ask the signals officer');
+  ask.type = 'button';
+  ask.addEventListener('click', () => {
+    if (named && named !== work.key) {
+      work.done.clear();
+      setKey(named);
+      D.refresh();
+      ui.status.textContent = 'The signals officer reads the CYP line: ' + keyName(named) +
+        '. That key is in the slot now. Try the tape again.';
+    } else {
+      ui.outcome.querySelector('.outcome__officer').textContent = sig.key_name
+        ? 'The CYP line names ' + sig.key_name + ', and that key hasn’t come in. Until it does, ' +
+          'nothing on this tape can be read, so treat the signal with suspicion.'
+        : 'The CYP line names no key. Nothing on this tape can be read, so treat the signal with suspicion.';
+    }
+  });
+  row.appendChild(ask);
+  ui.outcome.appendChild(row);
+  ui.outcome.appendChild(h('p', 'outcome__officer'));
 }
 
 function renderKeys() {
@@ -387,17 +483,39 @@ function tapeDown(e) {
 
 function tapeMove(e) {
   if (!ui.dragging) return;
-  const c = cellAt(e);
+  let c = cellAt(e);
+  if (!c) {
+    /* Carried past the end of the tape, or off the screen: take it to the end */
+    const r = ui.tape.getBoundingClientRect();
+    if (e.clientY > r.bottom || e.clientY > innerHeight - 4) c = ui.cells[ui.cells.length - 1];
+    else if (e.clientY < r.top) c = ui.cells[0];
+  }
+  /* Keep the sheet moving when the drag reaches the edge of the screen */
+  const box = el.viewer;
+  if (box && e.clientY > innerHeight - 40) box.scrollTop += 14;
+  else if (box && e.clientY < 40) box.scrollTop -= 14;
   if (!c || c.n === ui.range.b) return;
   ui.range.b = ui.cur = c.n;
   paintRange();
 }
 
-function tapeUp() {
+function tapeUp(e) {
   if (!ui.dragging) return;
+  tapeMove(e);                     // the browser may have merged the last moves; end where the pointer let go
   ui.dragging = false;
   swallowClick();
+  if (ui.range.a === ui.range.b) ui.range = wordAt(ui.range.a);   // a click takes the whole word
   decodeRange();
+}
+
+/* The run of letters around one cell, on its own line of tape. */
+function wordAt(n) {
+  const c = ui.cells[n];
+  if (c.li < 0) return { a: n, b: n };
+  let a = n, b = n;
+  while (a > 0 && ui.cells[a - 1].li >= 0 && ui.cells[a - 1].row === c.row) a--;
+  while (b < ui.cells.length - 1 && ui.cells[b + 1].li >= 0 && ui.cells[b + 1].row === c.row) b++;
+  return { a: a, b: b };
 }
 
 function tapeKey(e) {
@@ -410,7 +528,7 @@ function tapeKey(e) {
   else if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     if (!keyword()) { nudge(); return; }
-    if (!ui.range) ui.range = { a: ui.cur, b: ui.cur };
+    if (!ui.range) ui.range = wordAt(ui.cur);
     decodeRange();
     return;
   }
@@ -517,6 +635,13 @@ function debrief(sig, v) {
     box.appendChild(list);
   }
   if (sig.lesson) box.appendChild(h('p', 'debrief__lesson', sig.lesson));
+
+  /* Fail-safe: however the decoding went, the debrief shows what the tape
+     really says under the key it was written with. */
+  if (C.isEnciphered(sig)) {
+    box.appendChild(h('h4', 'tools__sub', 'Under ' + (sig.key_name || 'its own key') + ' the tape reads'));
+    box.appendChild(h('pre', 'outcome__text', plaintext(sig)));
+  }
 
   const all = Array.from(state.verdicts.values());
   box.appendChild(h('p', 'debrief__tally',

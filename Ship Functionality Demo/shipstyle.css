@@ -1246,6 +1246,23 @@ body {
   transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
+/* With the cipher desk tools beside it (decoder.js) */
+.signal.has-tools {
+  grid-template-columns: auto minmax(0, 620px);
+  place-items: start center;
+  align-content: start;
+  justify-content: center;
+  gap: 18px;
+  overflow-y: auto;
+  padding-top: 9vh;
+}
+.signal.has-tools .signal__sheet { max-width: min(100%, 46ch); }
+
+@media (max-width: 1000px) {
+  .signal.has-tools { grid-template-columns: minmax(0, 1fr); }
+  .signal.has-tools .signal__sheet { max-height: none; justify-self: center; }
+}
+
 /* Same brass fitting as the one that lowers the glasses */
 .signal__back {
   position: absolute;

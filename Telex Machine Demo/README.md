@@ -125,6 +125,12 @@ holds unread traffic.
   out in columns again.
 - Each page is labelled with its serial, its type and how much has been
   decoded, and stamped *Genuine* or *Suspect* once the player has judged it.
+- **Stacks.** Plain telegrams that are the same go on one pile with a
+  count: the same signal received again, or signals sharing a `STACK`
+  header (`STACK: Recon reports`, or `stack:` on a signal object made in
+  code, as the helm's sighting replies are). Reading a stack reads the
+  whole pile, newest first. Keys and enciphered messages never stack,
+  since each one is clipped to its own key.
 
 The button and the desk are their own block in `index.html`, outside the
 prop. In the helm, put the button wherever it suits and drop its
@@ -164,11 +170,29 @@ KEY NAME: DAY KEY 31 MAY
 ```
 
 On the desk the player drags a key from the tray into the slot (or
-clicks it), then clicks and drags across the punched tape to decode it
-letter by letter. Keyboard: Tab to the tape, arrow keys, Shift to extend,
-Enter to decode. Decoding with the wrong key gives nonsense, and that's
-the point. A forgery enciphered under some other key won't read under
-the genuine one.
+clicks it), then decodes the punched tape. Clicking a word decodes that
+word, and one drag from the first letter to the last decodes the whole
+tape. Keyboard: Tab to the tape, arrow keys, Shift to extend, Enter to
+decode. Decoding with the wrong key gives nonsense, and that's the point.
+A forgery enciphered under some other key won't read under the genuine one.
+
+The decoding is built to these criteria:
+
+- **Clicks only.** No step needs typing: a key goes in by drag or click,
+  the tape decodes by click or drag, and the verdict is two buttons.
+- **Under a minute.** With its key already clipped, an order decodes in
+  two actions: click the slip, then drag across the tape.
+- **Right decode, true instruction. Wrong decode, a way out.**
+  - With the right key, a fully decoded tape sets the order out under
+    "Decoded. The signal reads:" and fires a `telexdecoded` event on
+    `document` (`{ signal, key, text }`) for the game to act on.
+  - With the wrong key, five letters of nonsense bring up "This tape
+    doesn't read" with two buttons. *Clear the tape and try another
+    key* starts over. *Ask the signals officer* puts in the key the CYP
+    line names, or says that key hasn't come in and the signal should be
+    treated with suspicion.
+  - Whatever happened on the tape, the debrief after the verdict shows
+    what it really says.
 
 **Is it genuine?** Any signal, enciphered or in clear, can ask the player
 to judge it. After they answer, the desk explains what gave it away.
@@ -197,16 +221,22 @@ To send a key and its message as a pair, force them from the operator
 panel one after the other. The lamp stays lit until both have printed.
 The panel tags key and cipher signals, but never says which are forged.
 
-The helm in `Ship Functionality Demo` loads `desk.js` and `desk.css`
-from this folder. Once a slip has been read and put down, it comes off
-the teleprinter and goes onto the desk, and the player can read it again
-from there. The helm doesn't have the decoder tools yet, so it still
-leaves keys, enciphered signals and drill signals out of its random pick.
+The helm in `Ship Functionality Demo` loads `desk.js`, `desk.css`,
+`decoder.js` and `decoder.css` from this folder. Once a slip has been
+read and put down, it comes off the teleprinter and goes onto the desk,
+and the player can read it again from there. Every signal in the manifest
+is in the helm's random pick, drill signals included. When the pick is an
+enciphered signal whose key hasn't come in yet, the helm sends the key
+first. The decoding tools open beside the helm's reading sheet, just as
+they do here, and the helm's sighting replies stack on the desk as
+*Recon reports*.
 
-The desk only needs these from whatever `window.TELEX` it finds:
-`on('printend' | 'close', fn)`, `take(sig)`, `open(paper)`,
-`cipher.letters / isEnciphered / lines`, and optionally `isReading()`.
-The helm provides them at the bottom of its teleprinter section.
+The desk and the decoder only need these from whatever `window.TELEX`
+they find: `on('printend' | 'open' | 'close', fn)`, `take(sig)`,
+`open(paper)`, `truthy`, and `cipher.letters / isEnciphered / encipher /
+decipher / lines`, plus `isReading()` if the page has its own reading
+sheet. The helm provides them at the bottom of its teleprinter section,
+along with its own copy of the cipher.
 
 ## Driving it from puzzle code
 

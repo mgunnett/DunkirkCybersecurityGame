@@ -1,8 +1,52 @@
 /* ==================================================================
    CIPHER DESK — sits beside the enlarged sheet
    ------------------------------------------------------------------
-   Uses the colour tokens from telex.css, so load it after that file.
+   Stands on its own, like desk.css: the helm loads it without
+   telex.css, so the colours and paper it needs are scoped to it here.
    ================================================================== */
+
+.tools{
+  --shell:#33382f;
+  --shell-dark:#1e211c;
+  --shell-light:#4a5142;
+  --edge-hi:rgba(255,248,220,.10);
+  --edge-lo:rgba(0,0,0,.65);
+  --brass:#b8934f;
+  --brass-dark:#6d5525;
+  --brass-hi:#e8cf94;
+  --paper:#e8dcbe;
+  --paper-2:#dccfab;
+  --paper-edge:#c2b28a;
+  --ink:#3b2d46;
+  --stop:#c4342a;
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+  box-sizing:border-box;
+  text-align:left;
+}
+.tools *,
+.tools *::before,
+.tools *::after{ box-sizing:inherit }
+
+/* Telegram paper (the clipped key telegram), as printed */
+.tools .slip{
+  position:relative;
+  display:block;
+  border:0;
+  background:
+    var(--grain),
+    repeating-linear-gradient(to bottom, rgba(0,0,0,.02) 0 1px, transparent 1px 6px),
+    linear-gradient(to right, var(--paper-edge) 0, var(--paper) 6%, var(--paper) 94%, var(--paper-edge) 100%),
+    var(--paper-2);
+  background-blend-mode:soft-light,normal,normal,normal;
+  box-shadow:0 0 0 1px rgba(0,0,0,.2), 0 4px 10px rgba(0,0,0,.45);
+  color:var(--ink);
+  font-family:'Courier Prime',ui-monospace,'Courier New',monospace;
+  white-space:pre-wrap;
+  overflow-wrap:break-word;
+}
+.tools .ch{ display:inline-block }
+.tools button:focus-visible,
+.tools .tape:focus-visible{ outline:2px solid #ffb27a; outline-offset:2px }
 
 :root{
   --desk-ink:#d9cfb6;
@@ -298,3 +342,40 @@ button.token:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px rgba(0,0,0,
   animation:none;
 }
 .keypaper .slip:hover{ transform:none }
+
+/* ---------------- what the decode comes to ---------------- */
+
+.outcome:empty{ display:none }
+.outcome{
+  margin-top:12px;
+  padding:12px 14px;
+  border-left:3px solid;
+  border-radius:3px;
+  background:rgba(0,0,0,.25);
+}
+.outcome.is-good{ border-color:var(--ok) }
+.outcome.is-bad{ border-color:var(--bad) }
+.outcome__head{ margin:0 0 8px; font-size:15px; font-weight:600; letter-spacing:.04em }
+.outcome.is-good .outcome__head{ color:var(--ok) }
+.outcome.is-bad .outcome__head{ color:#f08a7c }
+.outcome__note{ margin:8px 0 0; font-size:14px; line-height:1.5 }
+.outcome__officer{ margin:10px 0 0; font-size:14px; line-height:1.5; color:var(--brass-hi) }
+.outcome__officer:empty{ display:none }
+.outcome__actions{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px }
+.outcome__actions .vbtn{ border-color:#6b7360; color:var(--desk-ink) }
+.outcome__actions .vbtn:hover{ background:#262a20 }
+.outcome__text,
+.debrief .outcome__text{
+  margin:0;
+  padding:10px 12px;
+  overflow-x:auto;
+  background:
+    var(--grain),
+    linear-gradient(to right, var(--paper-edge), var(--paper) 4%, var(--paper) 96%, var(--paper-edge));
+  background-blend-mode:soft-light,normal;
+  color:var(--ink);
+  font-family:'Courier Prime',ui-monospace,'Courier New',monospace;
+  font-size:14px;
+  line-height:1.55;
+  white-space:pre-wrap;
+}

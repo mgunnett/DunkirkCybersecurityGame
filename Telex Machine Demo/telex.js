@@ -337,7 +337,7 @@ function openSlip(slip) {
      viewer should be clickable except the red X. */
   const big = document.createElement('div');
   big.className = 'slip';
-  big.innerHTML = slip.innerHTML;
+  big.innerHTML = slip._html || slip.innerHTML;    // a stack off the desk reads as one
   el.viewpaper.appendChild(big);
   el.viewer.classList.add('open');
   state.returnTo = slip;

@@ -288,3 +288,25 @@
 @media (prefers-reduced-motion:reduce){
   .deskopen.is-new b{ animation:none }
 }
+
+/* ---------------- a stack of the same telegram ---------------- */
+
+.page.is-stack .page__paper.slip{
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.2),
+    5px 5px 0 -1px var(--paper-2), 5px 5px 0 0 rgba(0,0,0,.28),
+    10px 10px 0 -1px var(--paper-edge), 10px 10px 0 0 rgba(0,0,0,.3),
+    0 12px 22px rgba(0,0,0,.55);
+}
+.page__count{
+  position:absolute; z-index:3;
+  top:-8px; right:-8px;
+  min-width:26px; padding:4px 7px;
+  border-radius:12px;
+  background:#221a09;
+  box-shadow:0 0 0 2px var(--brass), 0 2px 5px rgba(0,0,0,.6);
+  color:var(--brass-hi);
+  font-size:12px; font-weight:600; text-align:center;
+  pointer-events:none;
+}
+.page__count:empty{ display:none }

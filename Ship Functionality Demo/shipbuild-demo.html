@@ -6,6 +6,7 @@
 <title>Shipbuild Demo</title>
 <link rel="stylesheet" href="shipstyle.css">
 <link rel="stylesheet" href="../Telex Machine Demo/desk.css">
+<link rel="stylesheet" href="../Telex Machine Demo/decoder.css">
 </head>
 <body>
 
@@ -358,6 +359,9 @@
 <div class="signal" id="signal" role="dialog" aria-modal="true"
      aria-label="Signal" aria-hidden="true">
   <pre class="signal__sheet" id="signalSheet"></pre>
+  <!-- Cipher desk tools: filled by decoder.js for keys, enciphered signals
+       and signals the player has to judge -->
+  <aside class="tools" id="tools" aria-label="Cipher desk tools" hidden></aside>
   <button class="signal__back" id="signalBack" type="button">Put it down</button>
 </div>
 
@@ -376,7 +380,7 @@
       <button type="button" data-filter="plain" aria-pressed="false">Plain <b>0</b></button>
     </div>
     <button class="desk__tidy" id="desktidy" type="button">Tidy</button>
-    <p class="desk__hint">Drag pages to arrange them. Click a page to read it again.</p>
+    <p class="desk__hint">Drag pages to arrange them. Drop a key on a cipher message to clip it; pull a key off to unclip it. Click a page to read it again.</p>
     <button class="close" id="deskclose" type="button" aria-label="Put the desk away"></button>
   </header>
   <div class="desk__surface" id="desksurface">
@@ -1780,6 +1784,35 @@
     return out;
   }
 
+  // ---- The cipher, as in telex.js ----
+  // CIPHER: VIGENERE with KEYWORD: prints the body enciphered; the keyword never
+  // reaches the paper. KEY: is a key signal, printed with its key group.
+  const truthy = v => typeof v === 'string' ? !/^(no|false|off|0|)$/i.test(v.trim()) : !!v;
+  const letters = w => String(w || '').toUpperCase().replace(/[^A-Z]/g, '');
+
+  function vigenere(text, word, dir) {
+    const k = letters(word);
+    if (!k) return text;
+    let n = 0;
+    return text.replace(/[A-Z]/g, c => {
+      const shift = k.charCodeAt(n++ % k.length) - 65;
+      return String.fromCharCode((c.charCodeAt(0) - 65 + dir * shift + 26) % 26 + 65);
+    });
+  }
+
+  const isEnciphered = sig => truthy(sig.cipher) && letters(sig.keyword).length > 0;
+
+  function bodyText(sig) {
+    let body = sig.body || '';
+    if (isEnciphered(sig)) body = vigenere(body.toUpperCase(), sig.keyword, 1);
+    if (sig.key) body += '\n\nKEY GROUP ' + letters(sig.key);
+    return body;
+  }
+
+  function columns() {
+    return (window.TELEX_CONFIG && window.TELEX_CONFIG.columns) || 38;
+  }
+
   // Set a signal in teleprinter form, with the defaults from config.js
   function compose(sig) {
     const cfg = Object.assign({
@@ -1794,19 +1827,28 @@
       'PRI ' + (sig.priority || 'ROUTINE')
     ];
     if (sig.time) head.push('TOO ' + sig.time);
+    if (isEnciphered(sig)) head.push('CYP ' + (sig.key_name || 'DAY KEY'));
     head.push(bar);
     const sign = sig.sign !== undefined ? sig.sign : cfg.sign;
     const foot = sign ? [bar, sign, 'NNNN'] : [bar, 'NNNN'];
-    const out = head.concat(wrapText(sig.body || '', cfg.columns), foot).join('\n');
+    const out = head.concat(wrapText(bodyText(sig), cfg.columns), foot).join('\n');
     const raw = typeof sig.raw === 'string' ? !/^(no|false|off|0|)$/i.test(sig.raw.trim()) : !!sig.raw;
     return raw ? out : out.toUpperCase();
   }
+
+  const keysIn = new Set();     // KEY NAMEs that have been printed
 
   function pickSignal() {
     if (!signals.length) return null;
     let sig, guard = 0;
     do sig = signals[Math.floor(Math.random() * signals.length)];
     while (signals.length > 1 && sig === lastSignal && ++guard < 25);
+    // An enciphered signal waits for its key: if the key hasn't come in, send that first
+    const named = sig.key_name && sig.key_name.toUpperCase().trim();
+    if (isEnciphered(sig) && named && !keysIn.has(named)) {
+      const key = signals.find(k => k.key && k.key_name && k.key_name.toUpperCase().trim() === named);
+      if (key) sig = key;
+    }
     lastSignal = sig;
     return sig;
   }
@@ -1822,7 +1864,11 @@
   // From the helm it's only rows of type, one bar per printed line.
   function incoming(sig = pickSignal()) {
     if (!sig) return;
+    // Not while the slip in the machine is being read: putting it down files
+    // that slip on the desk, so the next one waits until it's off the machine
+    if (reading && !readingFrom) { setTimeout(() => incoming(sig), 1000); return; }
     current = sig;
+    if (sig.key && sig.key_name) keysIn.add(sig.key_name.toUpperCase().trim());
     printed = compose(sig);
     const lines = printed.split('\n');
     const cols = Math.max(...lines.map(l => l.length));
@@ -1874,7 +1920,7 @@
   // A page off the cipher desk, read again. It never goes back in the machine.
   function readPage(paper) {
     if (reading || !paper) return;
-    readSheet(paper.textContent, paper);
+    readSheet(paper._text || paper.textContent, paper);   // a stack reads as one
   }
 
   function readSheet(text, from) {
@@ -1882,8 +1928,10 @@
     readingFrom = from;
     tx.sheet.textContent = text;
     tx.sheet.scrollTop = 0;
+    tx.view.scrollTop = 0;
     tx.view.classList.add('is-open');
     tx.view.setAttribute('aria-hidden', 'false');
+    emit('open', from ? from._signal || null : current);   // decoder.js sets out its tools
 
     if (!stillness.matches) {
       tx.sheet.style.transition = 'none';
@@ -1972,7 +2020,8 @@
       priority: 'IMMEDIATE',
       body: 'Your report of enemy aircraft ' + name + ' bearing ' + bearing +
             ' degrees received.\n\nRecon sent.',
-      sign: ''
+      sign: '',
+      stack: 'Recon reports'                     // these pile up together on the desk
     }), REPLY_DELAY * 1000);
 
     // For the rest of the game to read: what was reported
@@ -2055,11 +2104,7 @@
   window.TELEX = {
     // Keys, enciphered and drill signals need the cipher desk, which the
     // helm doesn't have yet; printed here they'd give away the plaintext.
-    signal: text => {
-      const sig = parseSignal(text);
-      if (!sig.key && !sig.cipher && sig.genuine === undefined) signals.push(sig);
-      return sig;
-    },
+    signal: text => { const sig = parseSignal(text); signals.push(sig); return sig; },
     load: async names => {
       for (const name of names) {
         try { await loadScript(TELEX_DIR + 'signals/' + name); }
@@ -2074,10 +2119,13 @@
     take: takeSlip,                              // lift the read slip off for the desk
     open: readPage,                              // read a page off the desk
     isReading: () => reading,
+    truthy,
     cipher: {
-      letters: w => String(w || '').toUpperCase().replace(/[^A-Z]/g, ''),
-      isEnciphered: () => false,                 // cipher traffic is kept out of the helm for now
-      lines: sig => wrapText(sig.body || '', 38)
+      letters,
+      isEnciphered,
+      encipher: (text, word) => vigenere(String(text).toUpperCase(), word, 1),
+      decipher: (text, word) => vigenere(String(text).toUpperCase(), word, -1),
+      lines: sig => wrapText(bodyText(sig), columns())   // the body as printed
     }
   };
 
@@ -2097,6 +2145,7 @@
 })();
 </script>
 <script src="../Telex Machine Demo/desk.js"></script>
+<script src="../Telex Machine Demo/decoder.js"></script>
 
 </body>
 </html>
