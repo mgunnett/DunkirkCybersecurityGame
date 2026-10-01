@@ -23,7 +23,6 @@
       <div class="horizon" id="horizon">
         <div class="sky"></div>
         <div class="horizon__clouds" id="clouds"></div>
-        <div class="air" id="air"></div>
         <div class="haze"></div>
         <div class="sea"></div>
         <div class="swell" id="swell"></div>
@@ -377,6 +376,11 @@
      aria-label="Signal" aria-hidden="true">
   <pre class="signal__sheet" id="signalSheet"></pre>
   <button class="signal__back" id="signalBack" type="button">File it away</button>
+  <!-- The rulebook's spine, peeking in at the right. Opens the book beside the slip. -->
+  <button class="book-spine" id="signalBook" type="button"
+          aria-label="Rulebook: open it beside the signal">
+    <span class="book-spine__title">RULEBOOK</span>
+  </button>
 </div>
 
 <!-- The signal log: every slip that's been read and filed. Key and cipher
@@ -415,19 +419,6 @@
   </symbol>
 </svg>
 
-<!-- Artwork for things outside the window. Shapes here, colours in the stylesheet. -->
-<template id="art-island">
-  <svg class="art art--island" viewBox="0 0 240 90" preserveAspectRatio="none">
-    <path d="M0 90 L0 87 L38 76 L92 28 L140 58 L188 46 L240 87 L240 90 Z"/>
-  </svg>
-</template>
-  <button class="signal__back" id="signalBack" type="button">Put it down</button>
-  <!-- The rulebook's spine, peeking in at the right. Opens the book beside the slip. -->
-  <button class="book-spine" id="signalBook" type="button"
-          aria-label="Rulebook: open it beside the signal">
-    <span class="book-spine__title">RULEBOOK</span>
-  </button>
-</div>
 
 <!-- Reading the rulebook. The book stays in its own folder (../Rulebook Demo)
      and is loaded here the first time it's opened. -->
@@ -643,10 +634,6 @@
     { art: 'buoy-starboard', x:   68, y:   840, w: 3.4, h:  11 },
     { art: 'sloop',          x:  250, y:   520, w:  12, h:  16 },
     { art: 'sloop',          x: -880, y:  1600, w:  12, h:  16 },
-    { art: 'lighthouse',     x: -520, y:   900, w:  12, h:  42 },
-    { art: 'freighter',      x: 1400, y: -1500, w: 180, h:  40 },
-    { art: 'island',         x:  900, y:  1300, w: 700, h: 130 },
-    { art: 'island',         x:-1500, y:  -900, w: 600, h:  90 }
     //{ art: 'lighthouse',     x: -520, y:   900, w:  12, h:  42 },
     //{ art: 'freighter',      x: 1400, y: -1500, w: 180, h:  40 },
   ];
@@ -803,7 +790,6 @@
   const norm  = d => ((d % 360) + 360) % 360;
   const DEG   = 180 / Math.PI;
   const within = ([lo, hi]) => lo + Math.random() * (hi - lo);   // seconds; between() below is ms
-  const between = ([lo, hi]) => lo + Math.random() * (hi - lo);
   const signed = v => {                          // -12.4 -> "−0012", for the position indicator
     const n = Math.round(v);
     return (n < 0 ? '−' : '+') + String(Math.abs(n)).padStart(4, '0');
@@ -1343,7 +1329,6 @@
     }
 
     for (const c of clouds) c.b = norm(c.b + WIND * dt);
-    flyAircraft(dt);
 
     flyAircraft(sail);
     drawWorld();
@@ -1793,7 +1778,6 @@
   //   key     the key to a later cipher, tied to it by INDICATOR
   //   cipher  enciphered with its key and printed in five-letter groups;
   //           it never comes in before its key has
-  // Signals are the files in ../Telex Machine Demo/signals, read the same way.
   const tx = {
     root:  document.getElementById('telex'),
     slip:  document.getElementById('telexSlip'),
@@ -1921,49 +1905,6 @@
     const lines = [];
     for (let i = 0; i < groups.length; i += perLine) lines.push(groups.slice(i, i + perLine).join(' '));
     return { lines, count: groups.length };
-    back:  document.getElementById('signalBack')
-  };
-  const signals   = [];
-  let lastSignal  = null;      // so the random pick doesn't repeat itself
-  let printed     = '';        // the text on the slip in the machine
-  let unread      = false;     // lamp stays on until it's picked up
-  let reading     = false;
-  let signalTimer = 0;
-
-  // A signal file is a header block, a --- rule, then the message.
-  // Unknown headers are kept under lower_snake_case keys, as in telex.js.
-  function parseSignal(text) {
-    const lines = String(text).replace(/\r\n?/g, '\n').split('\n');
-    const sig = {};
-    const body = [];
-    let inHeader = true;
-    for (const line of lines) {
-      if (inHeader) {
-        if (/^-{3,}\s*$/.test(line.trim())) { inHeader = false; continue; }
-        const m = line.match(/^([A-Za-z][A-Za-z0-9 _-]*):[ \t]*(.*)$/);
-        if (m) { sig[m[1].trim().toLowerCase().replace(/[ -]+/g, '_')] = m[2].trim(); continue; }
-        if (!line.trim()) continue;
-        inHeader = false;                        // no rule given; the body starts here
-      }
-      body.push(line);
-    }
-    sig.body = body.join('\n').trim();
-    return sig;
-  }
-
-  function wrapText(text, width) {
-    const out = [];
-    text.split(/\n{2,}/).forEach((para, n) => {
-      if (n) out.push('');
-      let line = '';
-      para.replace(/\s+/g, ' ').trim().split(' ').forEach(word => {
-        if (!line) line = word;
-        else if ((line + ' ' + word).length <= width) line += ' ' + word;
-        else { out.push(line); line = word; }
-      });
-      if (line) out.push(line);
-    });
-    return out;
   }
 
   // Set a signal in teleprinter form, with the defaults from config.js
@@ -2024,6 +1965,7 @@
 
   function expectSignal(range) {
     clearTimeout(signalTimer);
+    if (scripted.signals) return;                // the Script sends them instead
     signalTimer = setTimeout(() => incoming(), between(range));
   }
 
@@ -2042,33 +1984,6 @@
     printed = compose(sig);
     delivered.add(sig);
     lastSignal = sig;
-    const sign = sig.sign !== undefined ? sig.sign : cfg.sign;
-    const foot = sign ? [bar, sign, 'NNNN'] : [bar, 'NNNN'];
-    const out = head.concat(wrapText(sig.body || '', cfg.columns), foot).join('\n');
-    const raw = typeof sig.raw === 'string' ? !/^(no|false|off|0|)$/i.test(sig.raw.trim()) : !!sig.raw;
-    return raw ? out : out.toUpperCase();
-  }
-
-  function pickSignal() {
-    if (!signals.length) return null;
-    let sig, guard = 0;
-    do sig = signals[Math.floor(Math.random() * signals.length)];
-    while (signals.length > 1 && sig === lastSignal && ++guard < 25);
-    lastSignal = sig;
-    return sig;
-  }
-
-  function expectSignal(range) {
-    clearTimeout(signalTimer);
-    if (scripted.signals) return;                // the Script sends them instead
-    signalTimer = setTimeout(() => incoming(), between(range) * 1000);   // range is in seconds
-  }
-
-  // A signal comes in: the last slip is torn off and a fresh one feeds out.
-  // From the helm it's only rows of type, one bar per printed line.
-  function incoming(sig = pickSignal()) {
-    if (!sig) return;
-    printed = compose(sig);
     const lines = printed.split('\n');
     const cols = Math.max(...lines.map(l => l.length));
 
@@ -2110,11 +2025,6 @@
   function over(target, sheet) {
     const from = target.getBoundingClientRect();
     const to = sheet.getBoundingClientRect();
-  tx.slip.addEventListener('animationend', slipFed);
-
-  // Transform that lays the reading sheet over the slip on the desk
-  function overSlip(to) {
-    const from = tx.slip.getBoundingClientRect();
     return 'translate(' + (from.left - to.left) + 'px,' + (from.top - to.top) + 'px) ' +
            'scale(' + (from.width / to.width) + ',' + (from.height / to.height) + ')';
   }
@@ -2126,15 +2036,12 @@
 
   function pickUpSlip() {
     if (reading || tx.slip.disabled || !current) return;
-  function pickUpSlip() {
-    if (reading || tx.slip.disabled) return;
     reading = true;
     if (unread) {
       unread = false;
       tx.root.classList.remove('is-calling');
     }
     setSheet(tx.sheet, current);
-    tx.sheet.textContent = printed;
     tx.sheet.scrollTop = 0;
     tx.view.classList.add('is-open');
     tx.view.setAttribute('aria-hidden', 'false');
@@ -2143,7 +2050,6 @@
       tx.sheet.style.transition = 'none';
       tx.sheet.style.transform = '';
       tx.sheet.style.transform = over(tx.slip, tx.sheet);
-      tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
       void tx.sheet.offsetWidth;
       tx.sheet.style.transition = '';
       tx.sheet.style.transform = '';
@@ -2164,6 +2070,7 @@
     tearOff();
     tx.log.focus({ preventScroll: true });
     expectSignal(SIGNAL_GAP);
+    tx.root.dispatchEvent(new CustomEvent('signalputdown', { bubbles: true }));
   }
 
   function tearOff() {
@@ -2335,27 +2242,11 @@
   tx.log.addEventListener('click', openLog);
   tx.shut.addEventListener('click', closeLog);
   tx.book.addEventListener('click', ev => { if (ev.target === tx.book) closeLog(); });
-  window.addEventListener('keydown', ev => {
-    if (ev.key !== 'Escape') return;
-    if (reading) putSlipDown();
-    else if (browsing) closeLog();
-  function putSlipDown() {
-    if (!reading) return;
-    reading = false;
-    if (!stillness.matches) tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
-    tx.view.classList.remove('is-open');
-    tx.view.setAttribute('aria-hidden', 'true');
-    tx.slip.focus({ preventScroll: true });
-    expectSignal(SIGNAL_GAP);
-    tx.root.dispatchEvent(new CustomEvent('signalputdown', { bubbles: true }));
-  }
-
-  tx.slip.addEventListener('click', pickUpSlip);
-  tx.back.addEventListener('click', putSlipDown);
-  tx.view.addEventListener('click', ev => { if (ev.target === tx.view) putSlipDown(); });
   // With the rulebook open over the slip, Escape closes only the book.
   window.addEventListener('keydown', ev => {
-    if (reading && ev.key === 'Escape' && !document.getElementById('bookroom').classList.contains('is-open')) putSlipDown();
+    if (ev.key !== 'Escape' || document.getElementById('bookroom').classList.contains('is-open')) return;
+    if (reading) putSlipDown();
+    else if (browsing) closeLog();
   });
 
   // ---- Rulebook -----------------------------------------------------------
@@ -2501,16 +2392,6 @@
     log:     () => filed.map(e => e.sig),        // what's been filed, newest first
     on:      (name, fn) => { (listeners[name] = listeners[name] || []).push(fn); }
                                                  // 'print' | 'read' | 'file' | 'select'
-  window.TELEX = {
-    signal: text => { const sig = parseSignal(text); signals.push(sig); return sig; },
-    load: async names => {
-      for (const name of names) {
-        try { await loadScript(TELEX_DIR + 'signals/' + name); }
-        catch (e) { console.error('[telex] could not load ' + e.message); }
-      }
-      expectSignal(SIGNAL_FIRST);
-    },
-    incoming                                     // bring a signal in now, from code
   };
 
   // ---- For the Script (../Script) ------------------------------------------

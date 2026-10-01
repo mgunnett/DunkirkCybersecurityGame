@@ -182,7 +182,6 @@ body {
 
 /* --- Things out in the water ----------------------------------------------------- */
 
-.art--island  path { fill: #3a5762; }
 
 .art--lighthouse .art__tower   { fill: #f1ece0; }
 .art--lighthouse .art__band    { fill: var(--vermilion); }
@@ -1190,22 +1189,6 @@ body {
 /* --- The slip, picked up and held close enough to read -------------------- */
 
 .signal {
-}
-
-@keyframes lamp {
-  0% {
-    fill: #ff7a33;
-    filter: drop-shadow(0 0 4px rgba(255, 122, 51, 0.9));
-  }
-  50% {
-    fill: #4a1a12;
-    filter: none;
-  }
-}
-
-/* --- The slip, picked up and held close enough to read -------------------- */
-
-.signal {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -1360,44 +1343,18 @@ body {
   position: fixed;
   inset: 0;
   z-index: 20;
-  display: grid;
-  place-items: center;
-  padding: 7vh 4vw;
-  background: rgba(8, 4, 2, 0.72);
+  background: #0b0c0a;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+  transition: opacity 0.35s ease, visibility 0s linear 0.35s;
 }
 
-.signal.is-open {
 .room.is-open {
   opacity: 1;
   visibility: visible;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.35s ease;
 }
 
-/* The same slip, at reading size. It grows out of the machine (see pickUpSlip). */
-.signal__sheet {
-  max-width: 100%;
-  max-height: 84vh;
-  margin: 0;
-  padding: 1.7em 1.5em 2em;
-  overflow: auto;
-  font-family: "Courier Prime", "Courier New", Courier, monospace;
-  font-size: clamp(11px, 2.1vh, 16px);
-  line-height: 1.55;
-  white-space: pre;
-  color: #2e2438;
-  background:
-    repeating-linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0 1px, rgba(0, 0, 0, 0) 1px 6px),
-    linear-gradient(90deg, #d6c79f 0%, #e8dcbe 5%, #efe5ca 50%, #e8dcbe 95%, #d6c79f 100%);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 22px 44px rgba(0, 0, 0, 0.6);
-  transform-origin: 0 0;
-  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-
-/* Same brass fitting as the one that lowers the glasses */
-.signal__back {
 .room__frame {
   display: block;
   width: 100%;
@@ -1463,14 +1420,13 @@ body {
   transition: filter 0.2s ease, transform 0.2s ease;
 }
 
-.signal__back:hover,
-.signal__back:focus-visible {
 .room__back:hover,
 .room__back:focus-visible {
   filter: brightness(1.1) drop-shadow(0 0 6px rgba(227, 198, 132, 0.6));
   transform: translateY(-1px);
   outline: none;
 }
+
 
 /* The sleuth: a noir detective in fedora and turned-up collar. It marks
    key and cipher traffic wherever it goes. Fill follows currentColor. */
