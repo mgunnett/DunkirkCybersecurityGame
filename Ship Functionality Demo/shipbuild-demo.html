@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shipbuild Demo</title>
 <link rel="stylesheet" href="shipstyle.css">
+<link rel="stylesheet" href="../Telex Machine Demo/desk.css">
+<link rel="stylesheet" href="../Telex Machine Demo/decoder.css">
 <link rel="stylesheet" href="../Script/script.css">
 </head>
 <body>
@@ -174,6 +176,10 @@
         <span class="telex__type" id="telexType"></span>
       </button>
     </div>
+    <!-- Lit after a German aircraft is identified: click the machine to report it -->
+    <button class="telex__report" id="telexReport" type="button" hidden
+            aria-label="Report the German aircraft on the telex">
+      <span class="telex__tag">Report sighting</span>
 
     <!-- The signal log. Read slips are filed in here. -->
     <button class="telex__log" id="telexLog" type="button" aria-label="Signal log: nothing filed">
@@ -376,6 +382,9 @@
 <div class="signal" id="signal" role="dialog" aria-modal="true"
      aria-label="Signal" aria-hidden="true">
   <pre class="signal__sheet" id="signalSheet"></pre>
+  <!-- Cipher desk tools: filled by decoder.js for keys, enciphered signals
+       and signals the player has to judge -->
+  <aside class="tools" id="tools" aria-label="Cipher desk tools" hidden></aside>
   <button class="signal__back" id="signalBack" type="button">File it away</button>
 </div>
 
@@ -427,6 +436,29 @@
           aria-label="Rulebook: open it beside the signal">
     <span class="book-spine__title">RULEBOOK</span>
   </button>
+</div>
+
+<!-- The cipher desk. Every slip is taken off the teleprinter and filed here once
+     it has been read. The desk itself lives in ../Telex Machine Demo (desk.js). -->
+<button class="deskopen" id="deskopen" type="button" aria-haspopup="dialog" aria-expanded="false">
+  Cipher desk <b id="deskcount">0</b>
+</button>
+
+<div class="desk" id="desk" role="dialog" aria-modal="true" aria-label="Cipher desk" hidden>
+  <header class="desk__bar">
+    <div class="desk__plate">Cipher desk</div>
+    <div class="desk__filters" role="group" aria-label="Show">
+      <button type="button" data-filter="all" aria-pressed="true">All <b>0</b></button>
+      <button type="button" data-filter="cipher" aria-pressed="false">Cipher <b>0</b></button>
+      <button type="button" data-filter="plain" aria-pressed="false">Plain <b>0</b></button>
+    </div>
+    <button class="desk__tidy" id="desktidy" type="button">Tidy</button>
+    <p class="desk__hint">Drag pages to arrange them. Drop a key on a cipher message to clip it; pull a key off to unclip it. Click a page to read it again.</p>
+    <button class="close" id="deskclose" type="button" aria-label="Put the desk away"></button>
+  </header>
+  <div class="desk__surface" id="desksurface">
+    <p class="desk__empty" id="deskempty"></p>
+  </div>
 </div>
 
 <!-- Reading the rulebook. The book stays in its own folder (../Rulebook Demo)
@@ -1603,6 +1635,12 @@
     gl.verdict.textContent = (correct ? 'Correct: ' : 'Not quite: ') +
       'that’s a ' + name + ', ' + SIDES[side] + '.';
     gl.ask.classList.add('is-answered', correct ? 'is-right' : 'is-wrong');
+
+    // A German aircraft rightly called: it wants reporting on the telex
+    if (correct && side === 'german') {
+      gl.verdict.textContent += ' Lower the glasses and report it on the telex.';
+      askReport({ aircraft: art, name, bearing: plane.b });
+    }
     gl.lower.focus({ preventScroll: true });
 
     // For the rest of the game to read: what was up there, and what you called it
@@ -1801,6 +1839,7 @@
     view:  document.getElementById('signal'),
     sheet: document.getElementById('signalSheet'),
     back:  document.getElementById('signalBack'),
+    report: document.getElementById('telexReport')
     log:   document.getElementById('telexLog'),
     count: document.getElementById('telexCount'),
     book:  document.getElementById('log'),
@@ -1928,6 +1967,17 @@
   let printed     = '';        // the text on the slip in the machine
   let unread      = false;     // lamp stays on until it's picked up
   let reading     = false;
+  let current     = null;      // the signal on the slip in the machine
+  let readingFrom = null;      // null: the slip in the machine; else a page off the desk
+  let taking      = false;     // the slip just put down may be lifted off for the desk
+  const txListeners = {};
+
+  // The cipher desk (desk.js) listens for 'printend' and 'close'
+  function emit(name, payload) {
+    (txListeners[name] || []).forEach(fn => {
+      try { fn(payload); } catch (e) { console.error('[telex]', e); }
+    });
+  }
   let signalTimer = 0;
 
   // A signal file is a header block, a --- rule, then the message.
@@ -1966,6 +2016,35 @@
     return out;
   }
 
+  // ---- The cipher, as in telex.js ----
+  // CIPHER: VIGENERE with KEYWORD: prints the body enciphered; the keyword never
+  // reaches the paper. KEY: is a key signal, printed with its key group.
+  const truthy = v => typeof v === 'string' ? !/^(no|false|off|0|)$/i.test(v.trim()) : !!v;
+  const letters = w => String(w || '').toUpperCase().replace(/[^A-Z]/g, '');
+
+  function vigenere(text, word, dir) {
+    const k = letters(word);
+    if (!k) return text;
+    let n = 0;
+    return text.replace(/[A-Z]/g, c => {
+      const shift = k.charCodeAt(n++ % k.length) - 65;
+      return String.fromCharCode((c.charCodeAt(0) - 65 + dir * shift + 26) % 26 + 65);
+    });
+  }
+
+  const isEnciphered = sig => truthy(sig.cipher) && letters(sig.keyword).length > 0;
+
+  function bodyText(sig) {
+    let body = sig.body || '';
+    if (isEnciphered(sig)) body = vigenere(body.toUpperCase(), sig.keyword, 1);
+    if (sig.key) body += '\n\nKEY GROUP ' + letters(sig.key);
+    return body;
+  }
+
+  function columns() {
+    return (window.TELEX_CONFIG && window.TELEX_CONFIG.columns) || 38;
+  }
+
   // Set a signal in teleprinter form, with the defaults from config.js
   function compose(sig) {
     const cfg = Object.assign({
@@ -1980,6 +2059,7 @@
       'PRI ' + (sig.priority || 'ROUTINE')
     ];
     if (sig.time) head.push('TOO ' + sig.time);
+    if (isEnciphered(sig)) head.push('CYP ' + (sig.key_name || 'DAY KEY'));
     head.push(bar);
 
     let body, sign;
@@ -2044,22 +2124,33 @@
     lastSignal = sig;
     const sign = sig.sign !== undefined ? sig.sign : cfg.sign;
     const foot = sign ? [bar, sign, 'NNNN'] : [bar, 'NNNN'];
-    const out = head.concat(wrapText(sig.body || '', cfg.columns), foot).join('\n');
+    const out = head.concat(wrapText(bodyText(sig), cfg.columns), foot).join('\n');
     const raw = typeof sig.raw === 'string' ? !/^(no|false|off|0|)$/i.test(sig.raw.trim()) : !!sig.raw;
     return raw ? out : out.toUpperCase();
   }
+
+  const keysIn = new Set();     // KEY NAMEs that have been printed
 
   function pickSignal() {
     if (!signals.length) return null;
     let sig, guard = 0;
     do sig = signals[Math.floor(Math.random() * signals.length)];
     while (signals.length > 1 && sig === lastSignal && ++guard < 25);
+    // An enciphered signal waits for its key: if the key hasn't come in, send that first
+    const named = sig.key_name && sig.key_name.toUpperCase().trim();
+    if (isEnciphered(sig) && named && !keysIn.has(named)) {
+      const key = signals.find(k => k.key && k.key_name && k.key_name.toUpperCase().trim() === named);
+      if (key) sig = key;
+    }
     lastSignal = sig;
     return sig;
   }
 
   function expectSignal(range) {
     clearTimeout(signalTimer);
+    // range is in seconds; a slip still waiting to be read isn't printed over
+    signalTimer = setTimeout(() => unread ? expectSignal(SIGNAL_GAP) : incoming(),
+                             between(range) * 1000);
     if (scripted.signals) return;                // the Script sends them instead
     signalTimer = setTimeout(() => incoming(), between(range) * 1000);   // range is in seconds
   }
@@ -2068,6 +2159,11 @@
   // From the helm it's only rows of type, one bar per printed line.
   function incoming(sig = pickSignal()) {
     if (!sig) return;
+    // Not while the slip in the machine is being read: putting it down files
+    // that slip on the desk, so the next one waits until it's off the machine
+    if (reading && !readingFrom) { setTimeout(() => incoming(sig), 1000); return; }
+    current = sig;
+    if (sig.key && sig.key_name) keysIn.add(sig.key_name.toUpperCase().trim());
     printed = compose(sig);
     const lines = printed.split('\n');
     const cols = Math.max(...lines.map(l => l.length));
@@ -2096,8 +2192,10 @@
   }
 
   function slipFed() {
+    if (!tx.slip.disabled || !current) return;   // not mid-feed
     tx.slip.classList.remove('is-feeding');
     tx.slip.disabled = false;
+    emit('printend', current);
   }
 
   tx.slip.addEventListener('animationend', ev => {
@@ -2112,9 +2210,9 @@
     const to = sheet.getBoundingClientRect();
   tx.slip.addEventListener('animationend', slipFed);
 
-  // Transform that lays the reading sheet over the slip on the desk
-  function overSlip(to) {
-    const from = tx.slip.getBoundingClientRect();
+  // Transform that lays the reading sheet over the slip it was picked up from
+  function overSlip(to, source = tx.slip) {
+    const from = source.getBoundingClientRect();
     return 'translate(' + (from.left - to.left) + 'px,' + (from.top - to.top) + 'px) ' +
            'scale(' + (from.width / to.width) + ',' + (from.height / to.height) + ')';
   }
@@ -2128,20 +2226,35 @@
     if (reading || tx.slip.disabled || !current) return;
   function pickUpSlip() {
     if (reading || tx.slip.disabled) return;
-    reading = true;
     if (unread) {
       unread = false;
       tx.root.classList.remove('is-calling');
     }
+    readSheet(printed, null);
+  }
+
+  // A page off the cipher desk, read again. It never goes back in the machine.
+  function readPage(paper) {
+    if (reading || !paper) return;
+    readSheet(paper._text || paper.textContent, paper);   // a stack reads as one
+  }
+
+  function readSheet(text, from) {
+    reading = true;
+    readingFrom = from;
+    tx.sheet.textContent = text;
     setSheet(tx.sheet, current);
     tx.sheet.textContent = printed;
     tx.sheet.scrollTop = 0;
+    tx.view.scrollTop = 0;
     tx.view.classList.add('is-open');
     tx.view.setAttribute('aria-hidden', 'false');
+    emit('open', from ? from._signal || null : current);   // decoder.js sets out its tools
 
     if (!stillness.matches) {
       tx.sheet.style.transition = 'none';
       tx.sheet.style.transform = '';
+      tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect(), from || tx.slip);
       tx.sheet.style.transform = over(tx.slip, tx.sheet);
       tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
       void tx.sheet.offsetWidth;
@@ -2153,6 +2266,8 @@
     emit('read', current);
   }
 
+  // Once read, the slip comes off the machine and goes on the cipher desk,
+  // so the sheet shrinks away towards the desk rather than back to the platen.
   // Filing it away: the slip is torn off the machine and the sheet goes
   // down into the signal log
   function putSlipDown() {
@@ -2342,13 +2457,43 @@
   function putSlipDown() {
     if (!reading) return;
     reading = false;
-    if (!stillness.matches) tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect());
+    const from = readingFrom;
+    readingFrom = null;
+    const toward = from && from.isConnected ? from : deskButton || tx.slip;
+    if (!stillness.matches) tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect(), toward);
     tx.view.classList.remove('is-open');
     tx.view.setAttribute('aria-hidden', 'true');
+    if (from) {
+      emit('close', from._signal || null);
+      return;
+    }
     tx.slip.focus({ preventScroll: true });
     expectSignal(SIGNAL_GAP);
+    taking = true;
+    emit('close', current);
+    taking = false;
+    if (current) tearOff();                      // no desk loaded: the slip still comes off
+  }
+
+  // Lift the read slip off the machine. Returns it for the desk to file.
+  function tearOff() {
+    const sig = current;
+    current = null;
+    tx.slip.hidden = true;
+    tx.slip.disabled = true;
+    tx.type.textContent = '';
+    const paper = document.createElement('div');
+    paper.textContent = printed;
+    return { signal: sig, innerHTML: paper.innerHTML };
+  }
+
+  function takeSlip(sig) {
+    if (!taking || !current || sig !== current) return null;
+    return tearOff();
     tx.root.dispatchEvent(new CustomEvent('signalputdown', { bubbles: true }));
   }
+
+  const deskButton = document.getElementById('deskopen');
 
   tx.slip.addEventListener('click', pickUpSlip);
   tx.back.addEventListener('click', putSlipDown);
@@ -2357,6 +2502,46 @@
   window.addEventListener('keydown', ev => {
     if (reading && ev.key === 'Escape' && !document.getElementById('bookroom').classList.contains('is-open')) putSlipDown();
   });
+
+  // ---- Reporting a sighting -----------------------------------------------
+  // Once a German aircraft is identified the machine lights up to be clicked.
+  // Clicking it sends the report; a moment later Dover's reply prints on a slip.
+  const REPLY_DELAY = 1.8;     // seconds between sending and the reply coming in
+  let sighting    = null;      // the German aircraft waiting to be reported
+  let reportSerial = 100;
+
+  function askReport(s) {
+    sighting = s;
+    tx.report.hidden = false;
+    tx.root.classList.add('is-reporting');
+  }
+
+  function sendReport() {
+    if (!sighting) return;
+    const s = sighting;
+    sighting = null;
+    tx.report.hidden = true;
+    tx.root.classList.remove('is-reporting');
+
+    const bearing = String(Math.round(s.bearing) % 360).padStart(3, '0');
+    const name = s.name.replace(/[“”"]/g, '');
+    setTimeout(() => incoming({
+      serial: 'NR ' + ++reportSerial,
+      priority: 'IMMEDIATE',
+      body: 'Your report of enemy aircraft ' + name + ' bearing ' + bearing +
+            ' degrees received.\n\nRecon sent.',
+      sign: '',
+      stack: 'Recon reports'                     // these pile up together on the desk
+    }), REPLY_DELAY * 1000);
+
+    // For the rest of the game to read: what was reported
+    tx.root.dispatchEvent(new CustomEvent('aircraftreported', {
+      bubbles: true,
+      detail: { aircraft: s.aircraft, bearing: Math.round(s.bearing) }
+    }));
+  }
+
+  tx.report.addEventListener('click', sendReport);
 
   // ---- Rulebook -----------------------------------------------------------
   // The book is its own page in its own folder (../Rulebook Demo), shown in
@@ -2502,6 +2687,8 @@
     on:      (name, fn) => { (listeners[name] = listeners[name] || []).push(fn); }
                                                  // 'print' | 'read' | 'file' | 'select'
   window.TELEX = {
+    // Keys, enciphered and drill signals need the cipher desk, which the
+    // helm doesn't have yet; printed here they'd give away the plaintext.
     signal: text => { const sig = parseSignal(text); signals.push(sig); return sig; },
     load: async names => {
       for (const name of names) {
@@ -2510,7 +2697,21 @@
       }
       expectSignal(SIGNAL_FIRST);
     },
-    incoming                                     // bring a signal in now, from code
+    incoming,                                    // bring a signal in now, from code
+
+    // What the cipher desk (desk.js) needs from the machine
+    on: (name, fn) => { (txListeners[name] = txListeners[name] || []).push(fn); },
+    take: takeSlip,                              // lift the read slip off for the desk
+    open: readPage,                              // read a page off the desk
+    isReading: () => reading,
+    truthy,
+    cipher: {
+      letters,
+      isEnciphered,
+      encipher: (text, word) => vigenere(String(text).toUpperCase(), word, 1),
+      decipher: (text, word) => vigenere(String(text).toUpperCase(), word, -1),
+      lines: sig => wrapText(bodyText(sig), columns())   // the body as printed
+    }
   };
 
   // ---- For the Script (../Script) ------------------------------------------
@@ -2602,6 +2803,8 @@
   requestAnimationFrame(frame);
 })();
 </script>
+<script src="../Telex Machine Demo/desk.js"></script>
+<script src="../Telex Machine Demo/decoder.js"></script>
 
 <!-- The story: clock, dialogue, scripted telexes and sightings, endings. See ../Script/README.md -->
 <script src="../Script/dialogue.js"></script>

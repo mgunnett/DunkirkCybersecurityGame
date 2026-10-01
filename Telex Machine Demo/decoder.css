@@ -1,0 +1,381 @@
+/* ==================================================================
+   CIPHER DESK — sits beside the enlarged sheet
+   ------------------------------------------------------------------
+   Stands on its own, like desk.css: the helm loads it without
+   telex.css, so the colours and paper it needs are scoped to it here.
+   ================================================================== */
+
+.tools{
+  --shell:#33382f;
+  --shell-dark:#1e211c;
+  --shell-light:#4a5142;
+  --edge-hi:rgba(255,248,220,.10);
+  --edge-lo:rgba(0,0,0,.65);
+  --brass:#b8934f;
+  --brass-dark:#6d5525;
+  --brass-hi:#e8cf94;
+  --paper:#e8dcbe;
+  --paper-2:#dccfab;
+  --paper-edge:#c2b28a;
+  --ink:#3b2d46;
+  --stop:#c4342a;
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+  box-sizing:border-box;
+  text-align:left;
+}
+.tools *,
+.tools *::before,
+.tools *::after{ box-sizing:inherit }
+
+/* Telegram paper (the clipped key telegram), as printed */
+.tools .slip{
+  position:relative;
+  display:block;
+  border:0;
+  background:
+    var(--grain),
+    repeating-linear-gradient(to bottom, rgba(0,0,0,.02) 0 1px, transparent 1px 6px),
+    linear-gradient(to right, var(--paper-edge) 0, var(--paper) 6%, var(--paper) 94%, var(--paper-edge) 100%),
+    var(--paper-2);
+  background-blend-mode:soft-light,normal,normal,normal;
+  box-shadow:0 0 0 1px rgba(0,0,0,.2), 0 4px 10px rgba(0,0,0,.45);
+  color:var(--ink);
+  font-family:'Courier Prime',ui-monospace,'Courier New',monospace;
+  white-space:pre-wrap;
+  overflow-wrap:break-word;
+}
+.tools .ch{ display:inline-block }
+.tools button:focus-visible,
+.tools .tape:focus-visible{ outline:2px solid #ffb27a; outline-offset:2px }
+
+:root{
+  --desk-ink:#d9cfb6;
+  --desk-dim:#9aa38d;
+  --desk-line:#2c3128;
+  --hole:#14160f;             /* a punched hole shows the desk through */
+  --pick:rgba(255,178,122,.42);
+  --decoded:#7a2418;          /* red pencil over the tape */
+  --ok:#8fb07a;
+  --bad:#e2574a;
+}
+
+/* ---------------- the viewer makes room for it ---------------- */
+
+.viewer.has-tools{
+  grid-template-columns:minmax(0,1fr);   /* the tape scrolls; the page doesn't */
+  place-items:start center;
+  overflow-y:auto;
+}
+.viewerwrap.has-tools{
+  width:100%;
+  max-height:none;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:flex-start;
+  gap:18px;
+}
+.viewerwrap.has-tools .viewerpaper{ max-width:100% }
+@media (max-width:1040px){
+  .viewerwrap.has-tools .viewerpaper{ max-height:none }
+}
+
+/* ---------------- the desk ---------------- */
+
+.tools{
+  width:min(620px,100%);
+  min-width:0;
+  border-radius:8px;
+  padding:0 0 16px;
+  background:
+    var(--grain),
+    linear-gradient(to bottom, var(--shell-light) 0, var(--shell) 3px, var(--shell) 50%, var(--shell-dark) 100%);
+  background-blend-mode:soft-light,normal;
+  box-shadow:inset 0 1px 0 var(--edge-hi), inset 0 -2px 6px var(--edge-lo), 0 22px 44px rgba(0,0,0,.6);
+  color:var(--desk-ink);
+  font-family:'Oswald','Helvetica Neue',Arial,sans-serif;
+}
+.tools[hidden]{ display:none }
+
+.tools__plate{
+  width:max-content;
+  margin:14px auto 4px;
+  padding:5px 14px;
+  border-radius:2px;
+  background:linear-gradient(to bottom, #9c8145, #6a5427);
+  box-shadow:inset 0 1px 0 rgba(255,238,190,.45), 0 1px 3px rgba(0,0,0,.6);
+  color:#221a09;
+  font-size:11px; font-weight:600; letter-spacing:.26em;
+  text-transform:uppercase;
+}
+
+.tools__sec{ padding:12px 16px 0 }
+.tools__sec + .tools__sec{ margin-top:6px; border-top:1px solid var(--desk-line) }
+
+.tools__head{
+  margin:0 0 8px;
+  font-size:13px; font-weight:600; letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--brass-hi);
+}
+.tools__sub{
+  margin:12px 0 6px;
+  font-size:11px; font-weight:400; letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--desk-dim);
+}
+.tools__text{ margin:0 0 10px; font-size:14px; line-height:1.5 }
+.tools__note{ margin:10px 0 0; font-size:13px; line-height:1.5; color:var(--desk-dim) }
+.tools__status{ margin:8px 0 0; min-height:1.4em; font-size:13px; color:var(--desk-dim) }
+
+.keynote{ display:flex; gap:14px; align-items:center; flex-wrap:wrap }
+.keynote .tools__text{ flex:1; min-width:180px; margin:0 }
+
+/* ---------------- key tokens: short lengths of punched tape ---------------- */
+
+.token{
+  display:inline-grid;
+  grid-template-columns:auto auto;
+  grid-template-rows:auto auto;
+  column-gap:10px;
+  align-items:center;
+  padding:6px 10px 6px 8px;
+  border:0; border-radius:2px;
+  background:linear-gradient(to right, var(--paper-edge), var(--paper) 8%, var(--paper) 92%, var(--paper-edge));
+  box-shadow:0 0 0 1px rgba(0,0,0,.25), 0 3px 7px rgba(0,0,0,.5);
+  color:var(--ink);
+  font:inherit;
+  text-align:left;
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+  transition:transform .12s, box-shadow .12s, opacity .12s;
+}
+span.token{ cursor:default }
+button.token:hover{ transform:translateY(-2px); box-shadow:0 0 0 1px rgba(0,0,0,.25), 0 6px 12px rgba(0,0,0,.55) }
+.token__tape{ grid-row:span 2; display:flex; gap:2px }
+.token__name{ font-size:10px; letter-spacing:.14em; text-transform:uppercase }
+.token__word{ font-family:'Courier Prime',ui-monospace,monospace; font-size:13px; font-weight:700; letter-spacing:.2em }
+.token.is-in{ opacity:.4 }
+.token.is-lifted{ opacity:.3 }
+.token.is-suspect .token__word{ text-decoration:line-through; text-decoration-color:var(--stop) }
+.token.is-suspect .token__name::after{ content:" · suspect"; color:var(--stop) }
+.token.is-ghost{
+  position:fixed; left:0; top:0; z-index:200;
+  pointer-events:none;
+  cursor:grabbing;
+  box-shadow:0 0 0 1px rgba(0,0,0,.25), 0 14px 26px rgba(0,0,0,.6);
+}
+
+/* ---------------- holes ---------------- */
+
+.holes{ display:flex; flex-direction:column; align-items:center; gap:2px }
+.holes i{ width:5px; height:5px; border-radius:50%; background:rgba(59,45,70,.09) }
+.holes i.on{ background:var(--hole); box-shadow:inset 0 1px 1px rgba(255,255,255,.12) }
+.holes b{ width:3px; height:3px; border-radius:50%; background:rgba(20,22,15,.55) }  /* feed hole */
+.token .holes i{ width:4px; height:4px }
+
+/* ---------------- slot and tray ---------------- */
+
+.bench{
+  display:grid;
+  grid-template-columns:minmax(150px,auto) 1fr;
+  gap:12px;
+  align-items:stretch;
+  margin-bottom:12px;
+}
+@media (max-width:520px){ .bench{ grid-template-columns:1fr } }
+
+.slot{
+  display:grid; place-items:center;
+  min-height:58px;
+  padding:6px 10px;
+  border:1px dashed #6b7360;
+  border-radius:4px;
+  background:linear-gradient(to bottom, #11130e, #1b1e17);
+  box-shadow:inset 0 3px 8px rgba(0,0,0,.8);
+  color:var(--desk-dim);
+  font:inherit; font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  cursor:default;
+  transition:border-color .12s, box-shadow .12s;
+}
+.slot.has-key{ border-style:solid; border-color:var(--brass-dark); cursor:pointer }
+.slot.has-key:hover .token{ filter:brightness(.92) }
+.slot.is-ready{ border-color:var(--brass); color:var(--brass-hi) }
+.slot.is-over{ border-color:var(--brass-hi); box-shadow:inset 0 3px 8px rgba(0,0,0,.8), 0 0 0 3px rgba(232,207,148,.25) }
+.slot.is-nudge{ animation:nudge .36s ease }
+@keyframes nudge{ 20%,60%{ transform:translateX(-5px) } 40%,80%{ transform:translateX(5px) } }
+
+.tray{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  min-height:58px;
+  padding:8px;
+  border-radius:4px;
+  background:rgba(0,0,0,.22);
+}
+.tray__empty{ font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:#6f7767 }
+
+/* ---------------- the tape ---------------- */
+
+.tape{
+  max-height:46vh;
+  overflow:auto;
+  padding:6px 0;
+  border-radius:3px;
+  background:rgba(0,0,0,.25);
+  user-select:none;
+  touch-action:pan-y;           /* sideways drags select; up and down still scroll */
+  cursor:crosshair;
+}
+.tape:focus-visible{ outline:2px solid #ffb27a; outline-offset:2px }
+
+.tape__row{
+  display:flex;
+  width:max-content;
+  min-width:100%;
+  margin:0 0 6px;
+  padding:3px 8px;
+  background:
+    var(--grain),
+    linear-gradient(to bottom, var(--paper-edge), var(--paper) 10%, var(--paper) 90%, var(--paper-edge));
+  background-blend-mode:soft-light,normal;
+  box-shadow:0 1px 3px rgba(0,0,0,.4);
+}
+.tape__row.is-gap{ height:6px; padding:0; background:none; box-shadow:none }
+.tape__row:last-child{ margin-bottom:0 }
+
+.cell{
+  display:flex; flex-direction:column; align-items:center;
+  width:15px; flex:none;
+  padding:1px 0;
+  border-radius:2px;
+  color:var(--ink);
+  font-family:'Courier Prime',ui-monospace,'Courier New',monospace;
+}
+.cell__key,
+.cell__out{ height:13px; font-size:10px; line-height:13px; font-weight:700 }
+.cell__key{ color:var(--brass-dark) }
+.cell__ch{ font-size:12px; line-height:15px }
+.cell__out{ color:var(--decoded) }
+.cell .holes{ margin:2px 0 }
+.cell.is-plain .holes i{ background:transparent }
+.cell.is-plain .holes b{ opacity:.5 }
+.cell.is-done .cell__ch{ opacity:.45 }
+.cell.is-sel{ background:var(--pick) }
+.tape:focus-visible .cell.is-cur{ box-shadow:inset 0 0 0 1.5px var(--decoded) }
+
+/* ---------------- decoded readout ---------------- */
+
+.readout{
+  padding:10px 12px;
+  overflow-x:auto;
+  background:
+    var(--grain),
+    linear-gradient(to right, var(--paper-edge), var(--paper) 4%, var(--paper) 96%, var(--paper-edge));
+  background-blend-mode:soft-light,normal;
+  box-shadow:0 0 0 1px rgba(0,0,0,.2), 0 3px 8px rgba(0,0,0,.45);
+  color:var(--decoded);
+  font-family:'Courier Prime',ui-monospace,'Courier New',monospace;
+  font-size:14px;
+  line-height:1.55;
+}
+.readout__row{ white-space:pre }
+
+/* ---------------- verdict and debrief ---------------- */
+
+.verdict{ display:flex; flex-wrap:wrap; gap:10px }
+.vbtn{
+  flex:1 1 180px;
+  padding:10px 14px;
+  border:1px solid; border-radius:4px;
+  background:#1a1d16;
+  font:inherit; font-size:14px; letter-spacing:.06em;
+  cursor:pointer;
+  transition:background .12s, color .12s;
+}
+.vbtn--ok{ border-color:#4f6640; color:var(--ok) }
+.vbtn--ok:hover{ background:#223019; color:#c4e0ae }
+.vbtn--bad{ border-color:#7a3128; color:#f08a7c }
+.vbtn--bad:hover{ background:#331a16; color:#ffc0b6 }
+
+.debrief{ border-left:3px solid; padding:2px 0 2px 12px }
+.debrief.is-right{ border-color:var(--ok) }
+.debrief.is-wrong{ border-color:var(--bad) }
+.debrief__verdict{ margin:0; font-size:16px; font-weight:600; letter-spacing:.04em }
+.debrief.is-right .debrief__verdict{ color:var(--ok) }
+.debrief.is-wrong .debrief__verdict{ color:#f08a7c }
+.debrief__verdict:focus{ outline:none }
+
+.clues{ margin:0; padding:0; list-style:none; display:grid; gap:9px }
+.clues li{ font-size:14px; line-height:1.45 }
+.clues__quote{
+  display:block;
+  margin-bottom:2px;
+  font-family:'Courier Prime',ui-monospace,monospace;
+  font-size:13px;
+  color:var(--brass-hi);
+  text-transform:uppercase;
+}
+.debrief__lesson{
+  margin:14px 0 0;
+  padding:10px 12px;
+  border-radius:3px;
+  background:rgba(0,0,0,.25);
+  font-size:14px; line-height:1.5;
+}
+.debrief__tally{ margin:10px 0 0; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--desk-dim) }
+
+@media (prefers-reduced-motion:reduce){
+  .slot.is-nudge{ animation:none }
+  .token{ transition:none }
+}
+
+/* ---------------- the key telegram clipped to a message ---------------- */
+
+.keypaper{ margin-bottom:12px }
+.keypaper:empty{ display:none }
+.keypaper .slip{
+  width:100%;
+  font-size:11px;
+  line-height:1.5;
+  padding:14px 16px 16px;
+  cursor:default;
+  animation:none;
+}
+.keypaper .slip:hover{ transform:none }
+
+/* ---------------- what the decode comes to ---------------- */
+
+.outcome:empty{ display:none }
+.outcome{
+  margin-top:12px;
+  padding:12px 14px;
+  border-left:3px solid;
+  border-radius:3px;
+  background:rgba(0,0,0,.25);
+}
+.outcome.is-good{ border-color:var(--ok) }
+.outcome.is-bad{ border-color:var(--bad) }
+.outcome__head{ margin:0 0 8px; font-size:15px; font-weight:600; letter-spacing:.04em }
+.outcome.is-good .outcome__head{ color:var(--ok) }
+.outcome.is-bad .outcome__head{ color:#f08a7c }
+.outcome__note{ margin:8px 0 0; font-size:14px; line-height:1.5 }
+.outcome__officer{ margin:10px 0 0; font-size:14px; line-height:1.5; color:var(--brass-hi) }
+.outcome__officer:empty{ display:none }
+.outcome__actions{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px }
+.outcome__actions .vbtn{ border-color:#6b7360; color:var(--desk-ink) }
+.outcome__actions .vbtn:hover{ background:#262a20 }
+.outcome__text,
+.debrief .outcome__text{
+  margin:0;
+  padding:10px 12px;
+  overflow-x:auto;
+  background:
+    var(--grain),
+    linear-gradient(to right, var(--paper-edge), var(--paper) 4%, var(--paper) 96%, var(--paper-edge));
+  background-blend-mode:soft-light,normal;
+  color:var(--ink);
+  font-family:'Courier Prime',ui-monospace,'Courier New',monospace;
+  font-size:14px;
+  line-height:1.55;
+  white-space:pre-wrap;
+}
