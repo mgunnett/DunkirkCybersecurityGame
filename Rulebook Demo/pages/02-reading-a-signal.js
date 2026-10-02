@@ -1,37 +1,39 @@
 rulebookPage(String.raw`
 # Reading a Signal
 
-Every signal from Dover is printed in the same order, with the same headings, in capital letters. Learn the shape of an honest signal so well that a wrong one looks wrong at a glance.
+Every real signal from Dover has the same parts, in the same order. Learn what a real one looks like, and a fake will stand out.
 
 ~~~
-M.Y. KESTREL GBKW
-NR 031  MOST IMMEDIATE
-0412Z/30 MAY 40
-FM V.A. DOVER (DYNAMO)
-TO M.Y. KESTREL
---------------------------
-ENEMY BATTERIES AT GRAVELINES
-NOW RANGING ON ROUTE Z ...
+ZCZC GBKW NR 031
+FM  V.A. DOVER (DYNAMO)
+TO  M.Y. KESTREL
+PRI MOST IMMEDIATE
+TOO 0412Z/30 MAY 40
+==========================
+ENEMY GUNS AT GRAVELINES ARE
+FIRING ON ROUTE Z. ...
+==========================
 ACKNOWLEDGE BY LAMP ON SIGHT.
+NNNN
 ~~~
 
-## The serial number
+## NR: the number
 
-Each signal carries a serial, written NR followed by a number. Dover numbers its traffic in one continuous series, so each new signal you receive must carry a higher number than the last. Numbers may be skipped, because not every signal is addressed to you, but they never go backwards and never repeat.
+Every signal has a number. Each new one is higher than the last. Numbers can skip, but they never go backwards and never repeat.
 
-## The priority
+## FM and TO: who it's from, who it's for
 
-One of three words, and only these: ROUTINE, IMMEDIATE, or MOST IMMEDIATE. Dover does not invent new ones. A signal marked URGENT, FLASH or TOP PRIORITY did not come from Dover.
+A real signal is **FM** (from) V.A. DOVER (DYNAMO) and **TO** M.Y. KESTREL, your boat.
 
-## The time of origin
+## PRI: how urgent it is
 
-Written as four figures of Greenwich time, the letter Z, and the date: *0412Z/30 MAY 40* is twelve minutes past four in the morning on the thirtieth of May. Times move forward with the serial numbers. A later serial with an earlier time is a forgery.
+Dover only uses three words: ROUTINE, IMMEDIATE and MOST IMMEDIATE. Any other word, like URGENT, means the signal is fake.
 
-## Sender and addressee
+## TOO: the time
 
-Genuine signals come from V.A. DOVER (DYNAMO) and are addressed to this vessel by name and call sign, M.Y. KESTREL, GBKW. Any other sender, however senior it sounds, is to be disbelieved.
+When the signal was written: four figures, the letter Z, then the date. *0412Z/30 MAY 40* means 4:12 in the morning on 30 May 1940. Each new signal has a later time than the last.
 
-## The body and sign-off
+## The message
 
-Orders are short and plain. In a signal sent in clear, courses are always given as three figures in degrees, such as 072 or 213. (Signals in cipher spell them out: see *Signals in Cipher*.) Most signals close with a standing instruction, ACKNOWLEDGE BY LAMP ON SIGHT, or a particular order in its place.
+Short and plain. In an ordinary signal, a course is always three figures, such as 072. (In cipher, courses are spelled out in words. See *Signals in Cipher*.)
 `);

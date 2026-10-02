@@ -54,7 +54,8 @@
 
   // ---- Reading a chapter file ---------------------------------------------
   // Blank line: new paragraph. # heading, ## subheading, - list item,
-  // > boxed note, ~~~ (or ```) telex block, === page break, // a note to yourself.
+  // > boxed note, ~~~ (or ```) telex block, === page break, // a note to yourself,
+  // @figure name | caption  a drawing from pages/figures.js.
   // **bold** and *italic* inside any line.
   function parse(text, file) {
     const chapter = { file, title: '', titlePage: false, blocks: [] };
@@ -75,6 +76,11 @@
       if (line.trim() === '')      { flush(); continue; }
       if (/^\/\//.test(line))      { continue; }
       if (line === '@title-page')  { chapter.titlePage = true; continue; }
+      if ((m = line.match(/^@figure\s+([\w-]+)\s*(?:\|\s*(.*))?$/))) {
+        flush();                                         // a drawing from figures.js, kept whole
+        chapter.blocks.push({ type: 'figure', name: m[1], caption: m[2] || '' });
+        continue;
+      }
       if (line.trim() === '===')   { flush(); chapter.blocks.push({ type: 'break' }); continue; }
 
       if ((m = line.match(/^(#{1,2})\s+(.+)$/))) {
@@ -102,7 +108,7 @@
     let prev = null;
     let dropped = chapter.titlePage;
     for (const b of chapter.blocks) {
-      b.units = b.type === 'pre' ? b.lines : words(b.text || '');
+      b.units = b.type === 'pre' ? b.lines : b.type === 'figure' ? [b.name] : words(b.text || '');
       if (b.type === 'p') {
         b.entry = /^\*\*/.test(b.text);                 // glossary style: opens in bold
         b.lead  = !prev || prev.type !== 'p';
@@ -148,6 +154,12 @@
       case 'li':   node = make('p', 'bk-li');  node.innerHTML = part.join(' '); break;
       case 'note': node = make('div', 'bk-note'); node.innerHTML = '<p>' + part.join(' ') + '</p>'; break;
       case 'pre':  node = make('pre', 'bk-pre'); node.textContent = part.join('\n'); break;
+      case 'figure':
+        node = make('figure', 'bk-fig');
+        node.innerHTML = figures[b.name] ||
+          '<p class="bk-fig__missing">No drawing called “' + escape(b.name) + '” in pages/figures.js.</p>';
+        if (b.caption) node.insertAdjacentHTML('beforeend', '<figcaption>' + words(b.caption).join(' ') + '</figcaption>');
+        break;
       default:
         node = make('p');
         node.innerHTML = part.join(' ');
@@ -359,8 +371,10 @@
   // even from a page opened straight from disk, so no web server is needed.
   const texts = new Map();                 // script URL -> the text it gave
   let contentsList = null;
+  const figures = {};                      // drawings for @figure, from pages/figures.js
   window.rulebookPage     = text => { texts.set(document.currentScript.src, String(text)); };
   window.rulebookContents = list => { contentsList = list; };
+  window.rulebookFigures  = set => { Object.assign(figures, set); };
 
   // Resolves with the script's full URL once it has run; rejects if it
   // couldn't be found.
@@ -394,6 +408,9 @@ The contents list names **pages/${name}**, but that file couldn't be read. Check
 `;
 
   async function load() {
+    try {
+      await runScript('figures.js');       // optional: a book without drawings still opens
+    } catch (err) { /* each @figure says so instead */ }
     try {
       await runScript(CONTENTS);
     } catch (err) { /* reported below */ }
