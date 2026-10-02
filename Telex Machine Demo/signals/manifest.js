@@ -23,10 +23,4 @@ TELEX.load([
   '09-fuel-request.js',
   '10-replacement-key.js',
   '11-la-panne.js'
-  '07-weather.js',
-  '08-kwinte-key.js',      // key first: the cipher waits for it
-  '09-kwinte-cipher.js',
-  '10-fuel-and-water.js',
-  '11-malo-key.js',
-  '12-malo-cipher.js'
 ]);
