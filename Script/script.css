@@ -1,14 +1,16 @@
 /* ==========================================================================
    DUNKIRK — the story's screens: dialogue box, title / intro / ending stage,
-   clock plate, debug panel, and the two marks it puts on the water.
+   pause button and clock plate, debug panel, and the two marks it puts on
+   the water.
    Uses the helm's own colours and type from shipstyle.css (--brass etc.).
 
    Stacking, front to back:
+    150  the stage, paused  over everything, so nothing can be touched on a break
      40  dialogue box     over everything, even the glasses and the book
      30  debug panel
      20  the helm's own views (glasses, telex slip, rulebook)
      19  the stage        so the rulebook can open over the intro
-      9  clock plate
+      9  pause button and clock plate
    ========================================================================== */
 
 /* --- The dialogue box: a sheet of paper, like the telex slip ------------- */
@@ -138,6 +140,12 @@
 
 .story-stage[hidden] { display: none; }
 
+.story-stage.is-paused {
+  z-index: 150;
+  align-content: center;
+  padding-top: 0;
+}
+
 .story-stage.is-title {
   align-content: center;
   padding-top: 0;
@@ -219,13 +227,46 @@
   box-shadow: none;
 }
 
-/* --- The in-game clock ---------------------------------------------------- */
+/* --- The pause button and the in-game clock, top left ---------------------- */
 
-.story-clock {
+.story-corner {
   position: fixed;
   top: 2.2vh;
   left: 2.2vw;
   z-index: 9;
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.story-corner[hidden] { display: none; }
+
+.story-pause {
+  display: grid;
+  place-items: center;
+  padding: 0 0.7rem;
+  color: #3a2c12;
+  background: linear-gradient(180deg, var(--brass-lit), var(--brass));
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.story-pause svg {
+  width: clamp(12px, 1.6vh, 15px);
+  height: clamp(12px, 1.6vh, 15px);
+  fill: currentColor;
+}
+
+.story-pause:hover,
+.story-pause:focus-visible {
+  filter: brightness(1.1) drop-shadow(0 0 6px rgba(227, 198, 132, 0.6));
+  outline: none;
+}
+
+.story-clock {
   margin: 0;
   padding: 0.3rem 0.8rem;
   font-family: var(--serif);
@@ -238,8 +279,6 @@
   border-radius: 2px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
-
-.story-clock[hidden] { display: none; }
 
 /* --- Debug panel ---------------------------------------------------------- */
 
