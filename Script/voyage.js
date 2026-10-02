@@ -47,6 +47,9 @@
              once held in the binoculars' view for half a second.
              Aircraft are sent over at their time and the game's
              own German / Allied question decides right or wrong.
+             Only one fits in the sky: an aircraft due while another
+             is up waits until it has gone. ':overhead' is said as
+             each one actually comes over.
 
    ENDINGS   victory     on the last leg with routeSeconds of progress
              outOfTime   the clock reaches the deadline (18:00)
@@ -107,6 +110,7 @@ Story.Voyage = class {
     this.lure       = null;    // { rec, secs } once a false order has been followed
     this.plane      = null;    // the aircraft sighting in the sky now
     this.reportable = null;    // a German aircraft identified and not yet reported
+    this.skies      = [];      // aircraft sightings due, waiting for the sky to clear
     this.ended      = false;
 
     this.listen();
@@ -180,6 +184,7 @@ Story.Voyage = class {
     }
 
     this.feedTelex();
+    this.launchNext();
 
     const heading = SHIP.heading;
     const near = target => Math.abs(Story.Voyage.arc(heading, target)) <= this.cfg.tolerance;
@@ -293,10 +298,20 @@ Story.Voyage = class {
   openSighting(rec) {
     rec.open = true;
     if (rec.entry.sighting.kind === 'aircraft') {
-      this.plane = rec;
-      if (!SHIP.sendAircraft(rec.entry.sighting.aircraft)) { rec.done = true; this.plane = null; }
       rec.open = false;
+      this.skies.push(rec);                      // one aircraft up at a time: it waits its turn
+      this.launchNext();
     }
+  }
+
+  // Send the next aircraft waiting for an empty sky, and say it's overhead
+  launchNext() {
+    if (this.plane || !this.skies.length) return;
+    const rec = this.skies[0];
+    if (!SHIP.sendAircraft(rec.entry.sighting.aircraft)) return;   // the sky isn't clear yet
+    this.skies.shift();
+    this.plane = rec;
+    this.say(rec.id + ':overhead');
   }
 
   watchSightings(dt, t, onCourse) {

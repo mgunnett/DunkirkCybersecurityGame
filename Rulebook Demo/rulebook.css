@@ -384,6 +384,42 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 
+
+/* A drawing from pages/figures.js (@figure in a chapter), never split across pages */
+.bk-fig {
+  margin: 0.7em 0 0.9em;
+  text-align: center;
+  break-inside: avoid;
+}
+
+.bk-fig svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 34cqi;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.bk-fig svg text {
+  font-family: var(--serif, Georgia, serif);
+  fill: var(--ink);
+}
+
+.bk-fig figcaption {
+  margin-top: 0.35em;
+  font-size: 0.86em;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--ink-soft);
+}
+
+.bk-fig__missing {
+  padding: 0.6em;
+  border: 1px dashed var(--rubric);
+  font-style: italic;
+  text-indent: 0;
+}
 /* --- Special pages ---------------------------------------------------------- */
 
 .page--title .page__body {

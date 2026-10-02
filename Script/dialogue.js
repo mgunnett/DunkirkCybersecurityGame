@@ -42,7 +42,7 @@ window.STORY_DATA = {
     offCourseWarn: 15,
     offCourseUrgent: 40,
     // No off-course nagging for this long after a new course is ordered
-    newCourseGrace: 20,
+    newCourseGrace: 45,  // long enough to decode an order in cipher
     // "There's a message waiting" after the slip has lain unread this long
     unreadWarn: 20,
     // Seconds between a slip being put down and the next one printing
@@ -63,7 +63,7 @@ window.STORY_DATA = {
   //   intro, ending:victory, ending:outOfTime, ending:lured, ending:turnedBack
   //   TX-nn:arrived, TX-nn:read, TX-nn:trust, TX-nn:reject
   //   BN-nn:spotted, BN-nn:missed, BN-nn:missedOffCourse   (buoys)
-  //   BN-nn:correct, BN-nn:wrong, BN-nn:missed             (aircraft)
+  //   BN-nn:overhead, BN-nn:correct, BN-nn:wrong, BN-nn:missed   (aircraft)
   //   BN-nn:reported                                       (a German aircraft reported on the telex)
   //
   // Telex headers beyond the usual ones (see Telex Machine Demo/README.md):
@@ -204,6 +204,21 @@ North Goodwin light vessel. Keep wireless silence throughout.
     { id: 'V-06', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'time', value: 'T+1:10' },
       text: 'Look at all the boats, Skipper. Fishing boats, yachts, even a paddle steamer from the Thames.' },
 
+    // The first aircraft of the day, and Tom's reminder of WEFT
+    { id: 'BN-05', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+1:25' },
+      sighting: { kind: 'aircraft', aircraft: 'hurricane' },
+      text: 'A Hawker Hurricane crosses ahead. Thick wings with rounded tips, one engine, a big radiator under the belly, roundels.' },
+    { id: 'V-18', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-05:overhead' },
+      text: 'Hear that? Engines. Aircraft!' },
+    { id: 'V-19', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-05:overhead' },
+      text: 'Ours or theirs? Remember your WEFT.' },
+    { id: 'V-19a', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-05:correct' },
+      text: 'One of ours. That’s a weight off.' },
+    { id: 'V-19b', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'BN-05:wrong' },
+      text: 'German? It went straight past the boats without a second look.' },
+    { id: 'V-19i', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-05:missed' },
+      text: 'Gone. Whoever it was.' },
+
     { id: 'TX-02', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+1:50' },
       correctAction: 'reject', lureHeading: 180, lure: 'lured',
       fails: ['1. Who sent it?', '5. Does the order make sense?'],
@@ -249,23 +264,27 @@ Calais Roads, where an escort will meet you.
 
     { id: 'TX-03', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+3:15' },
       correctAction: 'trust', newHeading: 15,
-      concept: 'A true change of orders says plainly why.',
+      concept: 'A true change of orders says plainly why. The first order in cipher, under the day key (TX-K1).',
       text: `
 SERIAL:   NR 041
 PRIORITY: MOST IMMEDIATE
 TIME:     0810Z/30 MAY 40
+CIPHER:   VIGENERE
+KEYWORD:  DYNAMO
+KEY NAME: DAY KEY 30 MAY
 GENUINE:  yes
-CLUE 1:   NR 041 · 0810Z | Number and time both run on from Dover’s last signal.
-CLUE 2:   Enemy batteries at Gravelines | It says plainly why the course is changing, and the reason fits what you know of the coast.
-CLUE 3:   Keep the swept water | It keeps you clear of the mines and the guns, not closer to them.
+CLUE 1:   Reads plainly under the day key | Only someone holding Dover’s key could write a message that decodes to sense with it.
+CLUE 2:   NR 041 · 0810Z | Number and time both run on from Dover’s last signal.
+CLUE 3:   Enemy batteries at Gravelines | It says plainly why the course is changing, and the reason fits what you know of the coast.
+CLUE 4:   Keep the swept water | It keeps you clear of the mines and the guns, not closer to them.
 LESSON:   A true change of orders says why, and still passes every check. A change of plan is not suspicious in itself; a change you can’t account for is.
 ---
 Enemy batteries at Gravelines now ranging on Route X. Alter
-course to 015 degrees for the Kwinte Buoy. Keep the swept
-water. Mines both sides.
+course to zero one five degrees for the Kwinte Buoy. Keep the
+swept water. Mines both sides.
 ` },
-    { id: 'V-14', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-03:read' },
-      text: 'Another change of course. That’s two today.' },
+    { id: 'V-14', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-03:read' },
+      text: 'Can’t make head nor tail of this one, Skipper.' },
     { id: 'V-14b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-03:trust' },
       text: 'Steady as she goes.' },
 
@@ -298,14 +317,25 @@ once. No time to check this signal.
     { id: 'V-17', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-04:trust' },
       text: 'Skipper, we’re heading home. The men on the beach are still waiting for us…' },
 
-    { id: 'V-18', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'time', value: 'T+4:45' },
-      text: 'Hear that? Engines. Aircraft!' },
-    { id: 'V-19', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'time', value: 'T+4:48' },
-      text: 'Ours or theirs? Remember your WEFT.' },
+    { id: 'BN-06', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+3:45' },
+      sighting: { kind: 'aircraft', aircraft: 'bf109' },
+      text: 'A Messerschmitt Bf 109 crosses ahead. Straight wings with square-cut tips, one engine, black crosses. Easily taken for a Spitfire.' },
+    { id: 'V-19c', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'BN-06:overhead' },
+      text: 'Another one, low and fast. Looks a lot like the last one, Skipper.' },
+    { id: 'V-19d', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-06:correct' },
+      text: 'A Messerschmitt. Hunting, by the look of it.' },
+    { id: 'V-19e', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'BN-06:wrong' },
+      text: 'One of ours? Then why’s it going for the boats behind us?' },
+    { id: 'V-19f', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-06:missed' },
+      text: 'Gone before I got a proper look.' },
+    { id: 'V-19g', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-06:reported' },
+      text: 'Dover knows. Maybe the RAF can catch it.' },
 
     { id: 'BN-02', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+4:50' },
       sighting: { kind: 'aircraft', aircraft: 'spitfire' },
       text: 'A Spitfire crosses ahead. Rounded wings, one engine, red, white and blue roundels. Click it and choose German or Allied.' },
+    { id: 'V-19h', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-02:overhead' },
+      text: 'There’s another, Skipper. High up this time.' },
     { id: 'V-20', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-02:correct' },
       text: 'One of ours! The RAF is watching over the beaches.' },
     { id: 'V-21', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'BN-02:wrong' },
@@ -385,6 +415,36 @@ North Goodwin light vessel. Keep wireless silence throughout.
     { id: 'V-25', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'TX-06:trust' },
       text: 'Funny. I could swear we’ve done this bit before.' },
 
+    { id: 'TX-06b', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+6:25' },
+      correctAction: 'reject', lureHeading: 110, lure: 'lured',
+      fails: ['3. Does the number fit?', '5. Does the order make sense?'],
+      concept: 'A forged order under the forged key (TX-05b): it decodes perfectly, but only under a key that came from the enemy.',
+      text: `
+SERIAL:   NR 044
+PRIORITY: MOST IMMEDIATE
+TIME:     1120Z/30 MAY 40
+CIPHER:   VIGENERE
+KEYWORD:  SEAGULL
+KEY NAME: REPLACEMENT KEY
+GENUINE:  no
+CLUE 1:   Nonsense under the day key | Decoded with Dover’s key it is gibberish, so whoever wrote it does not hold that key.
+CLUE 2:   CYP REPLACEMENT KEY | It only reads under the key from the signal that told you to throw Dover’s away.
+CLUE 3:   NR 044 | The same number as that replacement key. Numbers never repeat.
+CLUE 4:   Steer one one zero | East-south-east, out of the swept water and towards the French coast.
+CLUE 5:   Break wireless silence | Transmitting would tell the enemy exactly where you are.
+LESSON:   A message that decodes is only as trustworthy as the key that decodes it. Ask where the key came from, not just whether the message reads.
+---
+Kwinte channel blocked by a sunken trawler. Steer one one zero
+degrees for the Zuydcoote Pass. Break wireless silence on
+arrival and report your position.
+` },
+    { id: 'V-25b', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 4, trigger: { type: 'event', value: 'TX-06b:read' },
+      text: 'More code, Skipper.' },
+    { id: 'V-25c', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-06b:reject' },
+      text: 'Not that way, then. Fine by me.' },
+    { id: 'V-25d', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'TX-06b:trust' },
+      text: 'Zuydcoote it is. Bit close to the shore, isn’t it?' },
+
     { id: 'BN-03', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+6:20' },
       until: 'T+6:45',
       sighting: { kind: 'mark', art: 'kwinte', ahead: 800, offset: -2, w: 5, h: 10 },
@@ -421,7 +481,7 @@ for Dunkirk. Small craft are to work the beaches between
 Malo les Bains and Bray Dunes.
 ` },
     { id: 'V-27', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-07:read' },
-      text: 'That’s not English, Skipper. Not any English I know.' },
+      text: 'Code again. Is this the last of them, d’you think?' },
     { id: 'V-28', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-07:trust' },
       text: 'Not far now.' },
 
@@ -450,12 +510,28 @@ Malo-les-Bains and Bray-Dunes.
     { id: 'V-31', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'TX-08:trust' },
       text: 'That’s a sharp turn, Skipper. Are the beaches really that way?' },
 
+    { id: 'BN-07', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+7:15' },
+      sighting: { kind: 'aircraft', aircraft: 'he111' },
+      text: 'A Heinkel He 111 crosses ahead. Broad wings, two engines, a glazed nose, black crosses. A bomber.' },
+    { id: 'V-31a', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'BN-07:overhead' },
+      text: 'Listen to that drone. That’s a big one.' },
+    { id: 'V-31b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-07:correct' },
+      text: 'A bomber. And it’s heading for the beaches.' },
+    { id: 'V-31c', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'BN-07:wrong' },
+      text: 'Ours? Then what’s it doing turning in over the town?' },
+    { id: 'V-31d', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'BN-07:missed' },
+      text: 'It’s gone over. Towards Dunkirk, by the sound of it.' },
+    { id: 'V-31e', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'BN-07:reported' },
+      text: 'Dover knows. Let’s hope the fighters get to it first.' },
+
     { id: 'V-32', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'time', value: 'T+7:40' },
       text: 'Skipper… look at the horizon. All that black smoke. Is that Dunkirk?' },
 
     { id: 'BN-04', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+8:00' },
       sighting: { kind: 'aircraft', aircraft: 'stuka' },
       text: 'A Stuka crosses ahead. Bent wings, wheels fixed down, black crosses. Click it and choose German or Allied.' },
+    { id: 'V-32b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-04:overhead' },
+      text: 'Another one! Coming in low over the water.' },
     { id: 'V-33', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'BN-04:correct' },
       text: 'One of theirs. Keep her steady, Skipper. We’re nearly there.' },
     { id: 'V-34', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'BN-04:wrong' },
