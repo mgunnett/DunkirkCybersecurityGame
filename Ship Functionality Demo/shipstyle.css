@@ -1398,7 +1398,7 @@ body {
 .room {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 110;             /* over the slip (95), which opens it from its spine */
   background: #0b0c0a;
   opacity: 0;
   visibility: hidden;

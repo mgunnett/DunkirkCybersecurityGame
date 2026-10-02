@@ -81,6 +81,11 @@
   SHIP.script({ signals: true, aircraft: true });
   SHIP.hold(true);
 
+  // The cipher desk's button belongs to the voyage, not the title or the endings
+  const deskButton = document.getElementById('deskopen');
+  const showDesk = on => { if (deskButton) deskButton.hidden = !on; };
+  showDesk(false);
+
   // ---- Screens ------------------------------------------------------------------
   const el = tag => document.createElement(tag);
 
@@ -171,6 +176,7 @@
     stage.hidden = true;
     stage.classList.remove('is-title');
     plate.hidden = false;
+    showDesk(true);
     SHIP.hold(false);
     clock.start();
   }
@@ -185,6 +191,8 @@
     SHIP.closeRulebook();
     if (SHIP.reading) document.getElementById('signalBack').click();
     if (SHIP.glassesUp) document.getElementById('glassLower').click();
+    SHIP.closeDesk();
+    showDesk(false);
 
     dialogue.clear();
     dialogue.staged = true;

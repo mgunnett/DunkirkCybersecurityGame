@@ -18,7 +18,7 @@ window.STORY_DATA = {
   // ---- The voyage -----------------------------------------------------------
   voyage: {
     start:    '05:00',   // in-game clock when the Kestrel leaves Ramsgate
-    length:   600,       // real seconds until 15:00, when it's too late
+    length:   780,       // real seconds until 18:00, when it's too late
     date:     '30 MAY 40',
 
     // How close to the ordered course counts as "on course", in degrees either side
@@ -64,6 +64,13 @@ window.STORY_DATA = {
   //   TX-nn:arrived, TX-nn:read, TX-nn:trust, TX-nn:reject
   //   BN-nn:spotted, BN-nn:missed, BN-nn:missedOffCourse   (buoys)
   //   BN-nn:correct, BN-nn:wrong, BN-nn:missed             (aircraft)
+  //   BN-nn:reported                                       (a German aircraft reported on the telex)
+  //
+  // Telex headers beyond the usual ones (see Telex Machine Demo/README.md):
+  //   GENUINE, CLUE n, LESSON   the cipher desk's "Is this signal genuine?" and its debrief.
+  //                             Never printed on the slip; shown only after the player answers.
+  //   KEY, KEY NAME             a key, filed in the desk's key tray
+  //   CIPHER, KEYWORD, KEY NAME printed enciphered; the player decodes it on the desk
   //   remind:unread, remind:offCourse, remind:offCourseUrgent
   lines: [
 
@@ -108,14 +115,16 @@ window.STORY_DATA = {
     { id: 'I-13', speaker: 'Graves', mode: 'CLICK', trigger: { type: 'event', value: 'intro' },
       onShow: 'openRulebook', onDone: 'closeRulebook',
       text: 'This is your rulebook. Learn it. Nobody out there will check your signals for you, and a signal that fails even one check is to be ignored.' },
+    { id: 'I-13b', speaker: 'Graves', mode: 'CLICK', trigger: { type: 'event', value: 'intro' },
+      text: 'Some orders will come in cipher, under a key Dover sends you. Guard that key. Whoever holds it can write orders that read just like ours.' },
     { id: 'I-14', speaker: 'Graves', mode: 'CLICK', trigger: { type: 'event', value: 'intro' },
       text: 'This is Able Seaman Lacey. He’s going with you.' },
     { id: 'I-15', speaker: 'Tom', mode: 'CLICK', trigger: { type: 'event', value: 'intro' },
       text: 'Tom, sir. Er, Skipper. I’ve never been past the harbour wall, if I’m honest.' },
     { id: 'I-16', speaker: 'Graves', mode: 'CLICK', trigger: { type: 'event', value: 'intro' },
-      text: 'You have ten hours to reach the beaches. Any later and there may be no one left to bring home. Good luck.' },
+      text: 'You have until six tonight to reach the beaches. Any later and there may be no one left to bring home. Good luck.' },
     { id: 'I-17', speaker: 'Narrator', mode: 'CLICK', trigger: { type: 'event', value: 'intro' },
-      text: 'Steer with the WHEEL and watch your course on the COMPASS. Look about with the BINOCULARS. Read your orders on the TELEX, and check each one against the RULEBOOK.' },
+      text: 'Steer with the WHEEL and watch your course on the COMPASS. Look about with the BINOCULARS. Read your orders on the TELEX, and check each one against the RULEBOOK. Every slip you read is filed on the CIPHER DESK.' },
     { id: 'I-18', speaker: 'Narrator', mode: 'CLICK', trigger: { type: 'event', value: 'intro' },
       onDone: 'startVoyage',
       text: '05:00. The Kestrel leaves Ramsgate.' },
@@ -134,6 +143,11 @@ window.STORY_DATA = {
 SERIAL:   NR 033
 PRIORITY: ROUTINE
 TIME:     0510Z/30 MAY 40
+GENUINE:  yes
+CLUE 1:   FM V.A. DOVER (DYNAMO) | The station that sends all your orders, spelled correctly.
+CLUE 2:   TO M.Y. KESTREL | Addressed to you, by name.
+CLUE 3:   NR 033 · 0510Z | Remember the number and the time. Every true signal after this one carries a higher number and a later time.
+LESSON:   Know what normal looks like. You can only spot a fake if you know the real thing well.
 ---
 Test of line. This machine will carry your orders for the
 crossing. Check every signal against your handbook before you
@@ -144,6 +158,28 @@ act on it.
     { id: 'V-04', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-00:read' },
       text: 'Just Dover testing the line. Not much to it… though I suppose it’s worth remembering what a real one looks like.' },
 
+    { id: 'TX-K1', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+0:25' },
+      correctAction: 'trust',
+      concept: 'Keys: the key travels on its own, apart from the messages it unlocks.',
+      text: `
+SERIAL:   NR 034
+PRIORITY: IMMEDIATE
+TIME:     0515Z/30 MAY 40
+KEY:      DYNAMO
+KEY NAME: DAY KEY 30 MAY
+GENUINE:  yes
+CLUE 1:   FM V.A. DOVER (DYNAMO) | The right sender, with the next number in the run after NR 033.
+CLUE 2:   Valid for traffic dated 30 May only | A key with a fixed lifetime limits the damage if it is captured. Keys change on a schedule, not because a message says so.
+CLUE 3:   It asks you for nothing | A genuine key signal hands something over. It never asks you to send a secret back.
+LESSON:   Whoever holds the key can read your traffic and write traffic that looks as if it came from Dover. Guard it like the ship’s papers.
+---
+Day key for enciphered traffic. Valid for traffic dated 30 May
+only. Signals marked DAY KEY 30 MAY are to be read with the key
+group below. Do not repeat this key by any means.
+` },
+    { id: 'V-04b', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'TX-K1:read' },
+      text: '“Do not repeat this key by any means.” Sounds important.' },
+
     { id: 'TX-01', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+0:35' },
       correctAction: 'trust', newHeading: 72,
       concept: 'A true message passes every check.',
@@ -151,6 +187,11 @@ act on it.
 SERIAL:   NR 036
 PRIORITY: IMMEDIATE
 TIME:     0530Z/30 MAY 40
+GENUINE:  yes
+CLUE 1:   FM V.A. DOVER (DYNAMO) · TO M.Y. KESTREL | The right sender, and meant for you.
+CLUE 2:   NR 036 · 0530Z | The number has gone up since NR 034 and the time is later. Signals run in order.
+CLUE 3:   Keep wireless silence | The order fits standing instructions. It asks for nothing secret and nothing risky.
+LESSON:   A true signal passes every check: who sent it, who it is for, its number, its time, and whether the order makes sense.
 ---
 Kestrel to proceed by Route X. Steer 072 degrees to pass the
 North Goodwin light vessel. Keep wireless silence throughout.
@@ -172,6 +213,11 @@ SERIAL:   NR 039
 PRIORITY: IMMEDIATE
 TIME:     0645Z/30 MAY 40
 FROM:     V.A. DOVRE (DYNAMO)
+GENUINE:  no
+CLUE 1:   FM V.A. DOVRE (DYNAMO) | DOVRE, not DOVER. A lookalike sender, one letter off, is the oldest trick there is. Read the sender letter by letter.
+CLUE 2:   Alter course to 180 degrees | Due south, towards Calais and the enemy guns on that coast.
+CLUE 3:   An escort will meet you | A promise that makes a strange order feel safe. Nothing on the slip lets you check it.
+LESSON:   This is spoofing: a message made to look as if it came from someone you trust, like an email from an address one letter off. The number and time can be perfect and the sender still false.
 ---
 Route X closed by mines. Alter course to 180 degrees for
 Calais Roads, where an escort will meet you.
@@ -208,6 +254,11 @@ Calais Roads, where an escort will meet you.
 SERIAL:   NR 041
 PRIORITY: MOST IMMEDIATE
 TIME:     0810Z/30 MAY 40
+GENUINE:  yes
+CLUE 1:   NR 041 · 0810Z | Number and time both run on from Dover’s last signal.
+CLUE 2:   Enemy batteries at Gravelines | It says plainly why the course is changing, and the reason fits what you know of the coast.
+CLUE 3:   Keep the swept water | It keeps you clear of the mines and the guns, not closer to them.
+LESSON:   A true change of orders says why, and still passes every check. A change of plan is not suspicious in itself; a change you can’t account for is.
 ---
 Enemy batteries at Gravelines now ranging on Route X. Alter
 course to 015 degrees for the Kwinte Buoy. Keep the swept
@@ -228,6 +279,13 @@ TIME:     9 O'CLOCK
 FROM:     FIRST LORD OF THE ADMIRALTY
 TO:       ALL SMALL CRAFT
 SIGN:     OBEY AT ONCE.
+GENUINE:  no
+CLUE 1:   FM FIRST LORD OF THE ADMIRALTY | A big name, but your orders come from Dover. The First Lord doesn’t send course orders to yachts.
+CLUE 2:   TO ALL SMALL CRAFT | Not addressed to you. Every true order is sent to M.Y. KESTREL.
+CLUE 3:   No number · TOO 9 O'CLOCK | No serial at all, and a time in a form Dover never uses.
+CLUE 4:   Report your position by wireless | It wants you to break wireless silence and tell the enemy where you are.
+CLUE 5:   No time to check this signal | Invented urgency stops you checking. Real orders leave time to verify.
+LESSON:   This is phishing and social engineering: an important name, urgency, a threat and a request for something secret. The harder a message pushes you not to check it, the more it needs checking.
 ---
 Urgent urgent. Mines ahead on every route. Turn back to
 Ramsgate immediately. Report your position by wireless at
@@ -262,6 +320,10 @@ once. No time to check this signal.
 SERIAL:   NR 043
 PRIORITY: IMMEDIATE
 TIME:     1010Z/30 MAY 40
+GENUINE:  yes
+CLUE 1:   NR 043 · 1010Z | Number and time run on in order from NR 041.
+CLUE 2:   No change to your orders | A genuine warning asks you to be careful. It doesn’t ask you to do anything new or risky.
+LESSON:   Security warnings are real traffic too. Expect the enemy to use a warning like this as cover for the very trick it warns you about.
 ---
 Warning. Enemy is sending false signals in our name to small
 craft on all routes. Check every signal against your handbook.
@@ -269,6 +331,35 @@ No change to your orders.
 ` },
     { id: 'V-22', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-05:read' },
       text: 'So that’s what’s been going on.' },
+
+    { id: 'TX-05b', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+5:40' },
+      correctAction: 'reject',
+      fails: ['5. Does the order make sense?'],
+      concept: 'Key substitution: get the victim to swap their key for yours, and every forgery afterwards decodes perfectly.',
+      text: `
+SERIAL:   NR 044
+PRIORITY: MOST IMMEDIATE
+TIME:     1040Z/30 MAY 40
+KEY:      SEAGULL
+KEY NAME: REPLACEMENT KEY
+SIGN:
+GENUINE:  no
+CLUE 1:   Day key compromised | Keys change on a schedule and by a separate route. A key change announced on the same line as the orders is exactly what someone forging orders would send.
+CLUE 2:   Discard it at once | It wants you to throw away the one thing that lets you tell Dover’s traffic from the enemy’s.
+CLUE 3:   Do not confirm by lamp | Being told not to check is the strongest red flag of all. A genuine sender wants to be checked.
+CLUE 4:   Just after Dover’s warning | The number and time fit perfectly. It hides behind the real warning about false signals.
+LESSON:   This is a key substitution attack. Swap your key for theirs and every forged order afterwards decodes perfectly. Only accept a new key by the route that brought the old one, and confirm it before you use it.
+---
+Day key compromised. Discard it at once and use the
+replacement key below for all traffic from this signal on.
+Do not confirm by lamp. The enemy is reading lamps.
+` },
+    { id: 'V-22b', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-05b:read' },
+      text: 'A new key already? Dover’s being careful, I’ll give them that.' },
+    { id: 'V-22c', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-05b:reject' },
+      text: 'Keeping the old key, then. Right you are.' },
+    { id: 'V-22d', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-05b:trust' },
+      text: 'Out with the old key, in with the new.' },
 
     { id: 'TX-06', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+6:00' },
       correctAction: 'reject', lureHeading: 72, lure: 'lured',
@@ -278,6 +369,11 @@ No change to your orders.
 SERIAL:   NR 036
 PRIORITY: IMMEDIATE
 TIME:     0530Z/30 MAY 40
+GENUINE:  no
+CLUE 1:   NR 036 | You already have NR 036. The numbers have run on since; one can’t go backwards.
+CLUE 2:   0530Z | Half past five this morning, hours old by now.
+CLUE 3:   Steer 072 degrees | This morning’s leg. Dover moved you off Route X because of the guns at Gravelines.
+LESSON:   This is a replay attack: a real signal, recorded and sent again later. Everything about it was once genuine, which is why the number and the time are the checks that catch it.
 ---
 Kestrel to proceed by Route X. Steer 072 degrees to pass the
 North Goodwin light vessel. Keep wireless silence throughout.
@@ -304,18 +400,28 @@ North Goodwin light vessel. Keep wireless silence throughout.
 
     { id: 'TX-07', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+6:50' },
       correctAction: 'trust', newHeading: 40,
-      concept: 'A true message passes every check.',
+      concept: 'Encryption hides a message, and shows it came from someone who holds the key.',
+      // Enciphered under the day key (TX-K1). The course is written in words because
+      // the cipher only changes letters: figures would print in clear.
       text: `
 SERIAL:   NR 045
 PRIORITY: MOST IMMEDIATE
 TIME:     1145Z/30 MAY 40
+CIPHER:   VIGENERE
+KEYWORD:  DYNAMO
+KEY NAME: DAY KEY 30 MAY
+GENUINE:  yes
+CLUE 1:   Reads plainly under the day key | Only someone holding Dover’s key could write a message that decodes to sense with it. The cipher proves who sent it as well as hiding what it says.
+CLUE 2:   NR 045 · 1145Z | The number and time run on from Dover’s genuine traffic.
+CLUE 3:   Steer zero four zero | North-east along the coast to Dunkirk, inside the swept water.
+LESSON:   Encryption does two jobs. It hides a message from the enemy, and it shows the message came from someone who holds the key. A message is only as trustworthy as the key it reads under.
 ---
-Kestrel to turn for the beaches. Steer 040 degrees for
-Dunkirk. Small craft are to work the beaches between
-Malo-les-Bains and Bray-Dunes.
+Kestrel to turn for the beaches. Steer zero four zero degrees
+for Dunkirk. Small craft are to work the beaches between
+Malo les Bains and Bray Dunes.
 ` },
-    { id: 'V-27', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-07:read' },
-      text: 'Dunkirk! Is this it, Skipper?' },
+    { id: 'V-27', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-07:read' },
+      text: 'That’s not English, Skipper. Not any English I know.' },
     { id: 'V-28', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-07:trust' },
       text: 'Not far now.' },
 
@@ -327,6 +433,11 @@ Malo-les-Bains and Bray-Dunes.
 SERIAL:   NR 045
 PRIORITY: MOST IMMEDIATE
 TIME:     1145Z/30 MAY 40
+GENUINE:  no
+CLUE 1:   NR 045 · 1145Z | The same number and time as the order that has just come in. One signal can’t arrive twice with a different course.
+CLUE 2:   Sent in clear | The real NR 045 came in cipher under the day key. A message in cipher can’t be altered without the key; one in clear can be changed by anybody.
+CLUE 3:   Steer 140 degrees | One figure changed: south-east, towards Calais, instead of north-east to Dunkirk.
+LESSON:   This is tampering, a man-in-the-middle attack: a true message caught on its way and changed. Compare it with what you already hold, and trust the copy that only Dover’s key could have written.
 ---
 Kestrel to turn for the beaches. Steer 140 degrees for
 Dunkirk. Small craft are to work the beaches between
@@ -349,6 +460,8 @@ Malo-les-Bains and Bray-Dunes.
       text: 'One of theirs. Keep her steady, Skipper. We’re nearly there.' },
     { id: 'V-34', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'BN-04:wrong' },
       text: 'One of ours? Then why is it diving at the boats?' },
+    { id: 'V-34r', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-04:reported' },
+      text: 'Dover knows about it now. Someone’ll go after it.' },
     { id: 'V-34b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-04:missed' },
       text: 'It’s gone over. I never saw whose it was.' },
 
@@ -365,7 +478,7 @@ Malo-les-Bains and Bray-Dunes.
       text: 'The compass doesn’t match our orders, Skipper.' },
     { id: 'R-03', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'remind:offCourseUrgent' },
       text: 'We’re drifting badly. If we don’t correct now, we’ll never make it.' },
-    { id: 'R-04', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'time', value: 'T+8:00' },
+    { id: 'R-04', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'time', value: 'T+11:00' },
       text: 'Two hours to go, Skipper. We have to keep moving.' },
 
     // ==== Endings (clock stopped, all CLICK) ====================================
@@ -381,7 +494,7 @@ Malo-les-Bains and Bray-Dunes.
       text: 'Score: {telexes} of {telexTotal} telexes judged correctly. {sightings} of {sightingTotal} sightings correct.' },
 
     { id: 'E-T1', speaker: 'Narrator', mode: 'CLICK', trigger: { type: 'event', value: 'ending:outOfTime' },
-      text: '15:00. The Kestrel is still at sea.' },
+      text: '18:00. The Kestrel is still at sea.' },
     { id: 'E-T2', speaker: 'Tom', mode: 'CLICK', trigger: { type: 'event', value: 'ending:outOfTime' },
       text: 'We’re too late, Skipper. Too many wrong turns.' },
     { id: 'E-T3', speaker: 'Narrator', mode: 'CLICK', trigger: { type: 'event', value: 'ending:outOfTime' },

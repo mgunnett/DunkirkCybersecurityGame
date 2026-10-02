@@ -1897,7 +1897,7 @@
     if (!sig) return;
     // Not while the slip in the machine is being read: putting it down files
     // that slip on the desk, so the next one waits until it's off the machine
-    if (reading && !readingFrom) { setTimeout(() => incoming(sig), 1000); return; }
+    if (reading && !readingFrom) { setTimeout(() => incoming(sig), 1000); return sig; }
     current = sig;
     if (sig.key && sig.key_name) keysIn.add(sig.key_name.toUpperCase().trim());
     printed = compose(sig);
@@ -1922,6 +1922,7 @@
     tx.slip.classList.add('is-feeding');
     if (stillness.matches) slipFed();
     tx.root.dispatchEvent(new CustomEvent('signalarrived', { bubbles: true, detail: { signal: sig, printed } }));
+    return sig;                                  // the Script matches later events to it
   }
 
   function slipFed() {
@@ -1974,7 +1975,8 @@
       tx.sheet.style.transform = '';
     }
     tx.back.focus({ preventScroll: true });
-    tx.root.dispatchEvent(new CustomEvent('signalread', { bubbles: true, detail: { printed } }));
+    // Only the slip in the machine counts as reading a new signal, not a page off the desk
+    if (!from) tx.root.dispatchEvent(new CustomEvent('signalread', { bubbles: true, detail: { signal: current, printed } }));
   }
 
   // Once read, the slip comes off the machine and goes on the cipher desk,
@@ -2050,14 +2052,17 @@
 
     const bearing = String(Math.round(s.bearing) % 360).padStart(3, '0');
     const name = s.name.replace(/[“”"]/g, '');
-    setTimeout(() => incoming({
+    // The reply never prints over a slip nobody has read yet: it waits its turn
+    const reply = {
       serial: 'NR ' + ++reportSerial,
       priority: 'IMMEDIATE',
       body: 'Your report of enemy aircraft ' + name + ' bearing ' + bearing +
             ' degrees received.\n\nRecon sent.',
       sign: '',
       stack: 'Recon reports'                     // these pile up together on the desk
-    }), REPLY_DELAY * 1000);
+    };
+    const printWhenFree = () => unread ? setTimeout(printWhenFree, 1000) : incoming(reply);
+    setTimeout(printWhenFree, REPLY_DELAY * 1000);
 
     // For the rest of the game to read: what was reported
     tx.root.dispatchEvent(new CustomEvent('aircraftreported', {
@@ -2215,6 +2220,7 @@
     get position()  { return { x: boatX, y: boatY }; },
     get glassesUp() { return glassesUp; },
     get reading()   { return reading; },
+    get slipWaiting() { return unread; },        // a slip in the machine nobody has read yet
 
     // Hold the boat still (true) or let her sail (false)
     hold(on) { sailing = !on; },
@@ -2227,7 +2233,11 @@
     },
 
     // Print this signal now, written as a signal file is (headers, ---, message)
-    sendSignal(text) { incoming(parseSignal(text)); },
+    // Returns the signal, which comes back in signalread and telexverdict events.
+    sendSignal(text) { return incoming(parseSignal(text)); },
+
+    // The cipher desk (desk.js), for putting it away at the end
+    closeDesk() { if (window.TELEX.desk && TELEX.desk.isOpen()) TELEX.desk.close(); },
 
     // Send this aircraft over now: 'stuka' or 'spitfire'. False if one is already up.
     sendAircraft(art) {

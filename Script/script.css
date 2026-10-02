@@ -17,7 +17,7 @@
   position: fixed;
   left: 2.2vw;
   bottom: calc(2.2vh + 3rem);           /* clear of the speed plate */
-  z-index: 40;
+  z-index: 120;                         /* over the slip, the cipher desk and the rulebook */
   width: min(30rem, calc(100vw - 32px));
   margin: 0;
   padding: 0.85rem 1.1rem 0.95rem;
@@ -312,3 +312,6 @@
   .story-line.is-staged { left: 50%; bottom: 4vh; }
   .story-stage { padding-top: 10vh; }
 }
+
+/* The cipher desk button (desk.css) is hidden outside the voyage */
+.deskopen[hidden] { display: none; }

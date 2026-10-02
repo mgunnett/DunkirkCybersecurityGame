@@ -2,7 +2,7 @@
    DUNKIRK — the game clock
    ------------------------------------------------------------------
    Counts the voyage in real seconds: T = 0 when the Kestrel leaves
-   Ramsgate, T = 600 at 15:00. One real second is one in-game minute,
+   Ramsgate, T = 780 at 18:00 (the deadline is set in dialogue.js). One real second is one in-game minute,
    so the in-game time is simply the start time plus T minutes.
 
    The clock only runs during the voyage. The intro and the endings
