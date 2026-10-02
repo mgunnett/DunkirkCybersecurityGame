@@ -103,6 +103,21 @@ Story.Dialogue = class {
 
   get busy() { return !!this.line || this.queue.length > 0; }
 
+  // A break: stop calling update() after pause(), and resume() moves every
+  // timer on by the time away, so nothing goes stale or runs out meanwhile
+  pause(now = performance.now()) { this.pausedAt = now; }
+
+  resume(now = performance.now()) {
+    if (this.pausedAt === undefined) return;
+    const away = now - this.pausedAt;
+    this.pausedAt = undefined;
+    for (const q of this.queue) q.at += away;
+    if (this.line) {
+      this.line.started += away;
+      if (this.line.until) this.line.until += away;
+    }
+  }
+
   // ---- Every frame -------------------------------------------------------------
   update(now = performance.now()) {
     // Drop stale chatter

@@ -36,6 +36,13 @@ They load at the bottom of `shipbuild-demo.html`, in that order.
 4. **Ending.** The boat is held, the dialogue clears, the ending lines play,
    then the score. *Play again* reloads the page, which resets everything.
 
+### Pausing
+
+During the voyage a pause button sits beside the clock, top left (or press
+<kbd>P</kbd>). Pausing stops the clock, the boat and the dialogue, and puts up
+a *Resume* / *Start over* card. Switching tabs pauses too. Nothing is saved:
+reloading the page starts a new game.
+
 ### How a telex is judged
 
 Every telex carries Seth's `GENUINE`, `CLUE n` and `LESSON` headers, so the
