@@ -886,6 +886,30 @@ body {
 .spit__radiator   { fill: #55595a; stroke: #333; stroke-width: 1; }
 .spit__spinner    { fill: #262626; }
 
+/* Messerschmitt Bf 109 E: light blue underside, square-cut wingtips */
+.me__skin     { fill: #9fb3bf; stroke: #5e6f78; stroke-width: 1; }
+.me__panel    { stroke: rgba(40, 50, 56, 0.4); }
+.me__radiator { fill: #4a5357; stroke: #2a3034; stroke-width: 1; }
+.me__strut    { stroke: #5e6f78; stroke-width: 2; stroke-linecap: round; }
+.me__spinner  { fill: #2f3a33; }
+
+/* Hawker Hurricane Mk I: black and white undersides, like the Spitfire's */
+.hu__wing--stbd { fill: #e4e1d6; stroke: #8b8a84; stroke-width: 1; }
+.hu__wing--port { fill: #1d1d1d; stroke: #0c0c0c; stroke-width: 1; }
+.hu__skin       { fill: #b4b6b0; stroke: #6f7370; stroke-width: 1; }
+.hu__panel      { stroke: rgba(118, 118, 118, 0.6); }
+.hu__radiator   { fill: #55595a; stroke: #333; stroke-width: 1; }
+.hu__spinner    { fill: #262626; }
+
+/* Heinkel He 111 P: light blue underside, glazed nose, two engines */
+.he__skin    { fill: #95aab6; stroke: #56666e; stroke-width: 1; }
+.he__panel   { stroke: rgba(40, 50, 56, 0.4); }
+.he__nacelle { fill: #889dab; stroke: #4c5a61; stroke-width: 1; }
+.he__glass   { fill: #c9d9df; stroke: #56666e; stroke-width: 1; }
+.he__frame   { stroke: rgba(40, 50, 56, 0.55); }
+.he__gondola { fill: #7f939e; stroke: #4c5a61; stroke-width: 1; }
+.he__spinner { fill: #3f4a4f; }
+
 .roundel__blue  { fill: #1f3a78; }
 .roundel__white { fill: #efece2; }
 .roundel__red   { fill: var(--vermilion); }
@@ -1278,6 +1302,65 @@ body {
 }
 .signal.has-tools .signal__sheet { max-width: min(100%, 46ch); }
 
+/* --- Cipher desk folder, on the dash top beside the teleprinter ----------- */
+/* desk.css styles #deskopen as a brass corner button for its own demo page.
+   Here it's a manila folder next to the machine, so these rules go by id. */
+#deskopen {
+  position: absolute;
+  right: max(1%, calc(17% - 10dvh));   /* just to starboard of the teleprinter */
+  bottom: 49%;
+  height: 7%;
+  aspect-ratio: 64 / 50;
+  z-index: 4;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  cursor: pointer;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+#deskopen[hidden] { display: none; }
+
+#deskopen:hover,
+#deskopen:focus-visible {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 8px rgba(227, 198, 132, 0.75));
+  outline: none;
+}
+
+.deskopen__folder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.fo__back  { fill: #9c7a3f; stroke: #5e4720; stroke-width: 1.5; }
+.fo__paper { fill: #efe5ca; stroke: #b3a179; stroke-width: 1; }
+.fo__lines { fill: none; stroke: #8d8268; stroke-width: 1.4; }
+.fo__front { fill: #c9a35e; stroke: #5e4720; stroke-width: 1.5; }
+.fo__label { fill: #efe5ca; stroke: #8a6526; stroke-width: 1; }
+
+/* How many pages are filed */
+#deskopen b {
+  position: absolute;
+  top: -12%;
+  right: -12%;
+  min-width: 1.6em;
+  padding: 0.15em 0.4em;
+  border-radius: 1em;
+  font: 600 clamp(9px, 1.4vh, 12px)/1.2 var(--serif);
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--brass-lit);
+  background: #221a09;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
 @media (max-width: 1000px) {
   .signal.has-tools { grid-template-columns: minmax(0, 1fr); }
   .signal.has-tools .signal__sheet { max-height: none; justify-self: center; }
@@ -1504,6 +1587,7 @@ body {
 @media (max-width: 620px) {
   .binoculars { left: 7%; height: 8%; bottom: 50%; }
   .telex      { right: 5%; height: 9%; bottom: 50%; }
+  #deskopen   { right: 5%; height: 5%; bottom: 60%; }   /* above the teleprinter, which fills the corner */
   .rulebook   { right: 2%; bottom: 3%; height: 10%; }
   .glasses__hint { white-space: normal; width: 80vw; text-align: center; }
   .binnacle { height: 30%; bottom: 47%; }

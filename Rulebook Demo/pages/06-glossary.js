@@ -7,7 +7,17 @@ rulebookPage(String.raw`
 
 **Call sign.** The letters that identify a vessel by wireless and teleprinter. Ours is GBKW.
 
+**Cipher.** A message with every letter changed by a key, so that only someone holding the key can read it. The cipher desk decodes it.
+
+**Cipher desk.** The folder beside the teleprinter, where every signal is filed once it has been read and where signals in cipher are decoded.
+
+**CYP.** The line in a signal's heading that names the key it was written under.
+
 **Course.** The direction you steer, given in three figures of degrees from north: 000 is north, 090 east, 180 south, 270 west.
+
+**Day key.** The key Dover issues for one day's traffic in cipher. It reaches you as a key signal of its own.
+
+**Key.** The secret word a cipher is written under. A key signal prints it as a KEY GROUP; the desk keeps it in your key tray.
 
 **Lubber line.** The mark on the front of the compass bowl. The figure on the card beneath it is the course you are steering.
 

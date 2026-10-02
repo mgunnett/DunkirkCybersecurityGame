@@ -213,6 +213,20 @@
     </svg>
   </div>
 
+  <!-- The cipher desk's folder, beside the teleprinter. Every slip that's been read is
+       filed in it; click it to open the desk. The badge counts the pages (desk.js). -->
+  <button class="deskopen" id="deskopen" type="button" aria-haspopup="dialog" aria-expanded="false"
+          aria-label="Cipher desk: the folder of filed signals" title="Cipher desk">
+    <svg class="deskopen__folder" viewBox="0 0 64 50" aria-hidden="true">
+      <path class="fo__back" d="M2 8 Q2 4 6 4 L22 4 L27 9 L58 9 Q62 9 62 13 L62 44 Q62 48 58 48 L6 48 Q2 48 2 44 Z"/>
+      <rect class="fo__paper" x="8" y="11" width="46" height="24" rx="1" transform="rotate(-3 31 23)"/>
+      <path class="fo__lines" d="M13 16 H47 M13 21 H43 M13 26 H45" transform="rotate(-3 31 23)"/>
+      <path class="fo__front" d="M2 21 Q2 18 5 18 L59 18 Q62 18 62 21 L62 44 Q62 48 58 48 L6 48 Q2 48 2 44 Z"/>
+      <path class="fo__label" d="M22 28 H42 V36 H22 Z"/>
+    </svg>
+    <b id="deskcount">0</b>
+  </button>
+
   <!-- Dash face with the working instruments -->
   <div class="dashface">
     <div class="dashface__lip" aria-hidden="true"></div>
@@ -378,10 +392,8 @@
 </div>
 
 <!-- The cipher desk. Every slip is taken off the teleprinter and filed here once
-     it has been read. The desk itself lives in ../Telex Machine Demo (desk.js). -->
-<button class="deskopen" id="deskopen" type="button" aria-haspopup="dialog" aria-expanded="false">
-  Cipher desk <b id="deskcount">0</b>
-</button>
+     it has been read. The desk itself lives in ../Telex Machine Demo (desk.js);
+     its folder sits beside the teleprinter, on the dash top. -->
 
 <div class="desk" id="desk" role="dialog" aria-modal="true" aria-label="Cipher desk" hidden>
   <header class="desk__bar">
@@ -561,6 +573,99 @@
   </svg>
 </template>
 
+<!-- Messerschmitt Bf 109 E: straight tapered wing with square-cut tips (not the Spitfire's
+     ellipse), a radiator under each wing, slim fuselage, braced square tailplane -->
+<template id="art-bf109">
+  <svg class="art art--plane" viewBox="-150 -150 300 300" preserveAspectRatio="none">
+    <defs>
+      <g id="balken-me">
+        <path class="cross__edge" d="M-6 -15 H6 V-6 H15 V6 H6 V15 H-6 V6 H-15 V-6 H-6 Z"/>
+        <path class="cross__bar"  d="M-2.5 -15 H2.5 V-2.5 H15 V2.5 H2.5 V15 H-2.5 V2.5 H-15 V-2.5 H-2.5 Z"/>
+      </g>
+      <g id="me-half">
+        <path class="me__skin" d="M10 -30 L106 -17 Q110 -16 110 -12 L110 2 Q110 6 106 6 L10 18 Z"/>
+        <path class="panel me__panel" d="M12 12 L104 2 M52 -24 L52 13"/>
+        <rect class="me__radiator" x="30" y="-10" width="15" height="21" rx="2"/>
+        <use href="#balken-me" x="80" y="-6"/>
+        <path class="me__skin" d="M4 80 L38 82 Q42 83 42 87 L42 95 Q42 98 38 98 L4 100 Z"/>
+        <path class="me__strut" d="M6 92 L26 84"/>
+      </g>
+    </defs>
+    <g transform="rotate(90)">
+      <use href="#me-half"/>
+      <use href="#me-half" transform="scale(-1 1)"/>
+      <path class="me__skin" d="M0 -98 C6 -98 10 -92 10 -80 L11 -20 C11 10 9 40 6 72 L3 104 C2 108 -2 108 -3 104 L-6 72 C-9 40 -11 10 -11 -20 L-10 -80 C-10 -92 -6 -98 0 -98 Z"/>
+      <path class="panel me__panel" d="M-10 -66 L10 -66 M0 24 L0 100"/>
+      <rect class="me__radiator" x="-5" y="-84" width="10" height="12" rx="2"/>
+      <ellipse class="me__spinner" cx="0" cy="-100" rx="5" ry="5"/>
+      <ellipse class="airscrew" cx="0" cy="-104" rx="32" ry="2.4"/>
+    </g>
+  </svg>
+</template>
+
+<!-- Hawker Hurricane Mk I: thick wing, straighter leading edge and rounder tips than the
+     Spitfire, big radiator under the belly behind the wing, humped fuselage, round tail.
+     Black and white undersides like the Spitfire's. From below, starboard is on the left. -->
+<template id="art-hurricane">
+  <svg class="art art--plane" viewBox="-150 -150 300 300" preserveAspectRatio="none">
+    <defs>
+      <path id="hurri-wing" d="M10 -32 L94 -24 Q116 -22 116 -9 Q116 4 100 8 L10 24 Z"/>
+      <g id="roundel-hu">
+        <circle class="roundel__blue"  r="11"/>
+        <circle class="roundel__white" r="7"/>
+        <circle class="roundel__red"   r="3.5"/>
+      </g>
+      <g id="hurri-marks">
+        <path class="panel hu__panel" d="M12 20 L60 13 M44 -28 L44 16"/>
+        <use href="#roundel-hu" x="76" y="-6"/>
+        <path class="hu__skin" d="M4 76 C26 74 38 78 40 86 C41 94 32 98 4 98 Z"/>
+      </g>
+    </defs>
+    <g transform="rotate(90)">
+      <use href="#hurri-wing" class="hu__wing--port"/>
+      <use href="#hurri-wing" class="hu__wing--stbd" transform="scale(-1 1)"/>
+      <use href="#hurri-marks"/>
+      <use href="#hurri-marks" transform="scale(-1 1)"/>
+      <path class="hu__skin" d="M0 -86 C8 -86 13 -80 13 -70 L14 -20 C14 12 12 42 8 70 L3 96 C2 100 -2 100 -3 96 L-8 70 C-12 42 -14 12 -14 -20 L-13 -70 C-13 -80 -8 -86 0 -86 Z"/>
+      <path class="panel hu__panel" d="M-13 -58 L13 -58 M0 40 L0 94"/>
+      <rect class="hu__radiator" x="-9" y="8" width="18" height="28" rx="5"/>
+      <path class="hu__spinner" d="M0 -98 C4 -94 6 -88 6 -85 L-6 -85 C-6 -88 -4 -94 0 -98 Z"/>
+      <ellipse class="airscrew" cx="0" cy="-87" rx="34" ry="2.4"/>
+    </g>
+  </svg>
+</template>
+
+<!-- Heinkel He 111 P: a bomber. Broad wing with rounded tips, two engines with their
+     own airscrews, glazed nose, ventral gondola, crosses well out on the wings -->
+<template id="art-he111">
+  <svg class="art art--plane" viewBox="-150 -150 300 300" preserveAspectRatio="none">
+    <defs>
+      <g id="balken-he">
+        <path class="cross__edge" d="M-6 -15 H6 V-6 H15 V6 H6 V15 H-6 V6 H-15 V-6 H-6 Z"/>
+        <path class="cross__bar"  d="M-2.5 -15 H2.5 V-2.5 H15 V2.5 H2.5 V15 H-2.5 V2.5 H-15 V-2.5 H-2.5 Z"/>
+      </g>
+      <g id="he-half">
+        <path class="he__skin" d="M12 -34 L52 -36 L122 -24 Q144 -20 144 -9 Q144 2 130 5 L52 17 L12 19 Z"/>
+        <path class="panel he__panel" d="M14 14 L128 0 M84 -30 L84 10"/>
+        <use href="#balken-he" x="112" y="-7"/>
+        <path class="he__nacelle" d="M48 -72 C54 -72 57 -64 57 -52 L56 22 C56 28 52 30 48 30 C44 30 40 28 40 22 L39 -52 C39 -64 42 -72 48 -72 Z"/>
+        <ellipse class="he__spinner" cx="48" cy="-74" rx="5" ry="4"/>
+        <ellipse class="airscrew" cx="48" cy="-77" rx="26" ry="2.2"/>
+        <path class="he__skin" d="M5 86 L44 88 Q56 90 56 97 Q56 104 44 106 L5 108 Z"/>
+      </g>
+    </defs>
+    <g transform="rotate(90)">
+      <use href="#he-half"/>
+      <use href="#he-half" transform="scale(-1 1)"/>
+      <path class="he__skin" d="M0 -100 C10 -100 15 -90 15 -76 L15 -20 C15 20 12 50 8 80 L4 112 C3 116 -3 116 -4 112 L-8 80 C-12 50 -15 20 -15 -20 L-15 -76 C-15 -90 -10 -100 0 -100 Z"/>
+      <path class="he__glass" d="M0 -100 C10 -100 15 -90 15 -76 L-15 -76 C-15 -90 -10 -100 0 -100 Z"/>
+      <path class="panel he__frame" d="M-12 -84 L12 -84 M0 -100 L0 -76 M-7 -97 L-7 -77 M7 -97 L7 -77"/>
+      <rect class="he__gondola" x="-6" y="-44" width="12" height="36" rx="5"/>
+      <path class="panel he__panel" d="M0 30 L0 108"/>
+    </g>
+  </svg>
+</template>
+
 <script>
 (() => {
   'use strict';
@@ -670,7 +775,10 @@
   // you're asked whose it is. w and h are angular sizes.
   const AIRCRAFT = {
     stuka:    { w: 0.66, h: 0.50, side: 'german', name: 'Junkers Ju 87 “Stuka”' },
-    spitfire: { w: 0.56, h: 0.43, side: 'allied', name: 'Supermarine Spitfire' }
+    spitfire: { w: 0.56, h: 0.43, side: 'allied', name: 'Supermarine Spitfire' },
+    bf109:     { w: 0.56, h: 0.46, side: 'german', name: 'Messerschmitt Bf 109' },
+    hurricane: { w: 0.58, h: 0.45, side: 'allied', name: 'Hawker Hurricane' },
+    he111:     { w: 0.98, h: 0.72, side: 'german', name: 'Heinkel He 111' }
   };
   const SIDES = { german: 'German', allied: 'Allied' };
   const PLANE_DRIFT = 0.8;         // degrees of bearing per second

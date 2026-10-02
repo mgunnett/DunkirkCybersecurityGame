@@ -33,5 +33,5 @@ Genuine signals come from V.A. DOVER (DYNAMO) and are addressed to this vessel b
 
 ## The body and sign-off
 
-Orders are short and plain. Courses are always given as three figures in degrees, such as 072 or 213. Most signals close with a standing instruction, ACKNOWLEDGE BY LAMP ON SIGHT, or a particular order in its place.
+Orders are short and plain. In a signal sent in clear, courses are always given as three figures in degrees, such as 072 or 213. (Signals in cipher spell them out: see *Signals in Cipher*.) Most signals close with a standing instruction, ACKNOWLEDGE BY LAMP ON SIGHT, or a particular order in its place.
 `);

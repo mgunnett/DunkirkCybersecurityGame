@@ -25,5 +25,5 @@ Dover does change its orders, but it always says why. A signal that cancels your
 
 ## Unfamiliar forms
 
-Wrong priority words, times written in local hours instead of Z, courses given as words or points of the compass instead of three figures, and odd spellings of places are all signs that the writer has only studied our signals, not sent them.
+Wrong priority words, times written in local hours instead of Z, courses in a signal sent in clear given as words or points of the compass instead of three figures, and odd spellings of places are all signs that the writer has only studied our signals, not sent them.
 `);
