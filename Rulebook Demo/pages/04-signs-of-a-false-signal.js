@@ -1,29 +1,33 @@
 rulebookPage(String.raw`
 # Signs of a False Signal
 
-The enemy is careful and he is patient. His signals are not full of mistakes. Usually there is one thing wrong, placed where a tired man will not look. These are the tricks he is known to use.
+Most fakes look almost right. Usually just one thing is wrong, hidden where you might not look. Watch for these tricks.
 
-## Too much hurry
+## Rushing you
 
-Dover's signals are urgent, but they are never frantic. Be suspicious of any signal that tells you there is no time to check it, or piles on words such as AT ONCE, WITHOUT DELAY and REPEAT IMMEDIATELY in the same few lines.
+"No time to check!" Real orders always give you time to check them.
 
-## Breaking silence
+## Asking you to use the radio
 
-Dover will never ask you to use your wireless, to send your position, or to report your course by radio. You are ordered to keep wireless silence and to acknowledge by lamp. A signal asking you to transmit is fishing for your position.
+Dover will never ask you to use your wireless (radio), or to say where you are. That is how the enemy finds you.
 
-## Leaving the swept water
+## Leaving the safe channel
 
-The channels have been swept clear of mines at great cost, and every true order keeps you inside them. Any signal that tells you to cut a corner, save time by leaving the channel, or pass *close* to a buoy on its wrong side is to be refused.
+The channels have been cleared of mines. A real order never tells you to cut a corner or leave the channel.
 
-## Small changes to a true order
+## One figure changed
 
-The cleverest false signal repeats a genuine order almost word for word and changes a single figure: 213 becomes 231, or 072 becomes 027. Always compare a new order with the last one you received. If it repeats an order you already hold, ask why it was sent again.
+A clever fake copies a real order and changes one number: 040 becomes 140. Compare every new order with the last one.
 
-## Countermanding without reason
+## An old order sent again
 
-Dover does change its orders, but it always says why. A signal that cancels your last order and gives no reason, or blames an unnamed danger, should be treated with suspicion.
+A real order from earlier, sent again later, is a fake. Its old number and old time give it away.
 
-## Unfamiliar forms
+## A change with no reason
 
-Wrong priority words, times written in local hours instead of Z, courses given as words or points of the compass instead of three figures, and odd spellings of places are all signs that the writer has only studied our signals, not sent them.
+Dover does change orders, but always says why.
+
+## Things that look odd
+
+Wrong priority words, times not written the Dover way, and names spelled wrong all show the sender has only copied our signals.
 `);

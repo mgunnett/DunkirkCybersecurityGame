@@ -81,6 +81,11 @@
   SHIP.script({ signals: true, aircraft: true });
   SHIP.hold(true);
 
+  // The cipher desk's button belongs to the voyage, not the title or the endings
+  const deskButton = document.getElementById('deskopen');
+  const showDesk = on => { if (deskButton) deskButton.hidden = !on; };
+  showDesk(false);
+
   // ---- Screens ------------------------------------------------------------------
   const el = tag => document.createElement(tag);
 
@@ -123,12 +128,18 @@
     stage.classList.toggle('has-card', !!(kicker || title || sub || buttons.length));
   }
 
-  // The in-game clock, on a brass plate at the top left
-  const plate = el('p');
-  plate.className = 'story-clock';
-  plate.hidden = true;
-  plate.setAttribute('aria-label', 'Time');
-  document.body.appendChild(plate);
+  // The pause button and the in-game clock, on brass plates at the top left
+  const corner = el('div');
+  corner.className = 'story-corner';
+  corner.hidden = true;
+  corner.innerHTML =
+    '<button type="button" class="story-pause" aria-label="Pause" title="Pause (P)">' +
+      '<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="1.5" width="3" height="9"/><rect x="7" y="1.5" width="3" height="9"/></svg>' +
+    '</button>' +
+    '<p class="story-clock" aria-label="Time"></p>';
+  document.body.appendChild(corner);
+  const plate = corner.querySelector('.story-clock');
+  corner.querySelector('.story-pause').addEventListener('click', () => pause());
 
   // ---- What the script's onShow / onDone can ask for --------------------------------
   const actions = {
@@ -170,14 +181,69 @@
     SHIP.closeRulebook();
     stage.hidden = true;
     stage.classList.remove('is-title');
-    plate.hidden = false;
+    corner.hidden = false;
+    showDesk(true);
     SHIP.hold(false);
     clock.start();
   }
 
+  // A break: the clock, the boat and the dialogue all stop until Resume.
+  // Nothing is saved; reloading the page starts afresh, as Play again does.
+  let pausedAt = 0;
+  function pause() {
+    if (state !== 'voyage') return;
+    state = 'paused';
+    pausedAt = performance.now();
+    clock.pause();
+    SHIP.hold(true);
+    dialogue.pause(pausedAt);
+    corner.hidden = true;
+    stage.hidden = false;
+    stage.classList.add('is-paused');
+    setCard({
+      kicker: 'Paused · ' + clock.format(),
+      title: 'Taking a break',
+      sub: 'The clock is stopped. Reloading the page starts a new voyage.',
+      buttons: [['Resume', resume], ['Start over', startOver, true]]
+    });
+    card.actions.firstChild.focus({ preventScroll: true });
+  }
+
+  function resume() {
+    if (state !== 'paused') return;
+    state = 'voyage';
+    const now = performance.now();
+    dialogue.resume(now);
+    voyage.putDownAt += now - pausedAt;          // the gap between telexes doesn't run either
+    setCard({});
+    stage.classList.remove('is-paused');
+    stage.hidden = true;
+    corner.hidden = false;
+    SHIP.hold(false);
+    clock.start();
+  }
+
+  function startOver() {
+    if (!confirm('Start a new voyage? This one will be lost.')) return;
+    location.reload();
+  }
+
+  // Switching to another tab is a break too
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) pause();
+  });
+
+  window.addEventListener('keydown', ev => {
+    if (ev.key !== 'p' && ev.key !== 'P') return;
+    if (ev.target.closest && ev.target.closest('input, textarea, select')) return;
+    if (state === 'voyage') pause();
+    else if (state === 'paused') resume();
+  });
+
   function toEnding(kind, score) {
     state = 'ending';
     final = score;
+    corner.hidden = true;
     clock.pause();
     SHIP.hold(true);
 
@@ -185,6 +251,8 @@
     SHIP.closeRulebook();
     if (SHIP.reading) document.getElementById('signalBack').click();
     if (SHIP.glassesUp) document.getElementById('glassLower').click();
+    SHIP.closeDesk();
+    showDesk(false);
 
     dialogue.clear();
     dialogue.staged = true;
@@ -220,7 +288,7 @@
       voyage.update(step);
       plate.textContent = clock.format();
     }
-    dialogue.update(now);
+    if (state !== 'paused') dialogue.update(now);
     if (state === 'ending' && !scoreShown && !dialogue.busy) showScore();
     if (debug.on) debug.show();
     requestAnimationFrame(frame);
@@ -252,7 +320,8 @@
         ev.preventDefault();
         try {
           const t = Story.Clock.parse(p.querySelector('input').value);
-          if (state !== 'voyage') toVoyage();
+          if (state === 'paused') resume();
+          else if (state !== 'voyage') toVoyage();
           voyage.jumpTo(t);
         } catch (e) { alert(e.message); }
       });

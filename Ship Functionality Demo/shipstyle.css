@@ -182,7 +182,6 @@ body {
 
 /* --- Things out in the water ----------------------------------------------------- */
 
-
 .art--lighthouse .art__tower   { fill: #f1ece0; }
 .art--lighthouse .art__band    { fill: var(--vermilion); }
 .art--lighthouse .art__lantern { fill: #2b2b28; }
@@ -887,6 +886,30 @@ body {
 .spit__radiator   { fill: #55595a; stroke: #333; stroke-width: 1; }
 .spit__spinner    { fill: #262626; }
 
+/* Messerschmitt Bf 109 E: light blue underside, square-cut wingtips */
+.me__skin     { fill: #9fb3bf; stroke: #5e6f78; stroke-width: 1; }
+.me__panel    { stroke: rgba(40, 50, 56, 0.4); }
+.me__radiator { fill: #4a5357; stroke: #2a3034; stroke-width: 1; }
+.me__strut    { stroke: #5e6f78; stroke-width: 2; stroke-linecap: round; }
+.me__spinner  { fill: #2f3a33; }
+
+/* Hawker Hurricane Mk I: black and white undersides, like the Spitfire's */
+.hu__wing--stbd { fill: #e4e1d6; stroke: #8b8a84; stroke-width: 1; }
+.hu__wing--port { fill: #1d1d1d; stroke: #0c0c0c; stroke-width: 1; }
+.hu__skin       { fill: #b4b6b0; stroke: #6f7370; stroke-width: 1; }
+.hu__panel      { stroke: rgba(118, 118, 118, 0.6); }
+.hu__radiator   { fill: #55595a; stroke: #333; stroke-width: 1; }
+.hu__spinner    { fill: #262626; }
+
+/* Heinkel He 111 P: light blue underside, glazed nose, two engines */
+.he__skin    { fill: #95aab6; stroke: #56666e; stroke-width: 1; }
+.he__panel   { stroke: rgba(40, 50, 56, 0.4); }
+.he__nacelle { fill: #889dab; stroke: #4c5a61; stroke-width: 1; }
+.he__glass   { fill: #c9d9df; stroke: #56666e; stroke-width: 1; }
+.he__frame   { stroke: rgba(40, 50, 56, 0.55); }
+.he__gondola { fill: #7f939e; stroke: #4c5a61; stroke-width: 1; }
+.he__spinner { fill: #3f4a4f; }
+
 .roundel__blue  { fill: #1f3a78; }
 .roundel__white { fill: #efece2; }
 .roundel__red   { fill: var(--vermilion); }
@@ -1127,19 +1150,6 @@ body {
   to   { transform: translateY(0); }
 }
 
-/* Filed away: torn off the machine and gone */
-.telex__slip.is-torn {
-  pointer-events: none;
-  animation: tear 0.5s ease-in 0.12s both;
-}
-
-@keyframes tear {
-  0%   { transform: translateY(0) rotate(0); opacity: 1; }
-  25%  { transform: translateY(-4%) rotate(-3deg); opacity: 1; }
-  100% { transform: translateY(-30%) rotate(-9deg); opacity: 0; }
-}
-
-
 /* Rows of type: a bar the length of each printed line, too small to read */
 .telex__type {
   position: absolute;
@@ -1186,12 +1196,65 @@ body {
   }
 }
 
+/* Sighting to report: the machine glows and the whole body is clickable,
+   under the slip so the slip can still be picked up */
+.telex__report {
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  top: 36%;
+  bottom: 6%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.telex__report[hidden] { display: none; }
+.telex__report:focus-visible { outline: none; }
+
+.telex.is-reporting {
+  animation: report-glow 1.4s ease-in-out infinite;
+}
+
+.telex.is-reporting:has(.telex__report:hover),
+.telex.is-reporting:has(.telex__report:focus-visible) {
+  animation: none;
+  filter:
+    drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 10px rgba(227, 198, 132, 1));
+}
+
+@keyframes report-glow {
+  0%, 100% { filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 2px rgba(227, 198, 132, 0.3)); }
+  50%      { filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 9px rgba(227, 198, 132, 0.95)); }
+}
+
+/* Brass tag hung under the machine while there's a sighting to send */
+.telex__tag {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: 0.4rem;
+  transform: translateX(-50%);
+  padding: 0.2rem 0.6rem;
+  white-space: nowrap;
+  font-family: var(--serif);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #3a2c12;
+  background: linear-gradient(180deg, var(--brass-lit), var(--brass));
+  border: 1px solid var(--brass-deep);
+  border-radius: 2px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
 /* --- The slip, picked up and held close enough to read -------------------- */
 
 .signal {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 95;              /* over the cipher desk (90), so its pages can be read */
   display: grid;
   place-items: center;
   padding: 7vh calc(var(--spine-w) + 4vw) 7vh 4vw;
@@ -1225,6 +1288,82 @@ body {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 22px 44px rgba(0, 0, 0, 0.6);
   transform-origin: 0 0;
   transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* With the cipher desk tools beside it (decoder.js) */
+.signal.has-tools {
+  grid-template-columns: auto minmax(0, 620px);
+  place-items: start center;
+  align-content: start;
+  justify-content: center;
+  gap: 18px;
+  overflow-y: auto;
+  padding-top: 9vh;
+}
+.signal.has-tools .signal__sheet { max-width: min(100%, 46ch); }
+
+/* --- Cipher desk folder, on the dash top beside the teleprinter ----------- */
+/* desk.css styles #deskopen as a brass corner button for its own demo page.
+   Here it's a manila folder next to the machine, so these rules go by id. */
+#deskopen {
+  position: absolute;
+  right: max(1%, calc(17% - 10dvh));   /* just to starboard of the teleprinter */
+  bottom: 49%;
+  height: 7%;
+  aspect-ratio: 64 / 50;
+  z-index: 4;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  cursor: pointer;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55));
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+#deskopen[hidden] { display: none; }
+
+#deskopen:hover,
+#deskopen:focus-visible {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 8px rgba(227, 198, 132, 0.75));
+  outline: none;
+}
+
+.deskopen__folder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.fo__back  { fill: #9c7a3f; stroke: #5e4720; stroke-width: 1.5; }
+.fo__paper { fill: #efe5ca; stroke: #b3a179; stroke-width: 1; }
+.fo__lines { fill: none; stroke: #8d8268; stroke-width: 1.4; }
+.fo__front { fill: #c9a35e; stroke: #5e4720; stroke-width: 1.5; }
+.fo__label { fill: #efe5ca; stroke: #8a6526; stroke-width: 1; }
+
+/* How many pages are filed */
+#deskopen b {
+  position: absolute;
+  top: -12%;
+  right: -12%;
+  min-width: 1.6em;
+  padding: 0.15em 0.4em;
+  border-radius: 1em;
+  font: 600 clamp(9px, 1.4vh, 12px)/1.2 var(--serif);
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--brass-lit);
+  background: #221a09;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+@media (max-width: 1000px) {
+  .signal.has-tools { grid-template-columns: minmax(0, 1fr); }
+  .signal.has-tools .signal__sheet { max-height: none; justify-self: center; }
 }
 
 /* Same brass fitting as the one that lowers the glasses */
@@ -1342,7 +1481,7 @@ body {
 .room {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 110;             /* over the slip (95), which opens it from its spine */
   background: #0b0c0a;
   opacity: 0;
   visibility: hidden;
@@ -1427,346 +1566,14 @@ body {
   outline: none;
 }
 
-
-/* The sleuth: a noir detective in fedora and turned-up collar. It marks
-   key and cipher traffic wherever it goes. Fill follows currentColor. */
-.sleuth {
-  width: 1em;
-  height: 1em;
-  fill: currentColor;
-  flex: none;
-}
-
-/* --- The signal log, lying on the dash beside the teleprinter ------------- */
-
-.telex__log {
-  position: absolute;
-  right: 104%;
-  bottom: 2%;
-  width: 72%;
-  aspect-ratio: 120 / 64;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  transition: filter 0.2s ease, transform 0.2s ease;
-}
-
-.telex__log svg {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.telex__log:hover,
-.telex__log:focus-visible {
-  filter: brightness(1.08) drop-shadow(0 0 5px rgba(227, 198, 132, 0.7));
-  transform: translateY(-1px);
-  outline: none;
-}
-
-.telex__log.is-filing { animation: filing 0.5s ease-out 0.35s; }
-
-@keyframes filing {
-  0%, 100% { transform: translateY(0); }
-  35%      { transform: translateY(2px) scale(1.04, 0.96); }
-  70%      { transform: translateY(-1px); }
-}
-
-.log__shadow  { fill: rgba(0, 0, 0, 0.45); }
-.log__back    { fill: #a8834c; stroke: #5e4320; stroke-width: 1; }
-.log__tabshape { fill: #b8925a; stroke: #5e4320; stroke-width: 1; }
-.log__flimsy  { fill: #e8dcbe; stroke: rgba(120, 100, 60, 0.5); stroke-width: 0.8; }
-.log__flimsy--2 { fill: #efe5ca; }
-.log__cover   { fill: #c9a56b; stroke: #5e4320; stroke-width: 1.2; }
-.log__label   { fill: #efe5ca; stroke: rgba(94, 67, 32, 0.6); stroke-width: 0.8; }
-.log__letter  { fill: #2a211c; font-family: var(--serif); font-size: 6px; letter-spacing: 0.6px; text-anchor: middle; }
-.log__stamp   { fill: rgba(150, 36, 28, 0.75); opacity: 0; transition: opacity 0.3s ease; }
-.telex__log.has-cipher .log__stamp { opacity: 1; }
-
-.telex__count {
-  position: absolute;
-  top: -10%;
-  left: 4%;
-  min-width: 1.5em;
-  padding: 0.1em 0.35em;
-  font-family: "Courier Prime", "Courier New", monospace;
-  font-size: clamp(9px, 1.4vh, 12px);
-  line-height: 1.3;
-  text-align: center;
-  color: #fff1ec;
-  background: #a8322a;
-  border-radius: 1em;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-}
-
-.telex__count[hidden] { display: none; }
-
-/* --- The log, opened ------------------------------------------------------ */
-
-.log {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  display: grid;
-  place-items: center;
-  padding: 7vh 3vw 4vh;
-  background: rgba(8, 4, 2, 0.78);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
-}
-
-.log.is-open {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.3s ease;
-}
-
-/* An opened manila docket */
-.log__folder {
-  display: flex;
-  flex-direction: column;
-  width: min(1180px, 100%);
-  height: min(86vh, 760px);
-  color: #2a211c;
-  background:
-    linear-gradient(180deg, rgba(255, 240, 200, 0.18), rgba(0, 0, 0, 0) 40%),
-    #c9a56b;
-  border: 1px solid #5e4320;
-  border-radius: 3px;
-  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.6), inset 0 0 0 6px rgba(94, 67, 32, 0.12);
-  transform: translateY(10px) scale(0.98);
-  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-
-.log.is-open .log__folder { transform: none; }
-
-.log__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.4rem 1.2rem;
-  padding: 0.9rem 1.2rem 0.7rem;
-  border-bottom: 1px solid rgba(94, 67, 32, 0.45);
-}
-
-.log__title {
-  margin: 0;
-  font-family: var(--serif);
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.log__count {
-  margin: 0;
-  font-family: "Courier Prime", "Courier New", monospace;
-  font-size: 0.85rem;
-  color: #4d3a1e;
-}
-
-.log__tabs {
-  display: flex;
-  gap: 0.3rem;
-  margin-left: auto;
-}
-
-.log__tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
-  padding: 0.3rem 0.75rem;
-  font-family: var(--serif);
-  font-size: 0.85rem;
-  color: #3a2c12;
-  background: rgba(239, 229, 202, 0.45);
-  border: 1px solid rgba(94, 67, 32, 0.55);
-  border-radius: 2px;
-  cursor: pointer;
-}
-
-.log__tab .sleuth { width: 1.15em; height: 1.15em; color: #8e2a20; }
-.log__tab:hover { background: rgba(239, 229, 202, 0.75); }
-.log__tab[aria-pressed="true"] { background: #efe5ca; border-color: #5e4320; box-shadow: inset 0 -2px 0 #8e2a20; }
-.log__tab:focus-visible { outline: 2px solid #3a2c12; outline-offset: 2px; }
-
-.log__body {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(230px, 310px) 1fr;
-}
-
-/* The index down the left */
-.log__list {
-  margin: 0;
-  padding: 0.6rem;
-  list-style: none;
-  overflow-y: auto;
-  border-right: 1px solid rgba(94, 67, 32, 0.45);
-}
-
-.log__none {
-  padding: 1rem 0.6rem;
-  font-family: var(--serif);
-  font-style: italic;
-  color: #4d3a1e;
-}
-
-.log__entry {
-  display: grid;
-  grid-template-columns: 2.1rem 1fr;
-  grid-template-rows: auto auto;
-  column-gap: 0.55rem;
-  width: 100%;
-  margin-bottom: 0.4rem;
-  padding: 0.5rem 0.6rem;
-  font-family: "Courier Prime", "Courier New", monospace;
-  font-size: 0.78rem;
-  text-align: left;
-  color: #2e2438;
-  background: linear-gradient(90deg, #e2d5b3, #efe5ca 12%, #efe5ca);
-  border: 1px solid rgba(120, 100, 60, 0.45);
-  border-radius: 1px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.log__entry:hover { transform: translateX(2px); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); }
-.log__entry:focus-visible { outline: 2px solid #3a2c12; outline-offset: 1px; }
-
-.log__entry[aria-pressed="true"] {
-  background: #fbf4df;
-  border-color: #5e4320;
-  box-shadow: inset 4px 0 0 #3a2c12, 0 2px 5px rgba(0, 0, 0, 0.3);
-}
-
-/* Key and cipher traffic: red margin rule and the sleuth */
-.log__entry--key,
-.log__entry--cipher {
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0) 2.9rem, rgba(150, 36, 28, 0.35) 2.9rem 3rem, rgba(0, 0, 0, 0) 3rem),
-    linear-gradient(90deg, #e2d5b3, #efe5ca 12%, #efe5ca);
-}
-
-.log__entry--key[aria-pressed="true"],
-.log__entry--cipher[aria-pressed="true"] {
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0) 2.9rem, rgba(150, 36, 28, 0.35) 2.9rem 3rem, rgba(0, 0, 0, 0) 3rem),
-    #fbf4df;
-  box-shadow: inset 4px 0 0 #8e2a20, 0 2px 5px rgba(0, 0, 0, 0.3);
-}
-
-.log__icon {
-  grid-row: 1 / 3;
-  display: grid;
-  place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  align-self: center;
-}
-
-.log__icon .sleuth {
-  width: 2.1rem;
-  height: 2.1rem;
-  padding: 0.22rem;
-  color: #8e2a20;
-  border: 1.5px solid currentColor;
-  border-radius: 50%;
-  --sleuth-band: #efe5ca;
-}
-
-.log__entry--key .log__icon .sleuth { border-style: dashed; }
-
-/* Plain traffic: a plain slip */
-.log__slipicon {
-  width: 1.1rem;
-  height: 1.45rem;
-  background:
-    repeating-linear-gradient(180deg, rgba(59, 45, 70, 0.5) 0 1px, rgba(0, 0, 0, 0) 1px 4px) 3px 4px / calc(100% - 6px) calc(100% - 7px) no-repeat,
-    #fbf4df;
-  border: 1px solid rgba(120, 100, 60, 0.6);
-}
-
-.log__line {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.log__serial { font-weight: 700; }
-.log__time { color: #5b4d63; white-space: nowrap; }
-
-.log__line--sub {
-  flex-direction: column;
-  gap: 0.05rem;
-  font-size: 0.72rem;
-}
-
-.log__kind {
-  color: #5b4d63;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.log__entry--key .log__kind,
-.log__entry--cipher .log__kind { color: #8e2a20; }
-
-.log__gist {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Picked up but not yet read: a signal filed before anyone looked at it */
-.log__entry.is-unread .log__serial::after {
-  content: " \2022 unread";
-  font-weight: 400;
-  color: #a8322a;
-}
-
-/* The desk: the chosen sheet, and its key or cipher beside it */
-.log__desk {
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  justify-content: center;
-  gap: 1.2rem;
-  padding: 1.1rem;
-  overflow: auto;
-}
-
-.log__sheet {
-  max-height: none;
-  flex: none;
-  font-size: clamp(11px, 1.8vh, 14px);
-  transform: none;
-  transition: none;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 10px 22px rgba(0, 0, 0, 0.35);
-}
-
-.log__sheet.is-partner { transform: rotate(-0.8deg); }
-
-.log__hint {
-  flex-basis: 100%;
-  margin: 0.2rem 0 0;
-  font-family: var(--serif);
-  font-style: italic;
-  text-align: center;
-  color: #4d3a1e;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .telex__slip.is-feeding { animation: none; }
   .telex.is-calling .tx__lamp { animation: none; fill: #ff7a33; }
+  .telex.is-reporting {
+    animation: none;
+    filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 8px rgba(227, 198, 132, 0.9));
+  }
   .signal__sheet { transition: none; }
-  .telex__slip.is-torn,
-  .telex__log.is-filing { animation: none; }
-  .log__folder { transition: none; transform: none; }
   .room__frame { transition: none; transform: none; }
   .book-spine { transition: none; }
   .art--gull,
@@ -1780,14 +1587,7 @@ body {
 @media (max-width: 620px) {
   .binoculars { left: 7%; height: 8%; bottom: 50%; }
   .telex      { right: 5%; height: 9%; bottom: 50%; }
-  .telex__log { right: 38%; bottom: -34%; width: 58%; }   /* in front of the machine, clear of the binnacle */
-  .log        { padding: 7vh 2vw 2vh; }
-  .log__sheet { font-size: clamp(9px, 2.9vw, 14px); }
-  .log__folder { height: 89vh; }
-  .log__tabs  { margin-left: 0; }
-  .log__body  { grid-template-columns: 1fr; grid-template-rows: minmax(0, 34%) 1fr; }
-  .log__list  { border-right: 0; border-bottom: 1px solid rgba(94, 67, 32, 0.45); }
-  .log__desk  { padding: 0.8rem 0.5rem; }
+  #deskopen   { right: 5%; height: 5%; bottom: 60%; }   /* above the teleprinter, which fills the corner */
   .rulebook   { right: 2%; bottom: 3%; height: 10%; }
   .glasses__hint { white-space: normal; width: 80vw; text-align: center; }
   .binnacle { height: 30%; bottom: 47%; }

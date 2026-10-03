@@ -6,6 +6,8 @@
 <title>Shipbuild Demo</title>
 <link rel="stylesheet" href="shipstyle.css">
 <link rel="stylesheet" href="../Script/script.css">
+<link rel="stylesheet" href="../Telex Machine Demo/desk.css">
+<link rel="stylesheet" href="../Telex Machine Demo/decoder.css">
 </head>
 <body>
 
@@ -23,12 +25,12 @@
       <div class="horizon" id="horizon">
         <div class="sky"></div>
         <div class="horizon__clouds" id="clouds"></div>
+        <div class="air" id="air"></div>
         <div class="haze"></div>
         <div class="sea"></div>
         <div class="swell" id="swell"></div>
         <canvas class="surface" id="surface"></canvas>
         <div class="world" id="world"></div>
-        <div class="air" id="air"></div>
       </div>
 
       <svg class="foredeck" viewBox="0 0 1000 260" preserveAspectRatio="none" aria-hidden="true">
@@ -173,21 +175,10 @@
         <span class="telex__type" id="telexType"></span>
       </button>
     </div>
-
-    <!-- The signal log. Read slips are filed in here. -->
-    <button class="telex__log" id="telexLog" type="button" aria-label="Signal log: nothing filed">
-      <svg viewBox="0 0 120 64" aria-hidden="true">
-        <ellipse class="log__shadow" cx="60" cy="58" rx="58" ry="5"/>
-        <path class="log__back" d="M14 14 L106 14 L116 56 L4 56 Z"/>
-        <path class="log__tabshape" d="M20 14 L22 8 L46 8 L48 14 Z"/>
-        <path class="log__flimsy" d="M20 10 L98 11 L104 50 L14 50 Z"/>
-        <path class="log__flimsy log__flimsy--2" d="M24 6 L92 8 L96 46 L20 46 Z"/>
-        <path class="log__cover" d="M10 22 L110 22 L118 58 L2 58 Z"/>
-        <rect class="log__label" x="42" y="30" width="36" height="10" rx="1"/>
-        <text class="log__letter" x="60" y="37.6">SIGNALS</text>
-        <use class="log__stamp" href="#sleuth" x="84" y="36" width="20" height="20"/>
-      </svg>
-      <span class="telex__count" id="telexCount" hidden>0</span>
+    <!-- Lit after a German aircraft is identified: click the machine to report it -->
+    <button class="telex__report" id="telexReport" type="button" hidden
+            aria-label="Report the German aircraft on the telex">
+      <span class="telex__tag">Report sighting</span>
     </button>
     <svg viewBox="0 0 200 150" aria-hidden="true">
       <defs>
@@ -221,6 +212,20 @@
       <rect class="tx__foot" x="160" y="130" width="26" height="8" rx="2"/>
     </svg>
   </div>
+
+  <!-- The cipher desk's folder, beside the teleprinter. Every slip that's been read is
+       filed in it; click it to open the desk. The badge counts the pages (desk.js). -->
+  <button class="deskopen" id="deskopen" type="button" aria-haspopup="dialog" aria-expanded="false"
+          aria-label="Cipher desk: the folder of filed signals" title="Cipher desk">
+    <svg class="deskopen__folder" viewBox="0 0 64 50" aria-hidden="true">
+      <path class="fo__back" d="M2 8 Q2 4 6 4 L22 4 L27 9 L58 9 Q62 9 62 13 L62 44 Q62 48 58 48 L6 48 Q2 48 2 44 Z"/>
+      <rect class="fo__paper" x="8" y="11" width="46" height="24" rx="1" transform="rotate(-3 31 23)"/>
+      <path class="fo__lines" d="M13 16 H47 M13 21 H43 M13 26 H45" transform="rotate(-3 31 23)"/>
+      <path class="fo__front" d="M2 21 Q2 18 5 18 L59 18 Q62 18 62 21 L62 44 Q62 48 58 48 L6 48 Q2 48 2 44 Z"/>
+      <path class="fo__label" d="M22 28 H42 V36 H22 Z"/>
+    </svg>
+    <b id="deskcount">0</b>
+  </button>
 
   <!-- Dash face with the working instruments -->
   <div class="dashface">
@@ -375,7 +380,10 @@
 <div class="signal" id="signal" role="dialog" aria-modal="true"
      aria-label="Signal" aria-hidden="true">
   <pre class="signal__sheet" id="signalSheet"></pre>
-  <button class="signal__back" id="signalBack" type="button">File it away</button>
+  <!-- Cipher desk tools: filled by decoder.js for keys, enciphered signals
+       and signals the player has to judge -->
+  <aside class="tools" id="tools" aria-label="Cipher desk tools" hidden></aside>
+  <button class="signal__back" id="signalBack" type="button">Put it down</button>
   <!-- The rulebook's spine, peeking in at the right. Opens the book beside the slip. -->
   <button class="book-spine" id="signalBook" type="button"
           aria-label="Rulebook: open it beside the signal">
@@ -383,42 +391,26 @@
   </button>
 </div>
 
-<!-- The signal log: every slip that's been read and filed. Key and cipher
-     traffic is marked with the sleuth; picking a cipher lays its key beside it. -->
-<div class="log" id="log" role="dialog" aria-modal="true"
-     aria-labelledby="logTitle" aria-hidden="true">
-  <div class="log__folder">
-    <header class="log__head">
-      <h2 class="log__title" id="logTitle">Signal log</h2>
-      <p class="log__count" id="logCount">Nothing filed</p>
-      <div class="log__tabs" role="group" aria-label="Show">
-        <button class="log__tab" type="button" data-show="all" aria-pressed="true">All</button>
-        <button class="log__tab" type="button" data-show="plain" aria-pressed="false">Plain</button>
-        <button class="log__tab" type="button" data-show="cipher" aria-pressed="false">
-          <svg class="sleuth" aria-hidden="true"><use href="#sleuth"/></svg>Cipher
-        </button>
-      </div>
-    </header>
-    <div class="log__body">
-      <ol class="log__list" id="logList"></ol>
-      <div class="log__desk" id="logDesk"></div>
+<!-- The cipher desk. Every slip is taken off the teleprinter and filed here once
+     it has been read. The desk itself lives in ../Telex Machine Demo (desk.js);
+     its folder sits beside the teleprinter, on the dash top. -->
+
+<div class="desk" id="desk" role="dialog" aria-modal="true" aria-label="Cipher desk" hidden>
+  <header class="desk__bar">
+    <div class="desk__plate">Cipher desk</div>
+    <div class="desk__filters" role="group" aria-label="Show">
+      <button type="button" data-filter="all" aria-pressed="true">All <b>0</b></button>
+      <button type="button" data-filter="cipher" aria-pressed="false">Cipher <b>0</b></button>
+      <button type="button" data-filter="plain" aria-pressed="false">Plain <b>0</b></button>
     </div>
+    <button class="desk__tidy" id="desktidy" type="button">Tidy</button>
+    <p class="desk__hint">Drag pages to arrange them. Drop a key on a cipher message to clip it; pull a key off to unclip it. Click a page to read it again.</p>
+    <button class="close" id="deskclose" type="button" aria-label="Put the desk away"></button>
+  </header>
+  <div class="desk__surface" id="desksurface">
+    <p class="desk__empty" id="deskempty"></p>
   </div>
-  <button class="signal__back" id="logClose" type="button">Close the log</button>
 </div>
-
-<!-- The sleuth: marks key and cipher traffic in the log -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="sleuth" viewBox="0 0 64 64">
-    <path d="M8 27 C14 23 50 22 57 26 C52 29.5 13 30 8 27 Z"/>
-    <path d="M19 25 C18 17 21 10 26 8 C30 10.5 35 10.5 39 8 C44 10 46 17 45 25 Z"/>
-    <path style="fill:var(--sleuth-band, transparent)" d="M19.2 20.6 C28 19 37 19 44.8 20.6 L45 23.6 C37 22.2 28 22.2 19.1 23.6 Z"/>
-    <path d="M24 29 L22.4 33 L19.6 35.8 L22.4 36.8 L22 39.4 C23 42.4 27 43.4 31 43.4 L40 43.4 L42 29 Z"/>
-    <path d="M4 64 C5 53 11 47 20 44.5 L22 37 L30.5 46.5 L33.5 46.5 L42 37 L44.5 44.5 C54 47 59 53 60 64 Z"/>
-    <path style="fill:var(--sleuth-band, transparent)" d="M31.4 48 L32.6 48 L32.6 64 L31.4 64 Z"/>
-  </symbol>
-</svg>
-
 
 <!-- Reading the rulebook. The book stays in its own folder (../Rulebook Demo)
      and is loaded here the first time it's opened. -->
@@ -581,6 +573,99 @@
   </svg>
 </template>
 
+<!-- Messerschmitt Bf 109 E: straight tapered wing with square-cut tips (not the Spitfire's
+     ellipse), a radiator under each wing, slim fuselage, braced square tailplane -->
+<template id="art-bf109">
+  <svg class="art art--plane" viewBox="-150 -150 300 300" preserveAspectRatio="none">
+    <defs>
+      <g id="balken-me">
+        <path class="cross__edge" d="M-6 -15 H6 V-6 H15 V6 H6 V15 H-6 V6 H-15 V-6 H-6 Z"/>
+        <path class="cross__bar"  d="M-2.5 -15 H2.5 V-2.5 H15 V2.5 H2.5 V15 H-2.5 V2.5 H-15 V-2.5 H-2.5 Z"/>
+      </g>
+      <g id="me-half">
+        <path class="me__skin" d="M10 -30 L106 -17 Q110 -16 110 -12 L110 2 Q110 6 106 6 L10 18 Z"/>
+        <path class="panel me__panel" d="M12 12 L104 2 M52 -24 L52 13"/>
+        <rect class="me__radiator" x="30" y="-10" width="15" height="21" rx="2"/>
+        <use href="#balken-me" x="80" y="-6"/>
+        <path class="me__skin" d="M4 80 L38 82 Q42 83 42 87 L42 95 Q42 98 38 98 L4 100 Z"/>
+        <path class="me__strut" d="M6 92 L26 84"/>
+      </g>
+    </defs>
+    <g transform="rotate(90)">
+      <use href="#me-half"/>
+      <use href="#me-half" transform="scale(-1 1)"/>
+      <path class="me__skin" d="M0 -98 C6 -98 10 -92 10 -80 L11 -20 C11 10 9 40 6 72 L3 104 C2 108 -2 108 -3 104 L-6 72 C-9 40 -11 10 -11 -20 L-10 -80 C-10 -92 -6 -98 0 -98 Z"/>
+      <path class="panel me__panel" d="M-10 -66 L10 -66 M0 24 L0 100"/>
+      <rect class="me__radiator" x="-5" y="-84" width="10" height="12" rx="2"/>
+      <ellipse class="me__spinner" cx="0" cy="-100" rx="5" ry="5"/>
+      <ellipse class="airscrew" cx="0" cy="-104" rx="32" ry="2.4"/>
+    </g>
+  </svg>
+</template>
+
+<!-- Hawker Hurricane Mk I: thick wing, straighter leading edge and rounder tips than the
+     Spitfire, big radiator under the belly behind the wing, humped fuselage, round tail.
+     Black and white undersides like the Spitfire's. From below, starboard is on the left. -->
+<template id="art-hurricane">
+  <svg class="art art--plane" viewBox="-150 -150 300 300" preserveAspectRatio="none">
+    <defs>
+      <path id="hurri-wing" d="M10 -32 L94 -24 Q116 -22 116 -9 Q116 4 100 8 L10 24 Z"/>
+      <g id="roundel-hu">
+        <circle class="roundel__blue"  r="11"/>
+        <circle class="roundel__white" r="7"/>
+        <circle class="roundel__red"   r="3.5"/>
+      </g>
+      <g id="hurri-marks">
+        <path class="panel hu__panel" d="M12 20 L60 13 M44 -28 L44 16"/>
+        <use href="#roundel-hu" x="76" y="-6"/>
+        <path class="hu__skin" d="M4 76 C26 74 38 78 40 86 C41 94 32 98 4 98 Z"/>
+      </g>
+    </defs>
+    <g transform="rotate(90)">
+      <use href="#hurri-wing" class="hu__wing--port"/>
+      <use href="#hurri-wing" class="hu__wing--stbd" transform="scale(-1 1)"/>
+      <use href="#hurri-marks"/>
+      <use href="#hurri-marks" transform="scale(-1 1)"/>
+      <path class="hu__skin" d="M0 -86 C8 -86 13 -80 13 -70 L14 -20 C14 12 12 42 8 70 L3 96 C2 100 -2 100 -3 96 L-8 70 C-12 42 -14 12 -14 -20 L-13 -70 C-13 -80 -8 -86 0 -86 Z"/>
+      <path class="panel hu__panel" d="M-13 -58 L13 -58 M0 40 L0 94"/>
+      <rect class="hu__radiator" x="-9" y="8" width="18" height="28" rx="5"/>
+      <path class="hu__spinner" d="M0 -98 C4 -94 6 -88 6 -85 L-6 -85 C-6 -88 -4 -94 0 -98 Z"/>
+      <ellipse class="airscrew" cx="0" cy="-87" rx="34" ry="2.4"/>
+    </g>
+  </svg>
+</template>
+
+<!-- Heinkel He 111 P: a bomber. Broad wing with rounded tips, two engines with their
+     own airscrews, glazed nose, ventral gondola, crosses well out on the wings -->
+<template id="art-he111">
+  <svg class="art art--plane" viewBox="-150 -150 300 300" preserveAspectRatio="none">
+    <defs>
+      <g id="balken-he">
+        <path class="cross__edge" d="M-6 -15 H6 V-6 H15 V6 H6 V15 H-6 V6 H-15 V-6 H-6 Z"/>
+        <path class="cross__bar"  d="M-2.5 -15 H2.5 V-2.5 H15 V2.5 H2.5 V15 H-2.5 V2.5 H-15 V-2.5 H-2.5 Z"/>
+      </g>
+      <g id="he-half">
+        <path class="he__skin" d="M12 -34 L52 -36 L122 -24 Q144 -20 144 -9 Q144 2 130 5 L52 17 L12 19 Z"/>
+        <path class="panel he__panel" d="M14 14 L128 0 M84 -30 L84 10"/>
+        <use href="#balken-he" x="112" y="-7"/>
+        <path class="he__nacelle" d="M48 -72 C54 -72 57 -64 57 -52 L56 22 C56 28 52 30 48 30 C44 30 40 28 40 22 L39 -52 C39 -64 42 -72 48 -72 Z"/>
+        <ellipse class="he__spinner" cx="48" cy="-74" rx="5" ry="4"/>
+        <ellipse class="airscrew" cx="48" cy="-77" rx="26" ry="2.2"/>
+        <path class="he__skin" d="M5 86 L44 88 Q56 90 56 97 Q56 104 44 106 L5 108 Z"/>
+      </g>
+    </defs>
+    <g transform="rotate(90)">
+      <use href="#he-half"/>
+      <use href="#he-half" transform="scale(-1 1)"/>
+      <path class="he__skin" d="M0 -100 C10 -100 15 -90 15 -76 L15 -20 C15 20 12 50 8 80 L4 112 C3 116 -3 116 -4 112 L-8 80 C-12 50 -15 20 -15 -20 L-15 -76 C-15 -90 -10 -100 0 -100 Z"/>
+      <path class="he__glass" d="M0 -100 C10 -100 15 -90 15 -76 L-15 -76 C-15 -90 -10 -100 0 -100 Z"/>
+      <path class="panel he__frame" d="M-12 -84 L12 -84 M0 -100 L0 -76 M-7 -97 L-7 -77 M7 -97 L7 -77"/>
+      <rect class="he__gondola" x="-6" y="-44" width="12" height="36" rx="5"/>
+      <path class="panel he__panel" d="M0 30 L0 108"/>
+    </g>
+  </svg>
+</template>
+
 <script>
 (() => {
   'use strict';
@@ -690,7 +775,10 @@
   // you're asked whose it is. w and h are angular sizes.
   const AIRCRAFT = {
     stuka:    { w: 0.66, h: 0.50, side: 'german', name: 'Junkers Ju 87 “Stuka”' },
-    spitfire: { w: 0.56, h: 0.43, side: 'allied', name: 'Supermarine Spitfire' }
+    spitfire: { w: 0.56, h: 0.43, side: 'allied', name: 'Supermarine Spitfire' },
+    bf109:     { w: 0.56, h: 0.46, side: 'german', name: 'Messerschmitt Bf 109' },
+    hurricane: { w: 0.58, h: 0.45, side: 'allied', name: 'Hawker Hurricane' },
+    he111:     { w: 0.98, h: 0.72, side: 'german', name: 'Heinkel He 111' }
   };
   const SIDES = { german: 'German', allied: 'Allied' };
   const PLANE_DRIFT = 0.8;         // degrees of bearing per second
@@ -789,7 +877,7 @@
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const norm  = d => ((d % 360) + 360) % 360;
   const DEG   = 180 / Math.PI;
-  const within = ([lo, hi]) => lo + Math.random() * (hi - lo);   // seconds; between() below is ms
+  const between = ([lo, hi]) => lo + Math.random() * (hi - lo);
   const signed = v => {                          // -12.4 -> "−0012", for the position indicator
     const n = Math.round(v);
     return (n < 0 ? '−' : '+') + String(Math.abs(n)).padStart(4, '0');
@@ -1402,11 +1490,6 @@
       s.el.style.height = (c.h * ppd) + 'px';
     }
 
-    if (plane) {
-      hang(silhouette, heading, plane.b, plane.e, plane.type.w, plane.type.h,
-           ppd, cx, horizonY, FOV / 2, horizonH);
-    }
-
     // Hidden behind the glasses when they're up, so spare the drawing
     if (!glassesUp) {
       drawSurface(el.surface, {
@@ -1532,11 +1615,10 @@
     plane = {
       type,
       b: norm(heading + side * PLANE_ENTER),
-      e: within(PLANE_ELEV),
+      e: between(PLANE_ELEV),
       dir: -side,
       flown: 0,
       spotted: false,
-      asking: false,
       hold: 0,
       fade: 0
     };
@@ -1588,6 +1670,12 @@
     gl.verdict.textContent = (correct ? 'Correct: ' : 'Not quite: ') +
       'that’s a ' + name + ', ' + SIDES[side] + '.';
     gl.ask.classList.add('is-answered', correct ? 'is-right' : 'is-wrong');
+
+    // A German aircraft rightly called: it wants reporting on the telex
+    if (correct && side === 'german') {
+      gl.verdict.textContent += ' Lower the glasses and report it on the telex.';
+      askReport({ aircraft: art, name, bearing: plane.b });
+    }
     gl.lower.focus({ preventScroll: true });
 
     // For the rest of the game to read: what was up there, and what you called it
@@ -1623,7 +1711,7 @@
       thing.el.classList.remove('is-target', 'is-spotted');
     }
     plane = null;
-    planeWait = within(PLANE_GAP);
+    planeWait = between(PLANE_GAP);
     delete gl.root.dataset.aircraft;
   }
 
@@ -1770,14 +1858,7 @@
   // The machine never moves. Every so often a signal comes in: the lamp
   // flashes and a slip feeds out, too small to read from the wheel. Click
   // the slip to pick it up; it grows out of the machine to reading size.
-  // Filing it away tears it off the machine and puts it in the signal log.
   // Signals are the files in ../Telex Machine Demo/signals, read the same way.
-  //
-  // Three kinds of traffic (the TYPE header):
-  //   plain   an ordinary signal, printed as written
-  //   key     the key to a later cipher, tied to it by INDICATOR
-  //   cipher  enciphered with its key and printed in five-letter groups;
-  //           it never comes in before its key has
   const tx = {
     root:  document.getElementById('telex'),
     slip:  document.getElementById('telexSlip'),
@@ -1785,35 +1866,25 @@
     view:  document.getElementById('signal'),
     sheet: document.getElementById('signalSheet'),
     back:  document.getElementById('signalBack'),
-    log:   document.getElementById('telexLog'),
-    count: document.getElementById('telexCount'),
-    book:  document.getElementById('log'),
-    list:  document.getElementById('logList'),
-    desk:  document.getElementById('logDesk'),
-    total: document.getElementById('logCount'),
-    tabs:  document.querySelectorAll('.log__tab'),
-    shut:  document.getElementById('logClose')
+    report: document.getElementById('telexReport')
   };
   const signals   = [];
-  const delivered = new Set(); // every signal that has come in at least once
-  const filed     = [];        // the signal log, newest first
-  const listeners = {};
   let lastSignal  = null;      // so the random pick doesn't repeat itself
-  let current     = null;      // the signal on the slip in the machine
-  let printed     = '';        // and its text
+  let printed     = '';        // the text on the slip in the machine
   let unread      = false;     // lamp stays on until it's picked up
   let reading     = false;
-  let browsing    = false;     // the log is open
-  let showing     = 'all';     // log filter
-  let chosen      = null;      // signal picked in the log
+  let current     = null;      // the signal on the slip in the machine
+  let readingFrom = null;      // null: the slip in the machine; else a page off the desk
+  let taking      = false;     // the slip just put down may be lifted off for the desk
+  const txListeners = {};
+
+  // The cipher desk (desk.js) listens for 'printend' and 'close'
+  function emit(name, payload) {
+    (txListeners[name] || []).forEach(fn => {
+      try { fn(payload); } catch (e) { console.error('[telex]', e); }
+    });
+  }
   let signalTimer = 0;
-  let loadingFile = null;      // the signal file being read, for its id
-
-  const SLEUTH = '<svg class="sleuth" aria-hidden="true"><use href="#sleuth"/></svg>';
-
-  const emit = (name, payload) => (listeners[name] || []).forEach(fn => {
-    try { fn(payload); } catch (e) { console.error('[telex]', e); }
-  });
 
   // A signal file is a header block, a --- rule, then the message.
   // Unknown headers are kept under lower_snake_case keys, as in telex.js.
@@ -1833,9 +1904,6 @@
       body.push(line);
     }
     sig.body = body.join('\n').trim();
-    sig.type = /^(key|cipher)$/i.test(sig.type || '') ? sig.type.toLowerCase() : 'plain';
-    if (sig.indicator) sig.indicator = sig.indicator.toUpperCase();
-    if (sig.type === 'cipher') sig.plain = sig.body;   // what it says, for puzzle code to check
     return sig;
   }
 
@@ -1854,57 +1922,33 @@
     return out;
   }
 
+  // ---- The cipher, as in telex.js ----
+  // CIPHER: VIGENERE with KEYWORD: prints the body enciphered; the keyword never
+  // reaches the paper. KEY: is a key signal, printed with its key group.
   const truthy = v => typeof v === 'string' ? !/^(no|false|off|0|)$/i.test(v.trim()) : !!v;
+  const letters = w => String(w || '').toUpperCase().replace(/[^A-Z]/g, '');
 
-  // The key that opens a cipher, by indicator
-  const keyFor = sig => sig.type === 'cipher' && sig.indicator
-    ? signals.find(s => s.type === 'key' && s.indicator === sig.indicator) || null
-    : null;
-  // And the cipher a key opens
-  const cipherFor = sig => sig.type === 'key'
-    ? signals.find(s => s.type === 'cipher' && s.indicator === sig.indicator) || null
-    : null;
-
-  // Encipher the letters of a cipher's plain text. The method and its setting
-  // come from the cipher's own headers, or failing that from its key's:
-  //   CIPHER: caesar    SHIFT: 7
-  //   CIPHER: vigenere  KEYWORD: DYNAMO
-  //   CIPHER: atbash
-  // With no CIPHER header the body is taken to be enciphered already.
-  // Anything that isn't a letter passes through unchanged.
-  function encipher(sig, text) {
-    const key = keyFor(sig) || {};
-    const method = (sig.cipher || key.cipher || '').toLowerCase();
-    text = text.toUpperCase();
-    const shiftBy = (ch, k) => String.fromCharCode((ch.charCodeAt(0) - 65 + k + 26) % 26 + 65);
-    if (method === 'caesar') {
-      const k = (parseInt(sig.shift || key.shift, 10) || 0) % 26;
-      return text.replace(/[A-Z]/g, ch => shiftBy(ch, k));
-    }
-    if (method === 'vigenere') {
-      const word = (sig.keyword || key.keyword || '').toUpperCase().replace(/[^A-Z]/g, '');
-      if (!word) return text;
-      let n = 0;
-      return text.replace(/[A-Z]/g, ch => shiftBy(ch, word.charCodeAt(n++ % word.length) - 65));
-    }
-    if (method === 'atbash') return text.replace(/[A-Z]/g, ch => String.fromCharCode(155 - ch.charCodeAt(0)));
-    return text;
+  function vigenere(text, word, dir) {
+    const k = letters(word);
+    if (!k) return text;
+    let n = 0;
+    return text.replace(/[A-Z]/g, c => {
+      const shift = k.charCodeAt(n++ % k.length) - 65;
+      return String.fromCharCode((c.charCodeAt(0) - 65 + dir * shift + 26) % 26 + 65);
+    });
   }
 
-  // Cipher traffic goes out in five-letter groups. The plain text is run
-  // together and padded out with X before it's enciphered, as it would be
-  // by hand, so the padding reads back as X.
-  const runTogether = text => {
-    const run = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    return run + 'X'.repeat((5 - run.length % 5) % 5);
-  };
+  const isEnciphered = sig => truthy(sig.cipher) && letters(sig.keyword).length > 0;
 
-  function toGroups(text, cols) {
-    const groups = text.match(/.{5}/g) || [];
-    const perLine = Math.max(1, Math.floor((cols + 1) / 6));
-    const lines = [];
-    for (let i = 0; i < groups.length; i += perLine) lines.push(groups.slice(i, i + perLine).join(' '));
-    return { lines, count: groups.length };
+  function bodyText(sig) {
+    let body = sig.body || '';
+    if (isEnciphered(sig)) body = vigenere(body.toUpperCase(), sig.keyword, 1);
+    if (sig.key) body += '\n\nKEY GROUP ' + letters(sig.key);
+    return body;
+  }
+
+  function columns() {
+    return (window.TELEX_CONFIG && window.TELEX_CONFIG.columns) || 38;
   }
 
   // Set a signal in teleprinter form, with the defaults from config.js
@@ -1921,69 +1965,50 @@
       'PRI ' + (sig.priority || 'ROUTINE')
     ];
     if (sig.time) head.push('TOO ' + sig.time);
+    if (isEnciphered(sig)) head.push('CYP ' + (sig.key_name || 'DAY KEY'));
     head.push(bar);
-
-    let body, sign;
-    if (sig.type === 'cipher') {
-      const grouped = truthy(sig.groups === undefined ? 'yes' : sig.groups);
-      const set = grouped
-        ? toGroups(encipher(sig, runTogether(sig.body)), cfg.columns)
-        : { lines: wrapText(encipher(sig, sig.body), cfg.columns) };
-      body = ['CIPHER  INDICATOR ' + (sig.indicator || '-----')];
-      if (grouped) body.push('GROUPS ' + String(set.count).padStart(3, '0'));
-      body = body.concat('', set.lines);
-      sign = sig.sign !== undefined ? sig.sign : '';
-    } else if (sig.type === 'key') {
-      body = ['KEY  INDICATOR ' + (sig.indicator || '-----'), ''].concat(wrapText(sig.body || '', cfg.columns));
-      sign = sig.sign !== undefined ? sig.sign : 'RETAIN FOR LATER TRAFFIC.';
-    } else {
-      body = wrapText(sig.body || '', cfg.columns);
-      sign = sig.sign !== undefined ? sig.sign : cfg.sign;
-    }
-
+    const sign = sig.sign !== undefined ? sig.sign : cfg.sign;
     const foot = sign ? [bar, sign, 'NNNN'] : [bar, 'NNNN'];
-    const out = head.concat(body, foot).join('\n');
-    return truthy(sig.raw) && sig.type !== 'cipher' ? out : out.toUpperCase();
+    const out = head.concat(wrapText(bodyText(sig), cfg.columns), foot).join('\n');
+    const raw = typeof sig.raw === 'string' ? !/^(no|false|off|0|)$/i.test(sig.raw.trim()) : !!sig.raw;
+    return raw ? out : out.toUpperCase();
   }
 
-  // Which signal comes in next. Each one arrives once before any repeats.
-  // A cipher waits until its key is in, and won't follow its key
-  // straight off while there's other traffic to send. Once everything
-  // has been through, plain signals come round again at random.
+  const keysIn = new Set();     // KEY NAMEs that have been printed
+
   function pickSignal() {
-    const ready = s => s.type !== 'cipher' || !keyFor(s) || delivered.has(keyFor(s));
-    const fresh = signals.filter(s => !delivered.has(s) && ready(s));
-    let pool = fresh.filter(s => !(keyFor(s) && keyFor(s) === lastSignal));
-    if (!pool.length) pool = fresh;
-    if (!pool.length) pool = signals.filter(s => s.type === 'plain' && s !== lastSignal);
-    if (!pool.length) pool = signals.filter(s => s.type === 'plain');
-    if (!pool.length) return null;
-    return pool[Math.floor(Math.random() * pool.length)];
+    if (!signals.length) return null;
+    let sig, guard = 0;
+    do sig = signals[Math.floor(Math.random() * signals.length)];
+    while (signals.length > 1 && sig === lastSignal && ++guard < 25);
+    // An enciphered signal waits for its key: if the key hasn't come in, send that first
+    const named = sig.key_name && sig.key_name.toUpperCase().trim();
+    if (isEnciphered(sig) && named && !keysIn.has(named)) {
+      const key = signals.find(k => k.key && k.key_name && k.key_name.toUpperCase().trim() === named);
+      if (key) sig = key;
+    }
+    lastSignal = sig;
+    return sig;
   }
-
-  const between = ([lo, hi]) => (lo + Math.random() * (hi - lo)) * 1000;
 
   function expectSignal(range) {
     clearTimeout(signalTimer);
     if (scripted.signals) return;                // the Script sends them instead
-    signalTimer = setTimeout(() => incoming(), between(range));
+    // range is in seconds; a slip still waiting to be read isn't printed over
+    signalTimer = setTimeout(() => unread ? expectSignal(SIGNAL_GAP) : incoming(),
+                             between(range) * 1000);
   }
 
-  // A signal comes in: a fresh slip feeds out. From the helm it's only rows
-  // of type, one bar per printed line. Pass a signal (or its id) to send that
-  // one rather than a pick.
-  function incoming(which) {
-    const sig = typeof which === 'string' ? signals.find(s => s.id === which)
-              : which || pickSignal();
+  // A signal comes in: the last slip is torn off and a fresh one feeds out.
+  // From the helm it's only rows of type, one bar per printed line.
+  function incoming(sig = pickSignal()) {
     if (!sig) return;
-    if (reading) putSlipDown();
-    if (current && unread) file(current);        // a slip nobody picked up still gets filed
-    clearTimeout(signalTimer);
-
+    // Not while the slip in the machine is being read: putting it down files
+    // that slip on the desk, so the next one waits until it's off the machine
+    if (reading && !readingFrom) { setTimeout(() => incoming(sig), 1000); return sig; }
     current = sig;
+    if (sig.key && sig.key_name) keysIn.add(sig.key_name.toUpperCase().trim());
     printed = compose(sig);
-    delivered.add(sig);
-    lastSignal = sig;
     const lines = printed.split('\n');
     const cols = Math.max(...lines.map(l => l.length));
 
@@ -1996,7 +2021,6 @@
 
     unread = true;
     tx.root.classList.add('is-calling');
-    tx.slip.classList.remove('is-torn');
     tx.slip.hidden = false;
     tx.slip.disabled = true;
     tx.slip.style.setProperty('--lines', lines.length);
@@ -2006,248 +2030,156 @@
     tx.slip.classList.add('is-feeding');
     if (stillness.matches) slipFed();
     tx.root.dispatchEvent(new CustomEvent('signalarrived', { bubbles: true, detail: { signal: sig, printed } }));
-    emit('print', sig);
-    return sig;
+    return sig;                                  // the Script matches later events to it
   }
 
   function slipFed() {
+    if (!tx.slip.disabled || !current) return;   // not mid-feed
     tx.slip.classList.remove('is-feeding');
     tx.slip.disabled = false;
+    emit('printend', current);
   }
 
-  tx.slip.addEventListener('animationend', ev => {
-    if (ev.animationName === 'feed') slipFed();
-    if (ev.animationName === 'tear') tx.slip.hidden = true;
-  });
+  tx.slip.addEventListener('animationend', slipFed);
 
-  // Transform that lays a sheet over something on the desk, so it can grow
-  // out of it or shrink back into it
-  function over(target, sheet) {
-    const from = target.getBoundingClientRect();
-    const to = sheet.getBoundingClientRect();
+  // Transform that lays the reading sheet over the slip it was picked up from
+  function overSlip(to, source = tx.slip) {
+    const from = source.getBoundingClientRect();
     return 'translate(' + (from.left - to.left) + 'px,' + (from.top - to.top) + 'px) ' +
            'scale(' + (from.width / to.width) + ',' + (from.height / to.height) + ')';
   }
 
-  // Put the printed text on a sheet: type only, as the machine struck it
-  function setSheet(sheet, sig) {
-    sheet.textContent = compose(sig);
-  }
-
   function pickUpSlip() {
-    if (reading || tx.slip.disabled || !current) return;
-    reading = true;
+    if (reading || tx.slip.disabled) return;
     if (unread) {
       unread = false;
       tx.root.classList.remove('is-calling');
     }
-    setSheet(tx.sheet, current);
+    readSheet(printed, null);
+  }
+
+  // A page off the cipher desk, read again. It never goes back in the machine.
+  function readPage(paper) {
+    if (reading || !paper) return;
+    readSheet(paper._text || paper.textContent, paper);   // a stack reads as one
+  }
+
+  function readSheet(text, from) {
+    reading = true;
+    readingFrom = from;
+    tx.sheet.textContent = text;
     tx.sheet.scrollTop = 0;
+    tx.view.scrollTop = 0;
     tx.view.classList.add('is-open');
     tx.view.setAttribute('aria-hidden', 'false');
+    emit('open', from ? from._signal || null : current);   // decoder.js sets out its tools
 
     if (!stillness.matches) {
       tx.sheet.style.transition = 'none';
       tx.sheet.style.transform = '';
-      tx.sheet.style.transform = over(tx.slip, tx.sheet);
+      tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect(), from || tx.slip);
       void tx.sheet.offsetWidth;
       tx.sheet.style.transition = '';
       tx.sheet.style.transform = '';
     }
     tx.back.focus({ preventScroll: true });
-    tx.root.dispatchEvent(new CustomEvent('signalread', { bubbles: true, detail: { printed } }));
-    emit('read', current);
+    // Only the slip in the machine counts as reading a new signal, not a page off the desk
+    if (!from) tx.root.dispatchEvent(new CustomEvent('signalread', { bubbles: true, detail: { signal: current, printed } }));
   }
 
-  // Filing it away: the slip is torn off the machine and the sheet goes
-  // down into the signal log
+  // Once read, the slip comes off the machine and goes on the cipher desk,
+  // so the sheet shrinks away towards the desk rather than back to the platen.
   function putSlipDown() {
     if (!reading) return;
     reading = false;
-    if (!stillness.matches) tx.sheet.style.transform = over(tx.log, tx.sheet);
+    const from = readingFrom;
+    readingFrom = null;
+    const toward = from && from.isConnected ? from : deskButton || tx.slip;
+    if (!stillness.matches) tx.sheet.style.transform = overSlip(tx.sheet.getBoundingClientRect(), toward);
     tx.view.classList.remove('is-open');
     tx.view.setAttribute('aria-hidden', 'true');
-    tearOff();
-    tx.log.focus({ preventScroll: true });
+    if (from) {
+      emit('close', from._signal || null);
+      return;
+    }
+    tx.slip.focus({ preventScroll: true });
     expectSignal(SIGNAL_GAP);
+    taking = true;
+    emit('close', current);
+    taking = false;
+    if (current) tearOff();                      // no desk loaded: the slip still comes off
     tx.root.dispatchEvent(new CustomEvent('signalputdown', { bubbles: true }));
   }
 
+  // Lift the read slip off the machine. Returns it for the desk to file.
   function tearOff() {
     const sig = current;
     current = null;
+    tx.slip.hidden = true;
     tx.slip.disabled = true;
-    if (stillness.matches) tx.slip.hidden = true;
-    else tx.slip.classList.add('is-torn');
-    file(sig);
+    tx.type.textContent = '';
+    const paper = document.createElement('div');
+    paper.textContent = printed;
+    return { signal: sig, innerHTML: paper.innerHTML };
   }
 
-  // ---- The signal log -----------------------------------------------------
-
-  function file(sig) {
-    if (!sig) return;
-    const was = filed.findIndex(e => e.sig === sig);
-    if (was >= 0) filed.splice(was, 1);          // a repeat moves back to the top
-    filed.unshift({ sig, text: compose(sig), read: !unread || sig !== current });
-    tx.log.classList.remove('is-filing');
-    void tx.log.offsetWidth;
-    tx.log.classList.add('is-filing');
-    refreshLog();
-    emit('file', sig);
+  function takeSlip(sig) {
+    if (!taking || !current || sig !== current) return null;
+    return tearOff();
   }
 
-  const KIND = { plain: 'Plain', key: 'Key', cipher: 'Cipher' };
-
-  function refreshLog() {
-    const n = filed.length;
-    const secret = filed.filter(e => e.sig.type !== 'plain').length;
-    tx.count.hidden = !n;
-    tx.count.textContent = n;
-    tx.log.classList.toggle('has-cipher', secret > 0);
-    tx.log.setAttribute('aria-label', 'Signal log: ' + (n ? n + ' filed' : 'nothing filed'));
-    tx.total.textContent = n
-      ? n + ' filed' + (secret ? ' · ' + secret + ' key & cipher' : '')
-      : 'Nothing filed';
-    if (browsing) drawList();
-  }
-
-  // First line of the message, for the log's index
-  function gist(entry) {
-    const lines = entry.text.split('\n');
-    const bar = lines.findIndex(l => /^=+$/.test(l));
-    const body = lines.slice(bar + 1).filter(l => l.trim() && !/^(CIPHER|KEY|GROUPS) /.test(l));
-    return body[0] || '';
-  }
-
-  function drawList() {
-    tx.list.textContent = '';
-    const shown = filed.filter(e => showing === 'all' ||
-      (showing === 'plain' ? e.sig.type === 'plain' : e.sig.type !== 'plain'));
-
-    if (!shown.length) {
-      const li = document.createElement('li');
-      li.className = 'log__none';
-      li.textContent = filed.length ? 'Nothing of that kind filed.' : 'No signals filed yet. Read a slip off the teleprinter and file it away.';
-      tx.list.appendChild(li);
-    }
-
-    for (const entry of shown) {
-      const sig = entry.sig;
-      const li = document.createElement('li');
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'log__entry log__entry--' + sig.type;
-      b.setAttribute('aria-pressed', String(entry === chosen));
-      if (!entry.read) b.classList.add('is-unread');
-
-      let note = '';
-      if (sig.type === 'cipher') {
-        const key = keyFor(sig);
-        note = key && filed.some(e => e.sig === key) ? 'key on file' : 'key not on file';
-      } else if (sig.type === 'key') {
-        const c = cipherFor(sig);
-        note = c && filed.some(e => e.sig === c) ? 'cipher on file' : 'awaiting cipher';
-      }
-
-      b.innerHTML =
-        '<span class="log__icon">' + (sig.type === 'plain' ? '<i class="log__slipicon"></i>' : SLEUTH) + '</span>' +
-        '<span class="log__line">' +
-          '<b class="log__serial"></b><span class="log__time"></span>' +
-        '</span>' +
-        '<span class="log__line log__line--sub">' +
-          '<span class="log__kind"></span><span class="log__gist"></span>' +
-        '</span>';
-      b.querySelector('.log__serial').textContent = (sig.serial || sig.id || 'No serial').toUpperCase();
-      b.querySelector('.log__time').textContent = (sig.time || '').toUpperCase();
-      b.querySelector('.log__kind').textContent = KIND[sig.type] +
-        (sig.indicator && sig.type !== 'plain' ? ' · ' + sig.indicator : '') + (note ? ' · ' + note : '');
-      b.querySelector('.log__gist').textContent = gist(entry);
-      b.addEventListener('click', () => choose(entry));
-      li.appendChild(b);
-      tx.list.appendChild(li);
-    }
-  }
-
-  // Lay the chosen signal on the desk. A cipher brings its key out beside it
-  // if the key is on file; a key brings out the cipher it opens.
-  function choose(entry) {
-    chosen = entry;
-    tx.desk.textContent = '';
-    if (!entry) {
-      const p = document.createElement('p');
-      p.className = 'log__hint';
-      p.textContent = filed.length ? 'Pick a signal from the log to read it.' : 'The log is empty.';
-      tx.desk.appendChild(p);
-      drawList();
-      return;
-    }
-
-    entry.read = true;
-    const sig = entry.sig;
-    const partner = sig.type === 'cipher' ? keyFor(sig) : sig.type === 'key' ? cipherFor(sig) : null;
-    const partnerFiled = partner && filed.find(e => e.sig === partner);
-    const pair = [sig];
-    if (partnerFiled) pair[sig.type === 'cipher' ? 'unshift' : 'push'](partner);   // key on the left
-
-    for (const s of pair) {
-      const pre = document.createElement('pre');
-      pre.className = 'signal__sheet log__sheet';
-      setSheet(pre, s);
-      if (s !== sig) pre.classList.add('is-partner');
-      tx.desk.appendChild(pre);
-    }
-
-    if (sig.type !== 'plain' && !partnerFiled) {
-      const p = document.createElement('p');
-      p.className = 'log__hint';
-      p.textContent = sig.type === 'cipher'
-        ? 'The key for indicator ' + (sig.indicator || '?') + ' is not on file.'
-        : 'Keep this. Traffic under indicator ' + (sig.indicator || '?') + ' will need it.';
-      tx.desk.appendChild(p);
-    }
-    tx.desk.scrollTop = 0;
-    drawList();
-    emit('select', sig);
-  }
-
-  function openLog() {
-    if (browsing) return;
-    if (reading) putSlipDown();
-    browsing = true;
-    if (chosen && !filed.includes(chosen)) chosen = null;
-    choose(chosen || filed[0] || null);
-    tx.book.classList.add('is-open');
-    tx.book.setAttribute('aria-hidden', 'false');
-    const pressed = tx.list.querySelector('[aria-pressed="true"]');
-    (pressed || tx.shut).focus({ preventScroll: true });
-  }
-
-  function closeLog() {
-    if (!browsing) return;
-    browsing = false;
-    tx.book.classList.remove('is-open');
-    tx.book.setAttribute('aria-hidden', 'true');
-    tx.log.focus({ preventScroll: true });
-  }
-
-  tx.tabs.forEach(tab => tab.addEventListener('click', () => {
-    showing = tab.dataset.show;
-    tx.tabs.forEach(t => t.setAttribute('aria-pressed', String(t === tab)));
-    drawList();
-  }));
+  const deskButton = document.getElementById('deskopen');
 
   tx.slip.addEventListener('click', pickUpSlip);
   tx.back.addEventListener('click', putSlipDown);
   tx.view.addEventListener('click', ev => { if (ev.target === tx.view) putSlipDown(); });
-  tx.log.addEventListener('click', openLog);
-  tx.shut.addEventListener('click', closeLog);
-  tx.book.addEventListener('click', ev => { if (ev.target === tx.book) closeLog(); });
   // With the rulebook open over the slip, Escape closes only the book.
   window.addEventListener('keydown', ev => {
-    if (ev.key !== 'Escape' || document.getElementById('bookroom').classList.contains('is-open')) return;
-    if (reading) putSlipDown();
-    else if (browsing) closeLog();
+    if (reading && ev.key === 'Escape' && !document.getElementById('bookroom').classList.contains('is-open')) putSlipDown();
   });
+
+  // ---- Reporting a sighting -----------------------------------------------
+  // Once a German aircraft is identified the machine lights up to be clicked.
+  // Clicking it sends the report; a moment later Dover's reply prints on a slip.
+  const REPLY_DELAY = 1.8;     // seconds between sending and the reply coming in
+  let sighting    = null;      // the German aircraft waiting to be reported
+  let reportSerial = 100;
+
+  function askReport(s) {
+    sighting = s;
+    tx.report.hidden = false;
+    tx.root.classList.add('is-reporting');
+  }
+
+  function sendReport() {
+    if (!sighting) return;
+    const s = sighting;
+    sighting = null;
+    tx.report.hidden = true;
+    tx.root.classList.remove('is-reporting');
+
+    const bearing = String(Math.round(s.bearing) % 360).padStart(3, '0');
+    const name = s.name.replace(/[“”"]/g, '');
+    // The reply never prints over a slip nobody has read yet: it waits its turn
+    const reply = {
+      serial: 'NR ' + ++reportSerial,
+      priority: 'IMMEDIATE',
+      body: 'Your report of enemy aircraft ' + name + ' bearing ' + bearing +
+            ' degrees received.\n\nRecon sent.',
+      sign: '',
+      stack: 'Recon reports'                     // these pile up together on the desk
+    };
+    const printWhenFree = () => unread ? setTimeout(printWhenFree, 1000) : incoming(reply);
+    setTimeout(printWhenFree, REPLY_DELAY * 1000);
+
+    // For the rest of the game to read: what was reported
+    tx.root.dispatchEvent(new CustomEvent('aircraftreported', {
+      bubbles: true,
+      detail: { aircraft: s.aircraft, bearing: Math.round(s.bearing) }
+    }));
+  }
+
+  tx.report.addEventListener('click', sendReport);
 
   // ---- Rulebook -----------------------------------------------------------
   // The book is its own page in its own folder (../Rulebook Demo), shown in
@@ -2355,43 +2287,32 @@
     document.head.appendChild(s);
   });
 
-  // Tell whoever writes the signals when a key and its cipher don't match up
-  function checkPairs() {
-    for (const s of signals) {
-      if (s.type === 'cipher' && !keyFor(s))
-        console.warn('[telex] ' + s.id + ': no key signal with INDICATOR ' + (s.indicator || '(none)') + '; it will print whenever it is picked');
-      if (s.type === 'key' && !s.indicator)
-        console.warn('[telex] ' + s.id + ': a key needs an INDICATOR to match it to its cipher');
-    }
-  }
-
   window.TELEX = {
-    signal: text => {
-      const sig = parseSignal(text);
-      let id = sig.id || (loadingFile || 'signal-' + signals.length).replace(/\.js$/, '');
-      while (signals.some(s => s.id === id)) id += '+';
-      sig.id = id;
-      signals.push(sig);
-      return sig;
-    },
+    // Keys, enciphered and drill signals need the cipher desk, which the
+    // helm doesn't have yet; printed here they'd give away the plaintext.
+    signal: text => { const sig = parseSignal(text); signals.push(sig); return sig; },
     load: async names => {
       for (const name of names) {
-        loadingFile = name;
         try { await loadScript(TELEX_DIR + 'signals/' + name); }
         catch (e) { console.error('[telex] could not load ' + e.message); }
-        loadingFile = null;
       }
-      checkPairs();
       expectSignal(SIGNAL_FIRST);
     },
-    incoming,                                    // bring a signal in now: a pick, or one by id
-    openLog,
-    closeLog,
-    get:     id => signals.find(s => s.id === id),
-    signals: () => signals.slice(),
-    log:     () => filed.map(e => e.sig),        // what's been filed, newest first
-    on:      (name, fn) => { (listeners[name] = listeners[name] || []).push(fn); }
-                                                 // 'print' | 'read' | 'file' | 'select'
+    incoming,                                    // bring a signal in now, from code
+
+    // What the cipher desk (desk.js) needs from the machine
+    on: (name, fn) => { (txListeners[name] = txListeners[name] || []).push(fn); },
+    take: takeSlip,                              // lift the read slip off for the desk
+    open: readPage,                              // read a page off the desk
+    isReading: () => reading,
+    truthy,
+    cipher: {
+      letters,
+      isEnciphered,
+      encipher: (text, word) => vigenere(String(text).toUpperCase(), word, 1),
+      decipher: (text, word) => vigenere(String(text).toUpperCase(), word, -1),
+      lines: sig => wrapText(bodyText(sig), columns())   // the body as printed
+    }
   };
 
   // ---- For the Script (../Script) ------------------------------------------
@@ -2407,6 +2328,7 @@
     get position()  { return { x: boatX, y: boatY }; },
     get glassesUp() { return glassesUp; },
     get reading()   { return reading; },
+    get slipWaiting() { return unread; },        // a slip in the machine nobody has read yet
 
     // Hold the boat still (true) or let her sail (false)
     hold(on) { sailing = !on; },
@@ -2419,7 +2341,11 @@
     },
 
     // Print this signal now, written as a signal file is (headers, ---, message)
-    sendSignal(text) { incoming(parseSignal(text)); },
+    // Returns the signal, which comes back in signalread and telexverdict events.
+    sendSignal(text) { return incoming(parseSignal(text)); },
+
+    // The cipher desk (desk.js), for putting it away at the end
+    closeDesk() { if (window.TELEX.desk && TELEX.desk.isOpen()) TELEX.desk.close(); },
 
     // Send this aircraft over now: 'stuka' or 'spitfire'. False if one is already up.
     sendAircraft(art) {
@@ -2483,6 +2409,8 @@
   requestAnimationFrame(frame);
 })();
 </script>
+<script src="../Telex Machine Demo/desk.js"></script>
+<script src="../Telex Machine Demo/decoder.js"></script>
 
 <!-- The story: clock, dialogue, scripted telexes and sightings, endings. See ../Script/README.md -->
 <script src="../Script/dialogue.js"></script>

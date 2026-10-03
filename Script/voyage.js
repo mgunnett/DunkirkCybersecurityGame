@@ -8,8 +8,15 @@
              last one hasn't been read yet, the next waits until it has
              been read and put down (plus a few seconds).
 
-   JUDGING   There are no TRUST / REJECT buttons. The player judges a
-             telex by how they steer:
+   JUDGING   Every telex carries GENUINE / CLUE / LESSON headers, so the
+             cipher desk (decoder.js) asks "Is this signal genuine?"
+             beside the slip. Answering it judges the telex:
+               Suspect                    refused
+               Genuine, false order       trusted (wrong)
+               Genuine, true order        nothing yet: a true order with
+                                          a course still has to be steered
+             The player can also judge a telex without the buttons, by
+             how they steer:
                true order with a course   followed once the boat holds
                                           that course for trustAfter s
                true order, no course      judged correctly once read
@@ -20,8 +27,15 @@
                                           s pass after reading without that
              A refusal holds only while that telex is the latest: follow
              it later, before the next one prints, and it counts as
-             trusted after all. An unread telex can't be judged, so it
-             counts as wrong.
+             trusted after all, whatever button was pressed. An unread
+             telex can't be judged, so it counts as wrong.
+
+   CIPHER    Keys and enciphered orders are ordinary TELEX lines with
+             Seth's KEY / CIPHER headers. The cipher desk does the
+             decoding; the voyage only cares how the player steers.
+
+   REPORTS   A German aircraft rightly called can be reported on the
+             telex; the sighting's ':reported' line follows.
 
    COURSE    The latest true order with a course sets the leg. Each
              second on that course (within `tolerance` degrees) adds a
@@ -33,9 +47,12 @@
              once held in the binoculars' view for half a second.
              Aircraft are sent over at their time and the game's
              own German / Allied question decides right or wrong.
+             Only one fits in the sky: an aircraft due while another
+             is up waits until it has gone. ':overhead' is said as
+             each one actually comes over.
 
    ENDINGS   victory     on the last leg with routeSeconds of progress
-             outOfTime   the clock reaches 15:00
+             outOfTime   the clock reaches the deadline (18:00)
              lured       a trusted false order's course held luredAfter s
              turnedBack  the same, for the order sending you home
 
@@ -92,6 +109,8 @@ Story.Voyage = class {
     this.warned     = 0;       // 0, 1 (gentle) or 2 (urgent) this spell off course
     this.lure       = null;    // { rec, secs } once a false order has been followed
     this.plane      = null;    // the aircraft sighting in the sky now
+    this.reportable = null;    // a German aircraft identified and not yet reported
+    this.skies      = [];      // aircraft sightings due, waiting for the sky to clear
     this.ended      = false;
 
     this.listen();
@@ -99,9 +118,9 @@ Story.Voyage = class {
 
   // ---- What the ship tells us -------------------------------------------------
   listen() {
-    document.addEventListener('signalread', () => {
+    document.addEventListener('signalread', ev => {
       const rec = this.onSlip;
-      if (!rec || rec.read) return;
+      if (!rec || rec.read || ev.detail.signal !== rec.sig) return;   // not a recon reply
       rec.read = true;
       rec.readAt = this.clock.t;
       this.unread = false;
@@ -111,12 +130,30 @@ Story.Voyage = class {
 
     document.addEventListener('signalputdown', () => { this.putDownAt = performance.now(); });
 
+    // The cipher desk's "Is this signal genuine?" (decoder.js)
+    document.addEventListener('telexverdict', ev => {
+      const rec = this.telexes.find(r => r.sig && r.sig === ev.detail.signal);
+      if (!rec || this.ended) return;
+      const verdict = ev.detail.choice ? 'trust' : 'reject';
+      if (rec.judged === verdict) return;
+      // A true order with a course is trusted by steering it, not by saying so
+      if (verdict === 'trust' && rec.genuine && rec.entry.newHeading !== undefined) return;
+      this.judge(rec, verdict);
+    });
+
     document.addEventListener('aircraftidentified', ev => {
       const rec = this.plane;
       if (!rec || rec.done) return;
       rec.done = true;
       rec.correct = ev.detail.correct;
+      if (rec.correct) this.reportable = rec;    // a German one can now be reported
       this.say(rec.id + (rec.correct ? ':correct' : ':wrong'));
+    });
+
+    document.addEventListener('aircraftreported', () => {
+      const rec = this.reportable;
+      this.reportable = null;
+      if (rec && !this.ended) this.say(rec.id + ':reported');
     });
 
     document.addEventListener('aircraftgone', () => {
@@ -147,6 +184,7 @@ Story.Voyage = class {
     }
 
     this.feedTelex();
+    this.launchNext();
 
     const heading = SHIP.heading;
     const near = target => Math.abs(Story.Voyage.arc(heading, target)) <= this.cfg.tolerance;
@@ -163,11 +201,11 @@ Story.Voyage = class {
       if (rec.genuine && e.newHeading !== undefined && !rec.judged) {
         rec.hold = near(e.newHeading) ? rec.hold + dt : 0;
         if (rec.hold >= this.cfg.trustAfter) this.judge(rec, 'trust');
-      } else if (!rec.genuine && rec.read && !rec.superseded && rec.judged !== 'trust') {
+      } else if (!rec.genuine && rec.read && !rec.superseded && !(this.lure && this.lure.rec === rec)) {
         // Still followable, even once refused, until a newer telex prints
         rec.hold = e.lureHeading !== undefined && near(e.lureHeading) ? rec.hold + dt : 0;
         if (rec.hold >= this.cfg.followAfter) {
-          this.judge(rec, 'trust');
+          if (rec.judged !== 'trust') this.judge(rec, 'trust');
           this.lure = { rec, secs: rec.hold };
         } else if (!rec.judged && t - rec.readAt >= this.cfg.refuseAfter) {
           this.judge(rec, 'reject');
@@ -198,7 +236,8 @@ Story.Voyage = class {
 
   // ---- Telexes ------------------------------------------------------------------
   feedTelex() {
-    if (!this.pending.length || this.unread || SHIP.reading) return;
+    // Not over a slip still in the machine, such as a recon reply nobody has read
+    if (!this.pending.length || this.unread || SHIP.reading || SHIP.slipWaiting) return;
     if (performance.now() - this.putDownAt < this.cfg.telexGap * 1000) return;
     this.deliver(this.pending.shift());
   }
@@ -227,7 +266,7 @@ Story.Voyage = class {
       this.warned = 0;
     }
 
-    SHIP.sendSignal(rec.entry.text);
+    rec.sig = SHIP.sendSignal(rec.entry.text);   // the signal the ship's events will name
     this.say(rec.id + ':arrived');
   }
 
@@ -259,10 +298,20 @@ Story.Voyage = class {
   openSighting(rec) {
     rec.open = true;
     if (rec.entry.sighting.kind === 'aircraft') {
-      this.plane = rec;
-      if (!SHIP.sendAircraft(rec.entry.sighting.aircraft)) { rec.done = true; this.plane = null; }
       rec.open = false;
+      this.skies.push(rec);                      // one aircraft up at a time: it waits its turn
+      this.launchNext();
     }
+  }
+
+  // Send the next aircraft waiting for an empty sky, and say it's overhead
+  launchNext() {
+    if (this.plane || !this.skies.length) return;
+    const rec = this.skies[0];
+    if (!SHIP.sendAircraft(rec.entry.sighting.aircraft)) return;   // the sky isn't clear yet
+    this.skies.shift();
+    this.plane = rec;
+    this.say(rec.id + ':overhead');
   }
 
   watchSightings(dt, t, onCourse) {
