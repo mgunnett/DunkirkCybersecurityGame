@@ -1,19 +1,24 @@
 rulebookPage(String.raw`
 # Before You Sail
 
-You have volunteered your vessel and yourself to bring the army home. You will not be told the whole of the plan, and you will not be told your destination in advance. Every course you steer will reach you by teleprinter, one signal at a time, from the Vice-Admiral at Dover.
+Your orders come from Dover by telex, one signal at a time.
 
-The enemy knows this. He listens to our traffic, he has learned its forms, and he will send signals of his own made to look like ours. A false signal will not ask you to surrender. It will ask you to steer a few degrees wrong, to wait an hour longer, or to leave the swept channel where the mines have been cleared. It will read well, and it will sound urgent.
+The enemy knows this. He sends fake signals that look just like ours. A fake won't look dangerous. It will just try to send you the wrong way, waste your time, or find out where you are.
 
-This book tells you how to tell the true signal from the false. Keep it by the wheel. Read it before you need it.
+This book shows you how to tell a real signal from a fake one. Keep it by the wheel.
 
-## How to use this book
+## What's in this book
 
-Chapter Two shows how an honest signal is laid out, line by line. Chapter Three gives the five checks every signal must pass before you act on it. Chapter Four lists the tricks the enemy is known to use. Chapter Five tells you what to do when you cannot be sure.
+- **Reading a Signal**: what a real signal looks like.
+- **The Five Checks**: what to check on every signal.
+- **Signs of a False Signal**: the enemy's favourite tricks.
+- **Signals in Cipher** and **Decoding a Signal**: secret messages, and how to read them.
+- **Aircraft Recognition**: telling our planes from theirs.
+- **When in Doubt**: what to do if you're not sure.
 
-> A signal that fails any one check is to be treated as false, however urgent it seems, and however much you would like it to be true.
+> If a signal fails even one check, ignore it.
 
-## Keep your own record
+## Keep track
 
-Note the serial number and time of every signal you receive and act upon. The record is your best defence: most false signals are caught not by what they say, but because they do not fit with what came before.
+Remember the number and time of every real signal. Most fakes are caught because they don't fit with the signals that came before.
 `);

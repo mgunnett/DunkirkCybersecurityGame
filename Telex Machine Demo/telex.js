@@ -122,6 +122,43 @@ function truthy(v) {
   return !!v;
 }
 
+/* ---------- 4b. THE CIPHER -------------------------------------- */
+/*
+   A signal with  CIPHER: VIGENERE  and  KEYWORD: DYNAMO  is written in
+   plain English in its file and enciphered as it prints. Only the
+   letters change: spaces, figures and punctuation pass through, and
+   the keyword steps on one letter for every letter of the message.
+   The keyword never reaches the paper. The player gets it from a
+   separate signal carrying  KEY: DYNAMO.
+*/
+
+function letters(word) {
+  return String(word || '').toUpperCase().replace(/[^A-Z]/g, '');
+}
+
+/* dir 1 enciphers, -1 deciphers. Text must already be upper case. */
+function vigenere(text, word, dir) {
+  const k = letters(word);
+  if (!k) return text;
+  let n = 0;
+  return text.replace(/[A-Z]/g, c => {
+    const shift = k.charCodeAt(n++ % k.length) - 65;
+    return String.fromCharCode((c.charCodeAt(0) - 65 + dir * shift + 26) % 26 + 65);
+  });
+}
+
+function isEnciphered(sig) {
+  return truthy(sig.cipher) && letters(sig.keyword).length > 0;
+}
+
+/* The message body as it goes on the paper, before wrapping. */
+function bodyText(sig) {
+  let body = sig.body || '';
+  if (isEnciphered(sig)) body = vigenere(body.toUpperCase(), sig.keyword, 1);
+  if (sig.key) body += '\n\nKEY GROUP ' + letters(sig.key);
+  return body;
+}
+
 function compose(sig) {
   const w = CONFIG.columns;
   const bar = '='.repeat(w);
@@ -132,6 +169,7 @@ function compose(sig) {
     'PRI ' + (sig.priority || 'ROUTINE')
   ];
   if (sig.time) head.push('TOO ' + sig.time);
+  if (isEnciphered(sig)) head.push('CYP ' + (sig.key_name || 'DAY KEY'));
   head.push(bar);
 
   const foot = [bar];
@@ -139,7 +177,7 @@ function compose(sig) {
   if (sign) foot.push(sign);
   foot.push('NNNN');
 
-  const out = head.concat(wrap(sig.body || '', w)).concat(foot).join('\n');
+  const out = head.concat(wrap(bodyText(sig), w)).concat(foot).join('\n');
   return truthy(sig.raw) ? out : out.toUpperCase();
 }
 
@@ -302,7 +340,7 @@ function openSlip(slip) {
      viewer should be clickable except the red X. */
   const big = document.createElement('div');
   big.className = 'slip';
-  big.innerHTML = slip.innerHTML;
+  big.innerHTML = slip._html || slip.innerHTML;    // a stack off the desk reads as one
   el.viewpaper.appendChild(big);
   el.viewer.classList.add('open');
   state.returnTo = slip;
@@ -314,9 +352,21 @@ function closeSlip() {
   if (!el.viewer.classList.contains('open')) return;
   el.viewer.classList.remove('open');
   el.viewpaper.textContent = '';
+  const sig = state.returnTo ? state.returnTo._signal || null : null;
   if (state.returnTo && state.returnTo.isConnected) state.returnTo.focus();
   state.returnTo = null;
-  emit('close');
+  emit('close', sig);
+}
+
+/* Lift a read slip out of the bay, for the cipher desk to file.
+   Returns the slip, or null if that signal isn't in the bay. */
+function take(sig) {
+  if (state.printing && el.bay.lastElementChild && el.bay.lastElementChild._signal === sig) return null;
+  const slip = Array.prototype.find.call(el.bay.querySelectorAll('.slip'), s => s._signal === sig);
+  if (!slip) return null;
+  slip.remove();
+  if (!el.bay.querySelector('.slip')) { el.bay.appendChild(el.idlenote); setIdleNote(); }
+  return slip;
 }
 
 /* ---------- 8. LOADING SIGNAL FILES ----------------------------- */
@@ -442,6 +492,13 @@ function buildPanel() {
     const b = document.createElement('button');
     b.className = 'sig';
     b.innerHTML = '<b>' + (n + 1) + '</b> &nbsp;' + (sig.serial || sig.id);
+    /* Tag keys and enciphered traffic so the operator can send a key
+       ahead of its message. Genuine or forged is never shown here. */
+    if (sig.key || isEnciphered(sig)) {
+      const tag = document.createElement('i');
+      tag.textContent = sig.key ? 'key' : 'cipher';
+      b.appendChild(tag);
+    }
     b.title = 'Force this one: ' + (sig.file || sig.id);
     b.addEventListener('click', () => send(sig));
     el.gmbody.appendChild(b);
@@ -497,6 +554,10 @@ function buildPanel() {
    TELEX.isPrinting()
    TELEX.on(event, fn)       'alert' | 'printstart' | 'printend'
                              | 'open' | 'close' | 'tear'
+                             'open' and 'close' pass the signal.
+   TELEX.take(sig)           lift a read slip out of the bay.
+   TELEX.cipher              the Vigenere helpers the cipher desk
+                             (desk.js) decodes with.
 
    Custom headers survive parsing, so a file carrying  ANSWER: 128
    reaches your puzzle code as sig.answer.
@@ -514,6 +575,7 @@ window.TELEX = {
   open:     ref => openSlip(typeof ref === 'number'
               ? el.bay.querySelectorAll('.slip')[ref] : ref),
   close:    closeSlip,
+  take:     take,
   get:      id => state.signals.find(x => x.id === id),
   parse:    parseSignal,
   slips:    () => Array.prototype.slice.call(el.bay.querySelectorAll('.slip')),
@@ -521,7 +583,15 @@ window.TELEX = {
   isPrinting: () => state.printing,
   on:       (name, fn) => { (state.listeners[name] = state.listeners[name] || []).push(fn); },
   config:   CONFIG,
-  cps:      CPS
+  cps:      CPS,
+  truthy:   truthy,
+  cipher: {
+    letters:      letters,
+    isEnciphered: isEnciphered,
+    encipher:     (text, word) => vigenere(String(text).toUpperCase(), word, 1),
+    decipher:     (text, word) => vigenere(String(text).toUpperCase(), word, -1),
+    lines:        sig => wrap(bodyText(sig), CONFIG.columns)   // the body as printed
+  }
 };
 
 Object.defineProperty(window.TELEX, 'signals', { get: () => state.signals });

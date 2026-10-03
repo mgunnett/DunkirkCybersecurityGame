@@ -397,6 +397,7 @@ body{
 }
 .gmbody .sig:hover{ background:#232719; color:#d3dbc4; border-color:#59634a }
 .gmbody .sig b{ color:#d8a25f; font-weight:400 }
+.gmbody .sig i{ margin-left:6px; font-style:normal; font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:#7f9a6c }
 .gmbody .sig.lead{ border-color:#7a5a25; color:#e0b673; width:100%; padding:8px 10px }
 .gmbody .sig.bad{ border-color:#6a3128; color:#c58374 }
 .gmbody hr{ width:100%; border:0; border-top:1px solid #262a20; margin:2px 0 }

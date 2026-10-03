@@ -1,19 +1,19 @@
 rulebookPage(String.raw`
 # When in Doubt
 
-There will be times when you are not sure. The light is bad, the boat is rolling, and there are men in the water. Follow these rules.
+Sometimes you won't be sure. Follow these rules.
 
-- Hold your last true course. An order you have already checked is worth more than a new one you cannot check.
-- Do not transmit. Whatever the signal asks, keep wireless silence.
-- Wait for the next signal. A genuine order that matters will be repeated or confirmed. A false one often is not.
-- Look at your record. Write down the doubtful signal next to the last true one and read them side by side.
-- Never act on a signal simply because it arrived last.
+- Keep to your last real course. An order you've checked beats a new one you can't.
+- Don't use the radio, whatever a signal says.
+- Wait for the next signal. Real orders that matter get confirmed.
+- Put the doubtful signal next to the last real one and compare them.
+- Don't follow a signal just because it's the newest.
 
-## If you have been deceived
+## If you've been tricked
 
-If you find you have been following a false signal, do not panic and do not turn wildly. Note the time, work out where you are from your last true course, speed and time run, and return to the swept channel by the safest way you know.
+Don't panic. Go back to your last real course, and get back into the safe channel.
 
-> Remember: the enemy's aim is not always to sink you. It is enough for him if you are late, lost, or in the wrong place when the men on the beach are waiting.
+> The enemy doesn't need to sink you. Making you late, lost or in the wrong place is enough for him.
 
-Good luck, and God speed.
+Good luck.
 `);

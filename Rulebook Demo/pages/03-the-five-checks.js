@@ -1,27 +1,27 @@
 rulebookPage(String.raw`
 # The Five Checks
 
-Put every signal to these five checks, in order, before you touch the wheel. They take less than a minute. A signal must pass all five.
+Check every signal before you turn the wheel. It must pass all five.
 
 ## 1. Who sent it?
 
-The sender must be V.A. DOVER (DYNAMO), exactly. Look closely at the spelling. The enemy has been known to send from DOVRE, from V.A. DOVOR, and from a DOVER COMMAND that does not exist.
+It must say **FM V.A. DOVER (DYNAMO)**, spelled exactly right. Read it letter by letter: fakes use names like DOVRE or D0VER.
 
 ## 2. Is it for us?
 
-It must be addressed to M.Y. KESTREL and carry our call sign, GBKW. A signal addressed to ALL SHIPS or to no one at all is not an order to you.
+It must say **TO M.Y. KESTREL**. A signal to ALL SHIPS, or to nobody, is not your order.
 
 ## 3. Does the number fit?
 
-Check the serial against your record. It must be higher than the last one you received. If it is the same as one you already hold, or lower, the signal is false.
+The number must be higher than the last signal's. The same number, or a lower one, means it's fake.
 
 ## 4. Does the time fit?
 
-The time of origin must be later than the last signal's, and it must not be in the future. A signal cannot be written after it arrives.
+The time must be later than the last signal's.
 
 ## 5. Does the order make sense?
 
-Plot the course before you steer it. A true order will keep you in the swept channel, clear of known minefields and away from the enemy's guns. It will agree with the order before it unless it says plainly why it does not, as in *enemy batteries now ranging on Route Z*.
+A real order keeps you in the safe channel and away from the enemy's guns. If it changes your course, it says why.
 
-> If the order would take you into a minefield, onto a sandbank, or towards the enemy coast, it is false, no matter how well it passes the other four checks.
+> If an order would take you into mines or towards the enemy coast, it's fake, even if it passes the other four checks.
 `);

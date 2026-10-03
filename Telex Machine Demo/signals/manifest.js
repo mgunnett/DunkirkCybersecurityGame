@@ -9,6 +9,10 @@
 
    The full game (../Script) sends 01 to 06 itself, one per leg of the
    route, so keep all six listed here.
+
+   07 to 11 are the security drill: a day key and the order it unlocks,
+   a phishing signal in clear, and a forged key with a forged order
+   enciphered under it. They open the cipher desk (desk.js).
    ================================================================== */
 
 TELEX.load([
@@ -18,10 +22,9 @@ TELEX.load([
   '04-air-attack.js',
   '05-homeward.js',
   '06-recall.js',          // the last leg; the full game sends it at the Zuydcoote Pass
-  '07-weather.js',
-  '08-kwinte-key.js',      // key first: the cipher waits for it
-  '09-kwinte-cipher.js',
-  '10-fuel-and-water.js',
-  '11-malo-key.js',
-  '12-malo-cipher.js'
+  '07-day-key.js',
+  '08-bray-dunes.js',
+  '09-fuel-request.js',
+  '10-replacement-key.js',
+  '11-la-panne.js'
 ]);

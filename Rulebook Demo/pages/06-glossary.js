@@ -1,25 +1,43 @@
 rulebookPage(String.raw`
 # Glossary
 
-**Acknowledge by lamp.** Reply to a signal by flashing a signal lamp to the nearest naval vessel, never by wireless.
+**Acknowledge by lamp.** Reply by flashing a lamp at a nearby navy ship. Never by radio.
+
+**Balkenkreuz.** The black cross with white edges on German planes.
 
 **Binnacle.** The stand in front of the wheel that holds the compass.
 
-**Call sign.** The letters that identify a vessel by wireless and teleprinter. Ours is GBKW.
+**Call sign.** Letters that stand for a boat on the radio and telex. Ours is GBKW.
 
-**Course.** The direction you steer, given in three figures of degrees from north: 000 is north, 090 east, 180 south, 270 west.
+**Cipher.** A message with its letters scrambled by a key. Only someone with the key can read it.
 
-**Lubber line.** The mark on the front of the compass bowl. The figure on the card beneath it is the course you are steering.
+**Cipher desk.** The folder next to the telex. Every signal you read is filed there, and you decode ciphers there.
 
-**Mole.** The long breakwater at Dunkirk harbour, used as a pier to embark troops.
+**Course.** The direction you steer, in three figures: 000 is north, 090 east, 180 south, 270 west.
 
-**Serial.** The number given to each signal, written NR, in one continuous series.
+**CYP.** The line on a signal in cipher that names its key.
 
-**Swept channel.** A route cleared of mines by minesweepers and marked by buoys. Stay inside it.
+**Day key.** The key Dover gives you for one day's ciphers. It comes as a signal of its own.
 
-**Time of origin.** When a signal was written, given in Greenwich time and marked Z.
+**Fin flash.** The red, white and blue stripes on the tail of an RAF plane.
 
-**V.A. Dover.** Vice-Admiral, Dover: the only authority that sends you orders.
+**Key.** The secret word used to scramble and unscramble a cipher.
 
-**Wireless silence.** No radio transmissions of any kind. Transmitting gives your position away to the enemy.
+**Lubber line.** The mark on the front of the compass. The number under it is the course you're steering.
+
+**Mole.** The long stone pier at Dunkirk harbour.
+
+**Roundel.** The blue, white and red rings on RAF planes.
+
+**Serial.** A signal's number, written NR.
+
+**Swept channel.** A route cleared of mines. Stay inside it.
+
+**Time of origin.** When a signal was written, marked Z.
+
+**V.A. Dover.** Vice-Admiral, Dover: the only person who sends you orders.
+
+**WEFT.** Wings, Engines, Fuselage, Tail: the four things to check on a plane.
+
+**Wireless silence.** No radio at all. Using it tells the enemy where you are.
 `);

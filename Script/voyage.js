@@ -24,7 +24,12 @@
                replay: true          an earlier true order sent again,
                                      word for word, number and all
                tamper: 'TX-06'       that order again, same number and
-                                     time, with its course changed
+                                     time, in clear, with its course
+                                     changed
+             headers: `...` adds header lines on top of any of these:
+             GENUINE / CLUE / LESSON for the cipher desk's debrief, or
+             CIPHER / KEYWORD / KEY NAME to send it enciphered. They win
+             over the same headers in the file.
              number: true gives a signal the next serial number and a
              time of origin a few minutes before it prints, so it fits
              the series whenever it arrives.
@@ -34,8 +39,15 @@
              true order's course is the live bearing of its mark from
              where she is, so it stays right as she moves.
 
-   JUDGING   There are no TRUST / REJECT buttons. The player judges a
-             telex by how they steer, once it has been read:
+   JUDGING   Every telex carries GENUINE / CLUE / LESSON headers, so the
+             cipher desk (decoder.js) asks "Is this signal genuine?"
+             beside the slip. Answering it judges the telex:
+               Suspect                    refused
+               Genuine, false order       trusted (wrong)
+               Genuine, true order        nothing yet: a true order with
+                                          a course still has to be steered
+             The player can also judge a telex without the buttons, by
+             how they steer, once it has been read:
                true order with a course   followed once the boat holds
                                           its course for trustAfter s,
                                           or reaches the mark it gave
@@ -48,18 +60,30 @@
              Holding a false course that is also the true one doesn't
              count as following it. A refusal holds only while that
              telex is the latest: follow it later, before the next one
-             prints, and it counts as trusted after all. An unread
-             telex can't be judged, so it counts as wrong.
+             prints, and it counts as trusted after all, whatever button
+             was pressed. An unread telex can't be judged, so it counts
+             as wrong.
+
+   CIPHER    Keys and enciphered orders are ordinary TELEX entries with
+             Seth's KEY / CIPHER headers. The cipher desk does the
+             decoding; the voyage only cares how the player steers.
+             course.js spells out the figures in an enciphered order,
+             because the cipher only changes letters.
+
+   REPORTS   A German aircraft rightly called can be reported on the
+             telex; the sighting's ':reported' line follows.
 
    SIGHTINGS Buoys and light vessels named by a route mark sit on that
              mark, and count as spotted once held in the binoculars'
              view for half a second; they're missed once the boat is
              sightingGrace s past the mark. Aircraft are sent over at
              their time and the game's own German / Allied question
-             decides right or wrong.
+             decides right or wrong. Only one fits in the sky: an
+             aircraft due while another is up waits until it has gone.
+             ':overhead' is said as each one actually comes over.
 
    ENDINGS   victory     the boat reaches the beach, the last mark
-             outOfTime   the clock reaches 15:00
+             outOfTime   the clock reaches the deadline (18:00)
              lured       a trusted false order's course held luredAfter s
              turnedBack  the same, for the order sending you home
 
@@ -104,6 +128,7 @@ Story.Voyage = class {
       correct: false,
       hold: 0,             // seconds held on its course without a break
       reminded: false,
+      sig: null,           // the signal as the ship printed it; its events name it
       leg: 0,              // the leg of the route it was printed for
       course: entry.newHeading,   // the course it gave, as printed
       lure: entry.lureHeading,    // where a false one would send her
@@ -141,6 +166,8 @@ Story.Voyage = class {
     this.warned     = 0;       // 0, 1 (gentle) or 2 (urgent) this spell off course
     this.lure       = null;    // { rec, secs } once a false order has been followed
     this.plane      = null;    // the aircraft sighting in the sky now
+    this.reportable = null;    // a German aircraft identified and not yet reported
+    this.skies      = [];      // aircraft sightings due, waiting for the sky to clear
     this.ended      = false;
 
     this.listen();
@@ -148,9 +175,9 @@ Story.Voyage = class {
 
   // ---- What the ship tells us -------------------------------------------------
   listen() {
-    document.addEventListener('signalread', () => {
+    document.addEventListener('signalread', ev => {
       const rec = this.onSlip;
-      if (!rec || rec.read) return;
+      if (!rec || rec.read || ev.detail.signal !== rec.sig) return;   // not a recon reply
       rec.read = true;
       rec.readAt = this.clock.t;
       this.unread = false;
@@ -160,12 +187,30 @@ Story.Voyage = class {
 
     document.addEventListener('signalputdown', () => { this.putDownAt = performance.now(); });
 
+    // The cipher desk's "Is this signal genuine?" (decoder.js)
+    document.addEventListener('telexverdict', ev => {
+      const rec = this.telexes.find(r => r.sig && r.sig === ev.detail.signal);
+      if (!rec || this.ended) return;
+      const verdict = ev.detail.choice ? 'trust' : 'reject';
+      if (rec.judged === verdict) return;
+      // A true order with a course is trusted by steering it, not by saying so
+      if (verdict === 'trust' && rec.genuine && rec.steers) return;
+      this.judge(rec, verdict);
+    });
+
     document.addEventListener('aircraftidentified', ev => {
       const rec = this.plane;
       if (!rec || rec.done) return;
       rec.done = true;
       rec.correct = ev.detail.correct;
+      if (rec.correct) this.reportable = rec;    // a German one can now be reported
       this.say(rec.id + (rec.correct ? ':correct' : ':wrong'));
+    });
+
+    document.addEventListener('aircraftreported', () => {
+      const rec = this.reportable;
+      this.reportable = null;
+      if (rec && !this.ended) this.say(rec.id + ':reported');
     });
 
     document.addEventListener('aircraftgone', () => {
@@ -234,6 +279,7 @@ Story.Voyage = class {
     this.later = this.later.filter(item => (t >= item.at ? (this.fire(item.entry), false) : true));
 
     this.feedTelex(plan);
+    this.launchNext();
 
     const heading = SHIP.heading;
     const near = target => Math.abs(Story.Voyage.arc(heading, target)) <= this.cfg.tolerance;
@@ -253,11 +299,11 @@ Story.Voyage = class {
         const its = e.newHeading !== undefined ? e.newHeading : plan && plan.leg === rec.leg ? plan.course : null;
         rec.hold = its !== null && near(its) ? rec.hold + dt : 0;
         if (rec.hold >= this.cfg.trustAfter) this.judge(rec, 'trust');
-      } else if (!rec.genuine && !rec.superseded && rec.judged !== 'trust') {
+      } else if (!rec.genuine && !rec.superseded && !(this.lure && this.lure.rec === rec)) {
         // Still followable, even once refused, until a newer telex prints
         rec.hold = this.following(rec, near, onCourse) ? rec.hold + dt : 0;
         if (rec.hold >= this.cfg.followAfter) {
-          this.judge(rec, 'trust');
+          if (rec.judged !== 'trust') this.judge(rec, 'trust');
           this.lure = { rec, secs: rec.hold };
         } else if (!rec.judged && t - rec.readAt >= this.cfg.refuseAfter) {
           this.judge(rec, 'reject');
@@ -304,14 +350,14 @@ Story.Voyage = class {
 
   // ---- Telexes ------------------------------------------------------------------
   feedTelex(plan) {
-    if (!this.pending.length || this.unread || SHIP.reading) return;
+    // Not over a slip still in the machine, such as a recon reply nobody has read
+    if (!this.pending.length || this.unread || SHIP.reading || SHIP.slipWaiting) return;
     if (performance.now() - this.putDownAt < this.cfg.telexGap * 1000) return;
     this.deliver(this.pending.shift(), plan);
   }
 
   deliver(rec, plan) {
     const t = this.clock.t;
-    const e = rec.entry;
 
     // False orders before this one are now out of date: read but not followed is
     // refused for good
@@ -324,37 +370,15 @@ Story.Voyage = class {
     rec.delivered = true;
     rec.deliveredAt = t;
 
-    if (e.signal) {
-      // A signal file: number it, and let the ship fill in its course from here
-      const sig = window.TELEX && TELEX.get(e.signal);
-      if (!sig) {
-        console.error('[story] ' + rec.id + ': signal file ' + e.signal + ' is not loaded; check signals/manifest.js');
-        return;
-      }
-      if (e.number) Object.assign(sig, this.nextNumber());
-      TELEX.incoming(e.signal);
-      if (sig.plot) {
-        rec.leg = sig.plot.leg;
-        rec.course = Number(sig.plot.course);
-      }
-      rec.copy = Story.Voyage.asText(sig);
-    } else {
-      let text = e.text;
-      if (e.replay) {
-        const old = this.replaySource(this.ordered(plan));
-        if (!old) { console.warn('[story] ' + rec.id + ': no true order to replay yet'); return; }
-        text = old.copy;
-        rec.lure = old.course;
-      } else if (e.tamper) {
-        const orig = this.telexes.find(r => r.id === e.tamper);
-        if (!orig || !orig.copy) { console.warn('[story] ' + rec.id + ': ' + e.tamper + ' has not printed, so there is nothing to tamper with'); return; }
-        rec.lure = orig.course < 260 ? orig.course + 100 : orig.course - 100;   // the first figure changed
-        text = this.tampered(orig, rec.lure);
-      }
-      if (e.number) text = Story.Voyage.headers(text, this.nextNumber());
-      rec.copy = text;
-      SHIP.sendSignal(text);
+    const text = this.compose(rec, plan);
+    if (text === null) return;
+    // The ship fills in its course from where she is now (course.js) as it prints
+    rec.sig = SHIP.sendSignal(text);             // the signal the ship's events will name
+    if (rec.sig && rec.sig.plot) {
+      rec.leg = rec.sig.plot.leg;
+      rec.course = Number(rec.sig.plot.course);
     }
+    rec.copy = rec.sig ? Story.Voyage.asText(rec.sig) : text;
 
     this.onSlip = rec;
     this.unread = true;
@@ -369,6 +393,34 @@ Story.Voyage = class {
     }
 
     this.say(rec.id + ':arrived');
+  }
+
+  // The words of a telex, ready for the machine. Null if there's nothing to send.
+  compose(rec, plan) {
+    const e = rec.entry;
+    let text = e.text;
+    if (e.signal) {
+      // A signal file, as written: the ship fills in its {HELM} and the rest
+      const sig = window.TELEX && TELEX.get && TELEX.get(e.signal);
+      if (!sig) {
+        console.error('[story] ' + rec.id + ': signal file ' + e.signal + ' is not loaded; check signals/manifest.js');
+        return null;
+      }
+      text = Story.Voyage.asText(sig, {}, sig.template !== undefined ? sig.template : sig.body);
+    } else if (e.replay) {
+      const old = this.replaySource(this.ordered(plan));
+      if (!old) { console.warn('[story] ' + rec.id + ': no true order to replay yet'); return null; }
+      text = old.copy;
+      rec.lure = old.course;
+    } else if (e.tamper) {
+      const orig = this.telexes.find(r => r.id === e.tamper);
+      if (!orig || !orig.copy) { console.warn('[story] ' + rec.id + ': ' + e.tamper + ' has not printed, so there is nothing to tamper with'); return null; }
+      rec.lure = orig.course < 260 ? orig.course + 100 : orig.course - 100;   // the first figure changed
+      text = this.tampered(orig, rec.lure);
+    }
+    if (e.headers) text = Story.Voyage.headers(text, e.headers);
+    if (e.number) text = Story.Voyage.headers(text, this.nextNumber());
+    return text;
   }
 
   // The next serial number, and a time of origin a few minutes back but after the last
@@ -394,11 +446,13 @@ Story.Voyage = class {
   }
 
   // A true order sent again with a different course: same number, same time, same
-  // words, and a helm order worked out for the new course
+  // words, in clear, and a helm order worked out for the new course
   tampered(orig, course) {
     const three = String(course).padStart(3, '0');
-    const sig = orig.entry.signal && TELEX.get(orig.entry.signal);
-    if (sig) return Story.Voyage.asText(sig, { STEER: three }, sig.template || sig.body);
+    const sig = orig.sig;
+    if (sig && sig.template !== undefined) {
+      return Story.Voyage.asText(sig, { STEER: three, CIPHER: undefined, KEYWORD: undefined, 'KEY NAME': undefined }, sig.template);
+    }
     const was = String(orig.course).padStart(3, '0');
     return orig.copy.replace(new RegExp('\\b' + was + '\\b', 'g'), three);
   }
@@ -431,10 +485,20 @@ Story.Voyage = class {
   openSighting(rec) {
     rec.open = true;
     if (rec.entry.sighting.kind === 'aircraft') {
-      this.plane = rec;
-      if (!SHIP.sendAircraft(rec.entry.sighting.aircraft)) { rec.done = true; this.plane = null; }
       rec.open = false;
+      this.skies.push(rec);                      // one aircraft up at a time: it waits its turn
+      this.launchNext();
     }
+  }
+
+  // Send the next aircraft waiting for an empty sky, and say it's overhead
+  launchNext() {
+    if (this.plane || !this.skies.length) return;
+    const rec = this.skies[0];
+    if (!SHIP.sendAircraft(rec.entry.sighting.aircraft)) return;   // the sky isn't clear yet
+    this.skies.shift();
+    this.plane = rec;
+    this.say(rec.id + ':overhead');
   }
 
   // Where a mark goes on the water, in the ship's own metres: on its route mark, or
@@ -559,21 +623,26 @@ Story.Voyage = class {
     };
   }
 
-  // A signal written out as a signal file is: headers, ---, then the message
+  // A signal written out as a signal file is: headers, ---, then the message.
+  // Keys and ciphers go with it, so a replayed order prints just as it did.
   static asText(sig, extra = {}, body = sig.body) {
     const heads = Object.assign({
       SERIAL: sig.serial, PRIORITY: sig.priority, TIME: sig.time,
-      FROM: sig.from, TO: sig.to, SIGN: sig.sign
+      FROM: sig.from, TO: sig.to, SIGN: sig.sign, STEER: sig.steer,
+      KEY: sig.key, CIPHER: sig.cipher, KEYWORD: sig.keyword, 'KEY NAME': sig.key_name
     }, extra);
     return Object.keys(heads).filter(k => heads[k] !== undefined)
       .map(k => k + ': ' + heads[k]).join('\n') + '\n---\n' + (body || '');
   }
 
-  // Put headers into a signal's text, just above its --- rule, where they win
+  // Put headers into a signal's text, just above its --- rule, where they win.
+  // `heads` is { name: value }, or header lines written out as in a signal file.
   static headers(text, heads) {
-    const add = Object.keys(heads).map(k => k.toUpperCase() + ': ' + heads[k]).join('\n');
+    const add = typeof heads === 'string'
+      ? heads.split('\n').map(l => l.trim()).filter(Boolean).join('\n')
+      : Object.keys(heads).map(k => k.toUpperCase() + ': ' + heads[k]).join('\n');
     return /^[ \t]*-{3,}[ \t]*$/m.test(text)
-      ? text.replace(/^([ \t]*-{3,}[ \t]*)$/m, add + '\n$1')
+      ? text.replace(/^([ \t]*-{3,}[ \t]*)$/m, (all, rule) => add + '\n' + rule)
       : add + '\n---\n' + text;
   }
 

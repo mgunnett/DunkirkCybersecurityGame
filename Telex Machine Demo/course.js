@@ -177,6 +177,21 @@ function fill(text, ship) {
   return render(text, p);
 }
 
+/* The cipher only changes letters, so figures in an enciphered signal
+   would print in clear and give the course away. In one, every figure
+   is written out: 055 becomes "zero five five". */
+const DIGITS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+
+function enciphered(sig) {
+  return !!sig.keyword && !/^(no|false|off|0|)$/i.test(String(sig.cipher || '').trim());
+}
+
+function spell(text) {
+  return text
+    .replace(/([+-])(?=\d)/g, s => (s === '+' ? 'plus ' : 'minus '))
+    .replace(/\d+/g, n => n.split('').map(d => DIGITS[d]).join(' '));
+}
+
 /* Called by the machine as a slip prints. Works the figures out once
    and writes them into sig.body, so the slip, the enlarged sheet and
    the log all read the same. The text as written is kept in
@@ -194,6 +209,7 @@ function stamp(sig, ship) {
     p = Object.assign({}, p, { course: norm(steer), turn: turnFrom((ship || alone).heading, steer), arrived: false });
   }
   sig.body = render(sig.template, p);
+  if (enciphered(sig)) sig.body = spell(sig.body);
   sig.plot = {
     leg: p.leg, legs: p.legs, mark: p.mark.name, course: three(p.course),
     turn: p.turn, metres: p.metres, arrived: p.arrived

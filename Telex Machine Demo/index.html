@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="telex.css">
+<link rel="stylesheet" href="decoder.css">
+<link rel="stylesheet" href="desk.css">
 </head>
 <body>
 
@@ -58,12 +60,43 @@
   <div class="viewerwrap" role="dialog" aria-modal="true" aria-label="Signal">
     <button class="close" id="closeview" aria-label="Put the paper back"></button>
     <div class="viewerpaper" id="viewerpaper"></div>
+    <!-- Desk tools: filled by decoder.js for keys, enciphered signals
+         and signals the player has to judge. -->
+    <aside class="tools" id="tools" aria-label="Cipher desk tools" hidden></aside>
+  </div>
+</div>
+
+<!-- ==============================================================
+     THE CIPHER DESK. Every telegram is filed here once it has been
+     read. The button can go anywhere in the helm; the desk itself
+     covers the screen, under the enlarged sheet.
+     ============================================================== -->
+<button class="deskopen" id="deskopen" type="button" aria-haspopup="dialog" aria-expanded="false">
+  Cipher desk <b id="deskcount">0</b>
+</button>
+
+<div class="desk" id="desk" role="dialog" aria-modal="true" aria-label="Cipher desk" hidden>
+  <header class="desk__bar">
+    <div class="desk__plate">Cipher desk</div>
+    <div class="desk__filters" role="group" aria-label="Show">
+      <button type="button" data-filter="all" aria-pressed="true">All <b>0</b></button>
+      <button type="button" data-filter="cipher" aria-pressed="false">Cipher <b>0</b></button>
+      <button type="button" data-filter="plain" aria-pressed="false">Plain <b>0</b></button>
+    </div>
+    <button class="desk__tidy" id="desktidy" type="button">Tidy</button>
+    <p class="desk__hint">Drag pages to arrange them. Drop a key on a cipher message to clip it; pull a key off to unclip it. Click a page to read it.</p>
+    <button class="close" id="deskclose" type="button" aria-label="Put the desk away"></button>
+  </header>
+  <div class="desk__surface" id="desksurface">
+    <p class="desk__empty" id="deskempty"></p>
   </div>
 </div>
 
 <script src="config.js" defer></script>
 <script src="course.js" defer></script>
 <script src="telex.js" defer></script>
+<script src="desk.js" defer></script>
+<script src="decoder.js" defer></script>
 <script src="signals/manifest.js" defer></script>
 </body>
 </html>
