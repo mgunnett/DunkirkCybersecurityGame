@@ -9,9 +9,12 @@
    source files into a sandbox instead of copying the code:
 
      Script/clock.js, Script/voyage.js   run whole, with a FAKE ship
-                                         (window.SHIP) and a MOCK
+     Telex Machine Demo/course.js        (window.SHIP) and a MOCK
                                          dialogue that records every
-                                         event the voyage says.
+                                         event the voyage says. The
+                                         fake ship fills in courses
+                                         from course.js as it prints,
+                                         as the real one does.
      Telex Machine Demo/telex.js,        the pure helpers (parseSignal,
      Telex Machine Demo/decoder.js       wrap, truthy, the cipher,
                                          cluesOf) are lifted out by
@@ -62,10 +65,11 @@ function fakeShip() {
   return {
     heading: 0, reading: false, slipWaiting: false,
     position: { x: 0, y: 0 },
+    start: { x: 0, y: 0 },          // (0, 0) on the position indicator
     glasses: false,                 // is the mark in the binoculars' view?
     aircraftFlies: true,
     marks: [],
-    sendSignal(text) { return { text }; },          // the "signal" events will name
+    sendSignal(text) { return { text }; },          // the "signal" events will name; see loadStory
     sendAircraft() { return this.aircraftFlies; },
     addMark(m) { this.marks.push(m); return this.marks.length; },
     removeMark() {},
@@ -86,18 +90,29 @@ function loadStory() {
   ctx.performance = { now: () => ctx.now };
   ctx.window = ctx;
   vm.createContext(ctx);
-  for (const f of ['Script/clock.js', 'Script/voyage.js']) vm.runInContext(read(f), ctx, { filename: f });
+  for (const f of ['Script/clock.js', 'Script/voyage.js', 'Telex Machine Demo/course.js']) {
+    vm.runInContext(read(f), ctx, { filename: f });
+  }
+  // Like the ship page: parse the text, and fill in its course from where she is
+  ship.sendSignal = text => {
+    const sig = T.parseSignal(text);
+    sig.text = text;
+    ctx.TELEX_COURSE.stamp(sig, { x: ship.position.x, y: ship.position.y, heading: ship.heading });
+    return sig;
+  };
   return ctx;
 }
 
 const T = loadTelexHelpers();
-const { Story } = loadStory();
+const { Story, TELEX_COURSE } = loadStory();
 const { Clock } = Story;
 const arc = Story.Voyage.arc;
 
 /* The voyage settings, as written in Script/dialogue.js */
 const CFG = {
-  start: '05:00', length: 780, tolerance: 20, routeSeconds: 460,
+  start: '05:00', length: 780, date: '30 MAY 40', tolerance: 20,
+  numbering: { lastSerial: 34, lastTime: '05:15', ago: 5 },
+  goalNear: 700, sightingGrace: 20, sightingRange: 1500,
   followAfter: 5, refuseAfter: 20, trustAfter: 3, luredAfter: 30,
   offCourseWarn: 15, offCourseUrgent: 40, newCourseGrace: 20,
   unreadWarn: 20, telexGap: 3
@@ -246,6 +261,8 @@ test('on course: exactly ±20° counts, a hair beyond does not', () => {
   ];
   for (const [order, heading, on] of cases) {
     const h = voyage([trueCourse('TX-01', 'T+0:00', order)]);
+    h.run(1);
+    h.read('TX-01');
     h.ship.heading = heading;
     h.run(3);
     assert.equal(h.rec('TX-01').judged === 'trust', on, 'order ' + order + ', heading ' + heading);
@@ -433,8 +450,20 @@ test('cluesOf: "quote | why", why alone, and extra pipes', () => {
    false course held 30 s = game over.
    ================================================================= */
 
+test('true order: not judged before it is read, however long she holds its course', () => {
+  const h = voyage([trueCourse('TX-01', 'T+0:00', 72)]);
+  h.ship.heading = 72;
+  h.run(30);
+  assert.equal(h.rec('TX-01').judged, null);
+  h.read('TX-01');
+  h.run(3);
+  assert.equal(h.rec('TX-01').judged, 'trust');
+});
+
 test('true order: trusted after exactly 3 s on course, not before', () => {
   const h = voyage([trueCourse('TX-01', 'T+0:00', 72)]);
+  h.run(1);
+  h.read('TX-01');
   h.ship.heading = 72;
   h.run(2.5, 0.5);
   assert.equal(h.rec('TX-01').judged, null);
@@ -445,6 +474,8 @@ test('true order: trusted after exactly 3 s on course, not before', () => {
 
 test('true order: wandering off course restarts the 3 s', () => {
   const h = voyage([trueCourse('TX-01', 'T+0:00', 72)]);
+  h.run(1);
+  h.read('TX-01');
   h.ship.heading = 72;  h.run(2);
   h.ship.heading = 200; h.run(1);
   h.ship.heading = 72;  h.run(2);
@@ -655,20 +686,49 @@ test('off course: each reminder once per spell; back on course starts afresh', (
   assert.equal(h.said.filter(e => e === 'remind:offCourse').length, 2);
 });
 
-test('victory: 460 s on the last leg wins, 459 s does not', () => {
-  const h = voyage([trueCourse('TX-07', 'T+0:00', 40)]);
-  h.ship.heading = 40;
-  h.run(459);
+// Sail the fake boat round the marks before route mark n (1 = the first), a frame at
+// each, then put her this many metres short of mark n on the line from the one before
+function placeBefore(h, n, short) {
+  const marks = h.ctx.TELEX_COURSE.marks;
+  for (let k = h.v.legNow; k < n; k++) {
+    h.ship.position = { x: marks[k - 1].x, y: marks[k - 1].y };
+    h.run(1);
+  }
+  const to = marks[n - 1], from = n > 1 ? marks[n - 2] : { x: 0, y: 0 };
+  const len = Math.hypot(to.x - from.x, to.y - from.y);
+  h.ship.position = { x: to.x - (to.x - from.x) * short / len, y: to.y - (to.y - from.y) * short / len };
+}
+const GOAL = TELEX_COURSE.marks.length;
+
+test('victory: reaching the beach wins; just outside the arrival circle does not', () => {
+  const h = voyage([]);
+  const arrive = h.ctx.TELEX_COURSE.arrive;
+  placeBefore(h, GOAL, arrive + 1);
+  h.run(1);
   assert.equal(h.ending, null);
+  placeBefore(h, GOAL, arrive - 1);
   h.run(1);
   assert.equal(h.ending && h.ending.kind, 'victory');
 });
 
-test('victory: progress on an early leg is not enough while a course order is still to come', () => {
-  const h = voyage([trueCourse('TX-01', 'T+0:00', 72), trueCourse('TX-03', 'T+12:00', 15)]);
-  h.ship.heading = 72;
-  h.run(500);
+test('victory: reaching an early mark is not enough; each mark passed is announced once', () => {
+  const h = voyage([]);
+  placeBefore(h, 3, 0);
+  h.run(5);
   assert.equal(h.ending, null);
+  assert.deepEqual(h.said.filter(e => e.startsWith('mark:')), ['mark:1', 'mark:2', 'mark:3']);
+});
+
+test('goal:near is said once, within 700 m of the beach', () => {
+  const h = voyage([]);
+  placeBefore(h, GOAL, 701);
+  h.run(1);
+  assert.ok(!h.said.includes('goal:near'));
+  placeBefore(h, GOAL, 699);
+  h.run(1);
+  placeBefore(h, GOAL, 600);
+  h.run(1);
+  assert.equal(h.said.filter(e => e === 'goal:near').length, 1);
 });
 
 test('out of time: the game ends at 18:00, not a second before', () => {
@@ -682,10 +742,11 @@ test('out of time: the game ends at 18:00, not a second before', () => {
 });
 
 test('the game ends once; later frames change nothing', () => {
-  const h = voyage([trueCourse('TX-07', 'T+0:00', 40)]);
-  h.ship.heading = 40;
-  h.run(460);
+  const h = voyage([]);
+  placeBefore(h, GOAL, 0);
+  h.run(1);
   const first = h.ending;
+  assert.equal(first && first.kind, 'victory');
   h.run(400);
   assert.equal(h.ending, first);
 });
@@ -762,4 +823,140 @@ test('aircraft: flying past unidentified is missed; a wrong call cannot be repor
   w.emit('aircraftidentified', { correct: false });
   w.emit('aircraftreported', {});
   assert.deepEqual(w.said.filter(e => e.startsWith('A-1')), ['A-1:wrong']);
+});
+
+
+/* =================================================================
+   12. THE ROUTE AND THE CIPHER TOGETHER
+       (voyage.js signal / headers / replay / tamper, course.js stamp)
+   ================================================================= */
+
+// A loaded signal file, as the ship's TELEX.get hands it over
+function signalFile(h, id, text) {
+  const sig = T.parseSignal(text);
+  sig.id = id;
+  h.ctx.TELEX = { get: name => (name === id ? sig : undefined) };
+  return sig;
+}
+const ORDER = 'SERIAL: NR 014\nTIME: 2212Z/29 MAY 40\n---\nNext mark: {MARK}. Steer {COURSE}.';
+const routeOrder = (id, at, extra) =>
+  telex(id, at, { correctAction: 'trust', signal: id, text: undefined, ...extra });
+
+test('a signal file is numbered as it goes out; the file is left as written', () => {
+  const h = voyage([routeOrder('TX-01', 'T+0:00', { number: true }),
+                    routeOrder('TX-02', 'T+0:00', { number: true, signal: 'TX-01' })]);
+  const file = signalFile(h, 'TX-01', ORDER);
+  h.run(1);
+  h.read('TX-01');
+  h.ctx.now += 10000; h.run(1);
+  assert.equal(h.rec('TX-01').sig.serial, 'NR 037');           // on from TX-K1, NR 034
+  assert.equal(h.rec('TX-02').sig.serial, 'NR 039');
+  assert.equal(file.serial, 'NR 014');
+  assert.match(file.body, /\{MARK\}/);
+});
+
+test('a signal file prints with the course to the next mark, and that course is steered', () => {
+  const h = voyage([routeOrder('TX-01', 'T+0:00')]);
+  signalFile(h, 'TX-01', ORDER);
+  h.run(1);
+  const rec = h.rec('TX-01');
+  assert.equal(rec.leg, 1);
+  assert.equal(rec.course, 0);                                  // due north to the fairway buoy
+  assert.match(rec.sig.body, /Steer 000\./);
+  h.read('TX-01');
+  h.ship.heading = 0;
+  h.run(3);
+  assert.equal(rec.judged, 'trust');
+});
+
+test('headers: debrief and cipher headers are added, and win over the file\'s own', () => {
+  const h = voyage([routeOrder('TX-01', 'T+0:00', {
+    headers: 'GENUINE:  yes\nCLUE 1:   Next mark | It names one.\nCIPHER: VIGENERE\nKEYWORD: DYNAMO\nTIME: 0600Z/30 MAY 40'
+  })]);
+  signalFile(h, 'TX-01', ORDER);
+  h.run(1);
+  const sig = h.rec('TX-01').sig;
+  assert.equal(sig.genuine, 'yes');
+  assert.equal(sig.clue_1, 'Next mark | It names one.');
+  assert.equal(sig.time, '0600Z/30 MAY 40');
+  assert.ok(T.isEnciphered(sig));
+});
+
+test('an enciphered order has its figures written out, so none prints in clear', () => {
+  const h = voyage([routeOrder('TX-01', 'T+0:00', { headers: 'CIPHER: VIGENERE\nKEYWORD: DYNAMO' })]);
+  signalFile(h, 'TX-01', 'SERIAL: NR 014\n---\nSteer {COURSE}. {HELM} Mark at {POSITION}.');
+  h.ship.heading = 90;
+  h.run(1);
+  const sig = h.rec('TX-01').sig;
+  assert.doesNotMatch(sig.body, /\d/);
+  assert.match(sig.body, /Steer zero zero zero\./);
+  assert.match(sig.body, /plus one zero zero zero/);
+  assert.doesNotMatch(T.bodyText(sig), /\d/);
+});
+
+test('an order in clear keeps its figures', () => {
+  const h = voyage([routeOrder('TX-01', 'T+0:00')]);
+  signalFile(h, 'TX-01', ORDER);
+  h.run(1);
+  assert.match(h.rec('TX-01').sig.body, /Steer 000\./);
+});
+
+test('tamper: same number and time as the original, sent in clear, course changed', () => {
+  const h = voyage([
+    routeOrder('TX-06', 'T+0:00', { number: true, headers: 'CIPHER: VIGENERE\nKEYWORD: DYNAMO\nKEY NAME: DAY KEY 30 MAY' }),
+    { id: 'TX-11', mode: 'TELEX', trigger: { type: 'after', value: 'TX-06:read', delay: 12 },
+      correctAction: 'reject', tamper: 'TX-06', headers: 'GENUINE: no' }
+  ]);
+  signalFile(h, 'TX-06', ORDER);
+  h.run(1);
+  const orig = h.rec('TX-06');
+  assert.ok(T.isEnciphered(orig.sig));
+  h.read('TX-06');
+  h.ctx.now += 10000;
+  h.run(11);
+  assert.equal(h.rec('TX-11').delivered, false);               // due 12 s after it was read
+  h.run(2);
+  const fake = h.rec('TX-11');
+  assert.equal(fake.delivered, true);
+  assert.equal(fake.sig.serial, orig.sig.serial);
+  assert.equal(fake.sig.time, orig.sig.time);
+  assert.equal(fake.sig.genuine, 'no');
+  assert.ok(!T.isEnciphered(fake.sig), 'the tampered copy should be in clear');
+  assert.equal(fake.lure, 100);                                 // 000 with its first figure changed
+  assert.match(fake.sig.body, /Steer 100\./);
+});
+
+test('replay: an earlier true order again, word for word, number and all', () => {
+  const h = voyage([
+    routeOrder('TX-01', 'T+0:00', { number: true }),
+    { id: 'TX-10', mode: 'TELEX', trigger: { type: 'time', value: 'T+0:30' },
+      correctAction: 'reject', replay: true, headers: 'GENUINE: no' }
+  ]);
+  signalFile(h, 'TX-01', ORDER);
+  h.run(1);
+  h.read('TX-01');
+  h.ctx.now += 10000;
+  h.run(31);
+  const old = h.rec('TX-01'), fake = h.rec('TX-10');
+  assert.equal(fake.delivered, true);
+  assert.equal(fake.sig.serial, old.sig.serial);
+  assert.equal(fake.sig.body, old.sig.body);
+  assert.equal(fake.sig.genuine, 'no');
+  assert.equal(fake.lure, old.course);
+});
+
+test('a leg-triggered telex waits for the boat to reach that leg', () => {
+  const h = voyage([telex('TX-03', 'T+0:00', { correctAction: 'trust', trigger: { type: 'leg', value: 3 } })]);
+  h.run(30);
+  assert.equal(h.rec('TX-03').delivered, false);
+  placeBefore(h, 2, 0);                                         // at mark 2: on leg 3 now
+  h.run(1);
+  assert.equal(h.rec('TX-03').delivered, true);
+});
+
+test('Voyage.headers: added just above the rule, or with a rule if there is none', () => {
+  const H = Story.Voyage.headers;
+  assert.equal(H('A: 1\n---\nbody', 'B: 2'), 'A: 1\nB: 2\n---\nbody');
+  assert.equal(H('body only', { serial: 'NR 001' }), 'SERIAL: NR 001\n---\nbody only');
+  assert.equal(H('A: 1\n---\ncosts $1', 'B: $&'), 'A: 1\nB: $&\n---\ncosts $1');
 });

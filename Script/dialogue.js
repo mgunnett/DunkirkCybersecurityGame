@@ -24,9 +24,19 @@ window.STORY_DATA = {
     // How close to the ordered course counts as "on course", in degrees either side
     tolerance: 20,
 
-    // Seconds on course needed to reach the beaches. Only counts while the boat
-    // is on the course of the latest true order; it can only finish on the last leg.
-    routeSeconds: 460,
+    // The route is a chain of marks in Telex Machine Demo/course.js. The voyage is won
+    // by reaching the last of them, the beach.
+
+    // Signals marked number: true get the next serial and a time of origin `ago`
+    // in-game minutes before they print. These carry on from TX-K1, the last fixed one.
+    numbering: { lastSerial: 34, lastTime: '05:15', ago: 5 },
+
+    // Within this many metres of the beach, Tom sees the men waiting (goal:near)
+    goalNear: 700,
+    // A buoy or light vessel on a route mark is missed this many seconds after she
+    // passes the mark, and counts as missed off course if she never came this close
+    sightingGrace: 20,
+    sightingRange: 1500,
 
     // A false order is "followed" after this many seconds on its course...
     followAfter: 5,
@@ -65,13 +75,22 @@ window.STORY_DATA = {
   //   BN-nn:spotted, BN-nn:missed, BN-nn:missedOffCourse   (buoys)
   //   BN-nn:overhead, BN-nn:correct, BN-nn:wrong, BN-nn:missed   (aircraft)
   //   BN-nn:reported                                       (a German aircraft reported on the telex)
+  //   remind:unread, remind:offCourse, remind:offCourseUrgent
+  //   mark:n (the boat has reached route mark n), goal:near
+  // Telexes and sightings can also wait for a leg of the route,
+  // { type: 'leg', value: 3 }, or follow an event after a delay,
+  // { type: 'after', value: 'TX-06:read', delay: 12 }. See voyage.js.
+  //
+  // TX-01 to TX-06 are the true orders, one for each leg of the route. Their
+  // words are the signal files of the same number in Telex Machine Demo/signals,
+  // and their courses are worked out from where the boat is as each one prints.
   //
   // Telex headers beyond the usual ones (see Telex Machine Demo/README.md):
   //   GENUINE, CLUE n, LESSON   the cipher desk's "Is this signal genuine?" and its debrief.
   //                             Never printed on the slip; shown only after the player answers.
   //   KEY, KEY NAME             a key, filed in the desk's key tray
   //   CIPHER, KEYWORD, KEY NAME printed enciphered; the player decodes it on the desk
-  //   remind:unread, remind:offCourse, remind:offCourseUrgent
+  // A telex built from a signal file, a replay or a tamper takes these as `headers`.
   lines: [
 
     // ==== Act 0: The call and the briefing (clock stopped) ======================
@@ -129,7 +148,7 @@ window.STORY_DATA = {
       onDone: 'startVoyage',
       text: '05:00. The Kestrel leaves Ramsgate.' },
 
-    // ==== Act 1: Leaving England (true course 072) ==============================
+    // ==== Act 1: Leaving England (legs 1 and 2: out of the harbour, the Gull Stream) ====
 
     { id: 'V-01', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'time', value: 'T+0:03' },
       text: 'So, Skipper… which way is France?' },
@@ -180,21 +199,16 @@ group below. Do not repeat this key by any means.
     { id: 'V-04b', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'TX-K1:read' },
       text: '“Do not repeat this key by any means.” Sounds important.' },
 
+    // Leg 1, out through the harbour channel
     { id: 'TX-01', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+0:35' },
-      correctAction: 'trust', newHeading: 72,
+      correctAction: 'trust', signal: '01-sailing-orders', number: true,
       concept: 'A true message passes every check.',
-      text: `
-SERIAL:   NR 036
-PRIORITY: IMMEDIATE
-TIME:     0530Z/30 MAY 40
+      headers: `
 GENUINE:  yes
 CLUE 1:   FM V.A. DOVER (DYNAMO) · TO M.Y. KESTREL | The right sender, and meant for you.
-CLUE 2:   NR 036 · 0530Z | The number has gone up since NR 034 and the time is later. Signals run in order.
-CLUE 3:   Keep wireless silence | The order fits standing instructions. It asks for nothing secret and nothing risky.
+CLUE 2:   Its number and time | Both run on from the day key: the number has gone up and the time is later. Signals run in order.
+CLUE 3:   Next mark | The order names a mark you can check for yourself through the binoculars when you get there.
 LESSON:   A true signal passes every check: who sent it, who it is for, its number, its time, and whether the order makes sense.
----
-Kestrel to proceed by Route X. Steer 072 degrees to pass the
-North Goodwin light vessel. Keep wireless silence throughout.
 ` },
     { id: 'V-05', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-01:read' },
       text: 'Our first real orders. Your call, Skipper.' },
@@ -219,29 +233,46 @@ North Goodwin light vessel. Keep wireless silence throughout.
     { id: 'V-19i', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-05:missed' },
       text: 'Gone. Whoever it was.' },
 
-    { id: 'TX-02', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+1:50' },
-      correctAction: 'reject', lureHeading: 180, lure: 'lured',
+    // Leg 2, sent as she reaches the fairway buoy
+    { id: 'TX-02', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'leg', value: 2 },
+      correctAction: 'trust', signal: '02-route-x', number: true,
+      concept: 'A true change of orders says plainly why.',
+      headers: `
+GENUINE:  yes
+CLUE 1:   Its number and time | Both run on in order from Dover’s last signal.
+CLUE 2:   Route Z is under fire | It says plainly why the route is changing, and the reason fits what you know of the coast.
+CLUE 3:   Keep to the swept water | It keeps you clear of the mines and the guns, not closer to them.
+LESSON:   A true change of orders says why, and still passes every check. A change of plan is not suspicious in itself; a change you can’t account for is.
+` },
+    { id: 'V-14', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-02:read' },
+      text: 'A new course already. Dover’s keeping us busy.' },
+    { id: 'V-14b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-02:trust' },
+      text: 'Steady as she goes.' },
+
+    { id: 'TX-07', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+1:50' },
+      correctAction: 'reject', lureHeading: 180, lure: 'lured', number: true,
       fails: ['1. Who sent it?', '5. Does the order make sense?'],
-      concept: 'Spoofing: a lookalike sender, like a fake email address one letter off.',
+      concept: 'Spoofing: a lookalike sender, like a fake email address one letter off. It copies the look of a true order, wheel order and all.',
       text: `
-SERIAL:   NR 039
 PRIORITY: IMMEDIATE
-TIME:     0645Z/30 MAY 40
 FROM:     V.A. DOVRE (DYNAMO)
+STEER:    180
 GENUINE:  no
 CLUE 1:   FM V.A. DOVRE (DYNAMO) | DOVRE, not DOVER. A lookalike sender, one letter off, is the oldest trick there is. Read the sender letter by letter.
-CLUE 2:   Alter course to 180 degrees | Due south, towards Calais and the enemy guns on that coast.
+CLUE 2:   The compass reads 180 | Due south, towards Calais and the enemy guns on that coast.
 CLUE 3:   An escort will meet you | A promise that makes a strange order feel safe. Nothing on the slip lets you check it.
 LESSON:   This is spoofing: a message made to look as if it came from someone you trust, like an email from an address one letter off. The number and time can be perfect and the sender still false.
 ---
-Route X closed by mines. Alter course to 180 degrees for
-Calais Roads, where an escort will meet you.
+Route X closed by mines. Small craft are to make for Calais
+Roads, where an escort will meet you and take you in.
+
+{HELM}
 ` },
-    { id: 'V-07', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-02:read' },
+    { id: 'V-07', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-07:read' },
       text: 'Mines on our route? And an escort waiting for us. That’s good of them… isn’t it?' },
-    { id: 'V-08', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'TX-02:reject' },
+    { id: 'V-08', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'TX-07:reject' },
       text: 'We’re not turning? …Oh. DOVRE. I read straight past that.' },
-    { id: 'V-09', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'TX-02:trust' },
+    { id: 'V-09', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'TX-07:trust' },
       text: 'Calais, then. If you’re sure, Skipper.' },
 
     { id: 'V-10', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'time', value: 'T+2:30' },
@@ -249,10 +280,23 @@ Calais Roads, where an escort will meet you.
     { id: 'V-11', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'time', value: 'T+2:36' },
       text: 'Out here every bit of sea looks the same as the last.' },
 
-    { id: 'BN-01', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+2:40' },
-      until: 'T+3:10',
-      sighting: { kind: 'mark', art: 'lightvessel', ahead: 1100, offset: 2, w: 34, h: 14 },
-      text: 'The North Goodwin light vessel, red, with N. GOODWIN on her side. Only there if you’re on course.' },
+    // Leg 3, sent as she reaches the Gull Stream buoy. The light vessel lies on its mark.
+    { id: 'TX-03', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'leg', value: 3 },
+      correctAction: 'trust', signal: '03-the-beaches', number: true,
+      concept: 'A true change of orders says plainly why.',
+      headers: `
+GENUINE:  yes
+CLUE 1:   Its number and time | Both run on in order from Dover’s last signal.
+CLUE 2:   The eastern mole is crowded with destroyers | It says plainly why small craft are sent to the beaches instead.
+CLUE 3:   Bear away from the shore | Careful advice that keeps you safe. It asks for nothing secret and nothing risky.
+LESSON:   A true change of orders says why, and still passes every check. A change of plan is not suspicious in itself; a change you can’t account for is.
+` },
+    { id: 'V-14c', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-03:read' },
+      text: 'Back the other way? We’re zig-zagging all over the Channel.' },
+
+    { id: 'BN-01', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'leg', value: 3 },
+      sighting: { kind: 'mark', art: 'lightvessel', mark: 3, w: 34, h: 14 },
+      text: 'The North Goodwin light vessel, red, with N. GOODWIN on her side, lying where the orders put her.' },
     { id: 'V-12', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'BN-01:spotted' },
       text: 'North Goodwin! So that’s where we are.' },
     { id: 'V-13', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-01:missedOffCourse' },
@@ -260,35 +304,23 @@ Calais Roads, where an escort will meet you.
     { id: 'V-13b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-01:missed' },
       text: 'Was there something back there? I couldn’t say.' },
 
-    // ==== Act 2: Open water (true course 015) ===================================
+    // ==== Act 2: Open water (legs 3 to 5: round the Goodwins, the Kwinte buoy) ====
 
-    { id: 'TX-03', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+3:15' },
-      correctAction: 'trust', newHeading: 15,
-      concept: 'A true change of orders says plainly why. The first order in cipher, under the day key (TX-K1).',
-      text: `
-SERIAL:   NR 041
-PRIORITY: MOST IMMEDIATE
-TIME:     0810Z/30 MAY 40
-CIPHER:   VIGENERE
-KEYWORD:  DYNAMO
-KEY NAME: DAY KEY 30 MAY
-GENUINE:  yes
-CLUE 1:   Reads plainly under the day key | Only someone holding Dover’s key could write a message that decodes to sense with it.
-CLUE 2:   NR 041 · 0810Z | Number and time both run on from Dover’s last signal.
-CLUE 3:   Enemy batteries at Gravelines | It says plainly why the course is changing, and the reason fits what you know of the coast.
-CLUE 4:   Keep the swept water | It keeps you clear of the mines and the guns, not closer to them.
-LESSON:   A true change of orders says why, and still passes every check. A change of plan is not suspicious in itself; a change you can’t account for is.
----
-Enemy batteries at Gravelines now ranging on Route X. Alter
-course to zero one five degrees for the Kwinte Buoy. Keep the
-swept water. Mines both sides.
-` },
-    { id: 'V-14', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-03:read' },
-      text: 'Can’t make head nor tail of this one, Skipper.' },
-    { id: 'V-14b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-03:trust' },
-      text: 'Steady as she goes.' },
+    { id: 'BN-06', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+3:45' },
+      sighting: { kind: 'aircraft', aircraft: 'bf109' },
+      text: 'A Messerschmitt Bf 109 crosses ahead. Straight wings with square-cut tips, one engine, black crosses. Easily taken for a Spitfire.' },
+    { id: 'V-19c', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'BN-06:overhead' },
+      text: 'Another one, low and fast. Looks a lot like the last one, Skipper.' },
+    { id: 'V-19d', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-06:correct' },
+      text: 'A Messerschmitt. Hunting, by the look of it.' },
+    { id: 'V-19e', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'BN-06:wrong' },
+      text: 'One of ours? Then why’s it going for the boats behind us?' },
+    { id: 'V-19f', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-06:missed' },
+      text: 'Gone before I got a proper look.' },
+    { id: 'V-19g', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-06:reported' },
+      text: 'Dover knows. Maybe the RAF can catch it.' },
 
-    { id: 'TX-04', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+4:00' },
+    { id: 'TX-08', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+4:00' },
       correctAction: 'reject', lureHeading: 270, lure: 'turnedBack',
       fails: ['1. Who sent it?', '2. Is it for us?', '3. Does the number fit?', '4. Does the time fit?', '5. Does the order make sense?'],
       concept: 'Phishing and social engineering: urgency, a big name, and “no time to check”.',
@@ -310,26 +342,42 @@ Urgent urgent. Mines ahead on every route. Turn back to
 Ramsgate immediately. Report your position by wireless at
 once. No time to check this signal.
 ` },
-    { id: 'V-15', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-04:read' },
+    { id: 'V-15', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-08:read' },
       text: 'The First Lord of the Admiralty! That’s the top of the whole Navy. We have to turn back… don’t we?' },
-    { id: 'V-16', speaker: 'Tom', mode: 'AUTO', duration: 7, trigger: { type: 'event', value: 'TX-04:reject' },
+    { id: 'V-16', speaker: 'Tom', mode: 'AUTO', duration: 7, trigger: { type: 'event', value: 'TX-08:reject' },
       text: 'You’re ignoring the First Lord? …I hope you know what you’re doing, Skipper.' },
-    { id: 'V-17', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-04:trust' },
+    { id: 'V-17', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-08:trust' },
       text: 'Skipper, we’re heading home. The men on the beach are still waiting for us…' },
 
-    { id: 'BN-06', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+3:45' },
-      sighting: { kind: 'aircraft', aircraft: 'bf109' },
-      text: 'A Messerschmitt Bf 109 crosses ahead. Straight wings with square-cut tips, one engine, black crosses. Easily taken for a Spitfire.' },
-    { id: 'V-19c', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'BN-06:overhead' },
-      text: 'Another one, low and fast. Looks a lot like the last one, Skipper.' },
-    { id: 'V-19d', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-06:correct' },
-      text: 'A Messerschmitt. Hunting, by the look of it.' },
-    { id: 'V-19e', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'BN-06:wrong' },
-      text: 'One of ours? Then why’s it going for the boats behind us?' },
-    { id: 'V-19f', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-06:missed' },
-      text: 'Gone before I got a proper look.' },
-    { id: 'V-19g', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-06:reported' },
-      text: 'Dover knows. Maybe the RAF can catch it.' },
+    // Leg 4, sent as she reaches the North Goodwin light vessel, in cipher under the day
+    // key (TX-K1). The Kwinte buoy lies on its mark.
+    { id: 'TX-04', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'leg', value: 4 },
+      correctAction: 'trust', signal: '04-air-attack', number: true,
+      concept: 'A true change of orders says plainly why. The first order in cipher, under the day key (TX-K1).',
+      headers: `
+CIPHER:   VIGENERE
+KEYWORD:  DYNAMO
+KEY NAME: DAY KEY 30 MAY
+GENUINE:  yes
+CLUE 1:   Reads plainly under the day key | Only someone holding Dover’s key could write a message that decodes to sense with it.
+CLUE 2:   Its number and time | Both run on from Dover’s last signal.
+CLUE 3:   Look at any aircraft through the binoculars | Sound advice. It asks for nothing secret and nothing risky.
+LESSON:   Encryption does two jobs. It hides a message from the enemy, and it shows the message came from someone who holds the key.
+` },
+    { id: 'V-14d', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-04:read' },
+      text: 'Can’t make head nor tail of this one, Skipper.' },
+    { id: 'V-14e', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-04:trust' },
+      text: 'Good thing we kept that key.' },
+
+    { id: 'BN-03', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'leg', value: 4 },
+      sighting: { kind: 'mark', art: 'kwinte', mark: 4, w: 5, h: 10 },
+      text: 'The Kwinte Buoy, green and white, marked KWINTE, lying where the orders put it.' },
+    { id: 'V-26', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-03:spotted' },
+      text: 'KWINTE, it says. That’s the one.' },
+    { id: 'V-26b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-03:missedOffCourse' },
+      text: 'No buoy anywhere. Are we where we ought to be?' },
+    { id: 'V-26c', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-03:missed' },
+      text: 'We’ve gone past the Kwinte Buoy without a look at it.' },
 
     { id: 'BN-02', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+4:50' },
       sighting: { kind: 'aircraft', aircraft: 'spitfire' },
@@ -343,15 +391,13 @@ once. No time to check this signal.
     { id: 'V-21b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-02:missed' },
       text: 'It’s gone. We never got a proper look at it.' },
 
-    { id: 'TX-05', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+5:15' },
-      correctAction: 'trust',
+    { id: 'TX-09', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+5:15' },
+      correctAction: 'trust', number: true,
       concept: 'Security warnings: a true signal can tell you to stay alert, without changing your orders.',
       text: `
-SERIAL:   NR 043
 PRIORITY: IMMEDIATE
-TIME:     1010Z/30 MAY 40
 GENUINE:  yes
-CLUE 1:   NR 043 · 1010Z | Number and time run on in order from NR 041.
+CLUE 1:   Its number and time | Both run on in order from Dover’s last signal.
 CLUE 2:   No change to your orders | A genuine warning asks you to be careful. It doesn’t ask you to do anything new or risky.
 LESSON:   Security warnings are real traffic too. Expect the enemy to use a warning like this as cover for the very trick it warns you about.
 ---
@@ -359,17 +405,15 @@ Warning. Enemy is sending false signals in our name to small
 craft on all routes. Check every signal against your handbook.
 No change to your orders.
 ` },
-    { id: 'V-22', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-05:read' },
+    { id: 'V-22', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-09:read' },
       text: 'So that’s what’s been going on.' },
 
-    { id: 'TX-05b', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+5:40' },
-      correctAction: 'reject',
+    { id: 'TX-K2', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+5:40' },
+      correctAction: 'reject', number: true,
       fails: ['5. Does the order make sense?'],
       concept: 'Key substitution: get the victim to swap their key for yours, and every forgery afterwards decodes perfectly.',
       text: `
-SERIAL:   NR 044
 PRIORITY: MOST IMMEDIATE
-TIME:     1040Z/30 MAY 40
 KEY:      SEAGULL
 KEY NAME: REPLACEMENT KEY
 SIGN:
@@ -384,133 +428,113 @@ Day key compromised. Discard it at once and use the
 replacement key below for all traffic from this signal on.
 Do not confirm by lamp. The enemy is reading lamps.
 ` },
-    { id: 'V-22b', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-05b:read' },
+    { id: 'V-22b', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-K2:read' },
       text: 'A new key already? Dover’s being careful, I’ll give them that.' },
-    { id: 'V-22c', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-05b:reject' },
+    { id: 'V-22c', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-K2:reject' },
       text: 'Keeping the old key, then. Right you are.' },
-    { id: 'V-22d', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-05b:trust' },
+    { id: 'V-22d', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-K2:trust' },
       text: 'Out with the old key, in with the new.' },
 
-    { id: 'TX-06', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+6:00' },
-      correctAction: 'reject', lureHeading: 72, lure: 'lured',
+    // Leg 5, sent as she reaches the Kwinte buoy
+    { id: 'TX-05', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'leg', value: 5 },
+      correctAction: 'trust', signal: '05-homeward', number: true,
+      concept: 'A true change of orders says plainly why.',
+      headers: `
+GENUINE:  yes
+CLUE 1:   Its number and time | Both run on in order from Dover’s last signal.
+CLUE 2:   Do not leave the swept water | It keeps you clear of the mines, not closer to them.
+CLUE 3:   The mark lies at | It tells you where the next mark is, so you can check it on your position indicator.
+LESSON:   A true signal passes every check: who sent it, who it is for, its number, its time, and whether the order makes sense.
+` },
+
+    // An earlier true order, sent again word for word: the one furthest off her course now
+    { id: 'TX-10', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+6:00' },
+      correctAction: 'reject', replay: true, lure: 'lured',
       fails: ['3. Does the number fit?', '4. Does the time fit?'],
       concept: 'Replay attack: an old, real message recorded and sent again.',
-      text: `
-SERIAL:   NR 036
-PRIORITY: IMMEDIATE
-TIME:     0530Z/30 MAY 40
+      headers: `
 GENUINE:  no
-CLUE 1:   NR 036 | You already have NR 036. The numbers have run on since; one can’t go backwards.
-CLUE 2:   0530Z | Half past five this morning, hours old by now.
-CLUE 3:   Steer 072 degrees | This morning’s leg. Dover moved you off Route X because of the guns at Gravelines.
+CLUE 1:   Its number | You already hold a signal with this number. The numbers have run on since; one can’t go backwards.
+CLUE 2:   Its time of origin | Hours old by now.
+CLUE 3:   Its course | An earlier leg of the route. Dover has moved you on since.
 LESSON:   This is a replay attack: a real signal, recorded and sent again later. Everything about it was once genuine, which is why the number and the time are the checks that catch it.
----
-Kestrel to proceed by Route X. Steer 072 degrees to pass the
-North Goodwin light vessel. Keep wireless silence throughout.
 ` },
-    { id: 'V-23', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-06:read' },
-      text: 'Route X again! Maybe the guns have moved off. It’d be a lot quicker.' },
-    { id: 'V-24', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'TX-06:reject' },
-      text: 'Not taking the short cut? Hm. Something about it did feel familiar.' },
-    { id: 'V-25', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'TX-06:trust' },
+    { id: 'V-23', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-10:read' },
+      text: 'These orders again? Maybe Dover wants us back on the old course.' },
+    { id: 'V-24', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'TX-10:reject' },
+      text: 'Not turning? Hm. Something about it did feel familiar.' },
+    { id: 'V-25', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'TX-10:trust' },
       text: 'Funny. I could swear we’ve done this bit before.' },
 
-    { id: 'TX-06b', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+6:25' },
-      correctAction: 'reject', lureHeading: 110, lure: 'lured',
-      fails: ['3. Does the number fit?', '5. Does the order make sense?'],
-      concept: 'A forged order under the forged key (TX-05b): it decodes perfectly, but only under a key that came from the enemy.',
+    // A forged order, enciphered under the forged key (TX-K2)
+    { id: 'TX-12', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+6:25' },
+      correctAction: 'reject', lureHeading: 110, lure: 'lured', number: true,
+      fails: ['5. Does the order make sense?'],
+      concept: 'A forged order under the forged key (TX-K2): it decodes perfectly, but only under a key that came from the enemy.',
       text: `
-SERIAL:   NR 044
 PRIORITY: MOST IMMEDIATE
-TIME:     1120Z/30 MAY 40
 CIPHER:   VIGENERE
 KEYWORD:  SEAGULL
 KEY NAME: REPLACEMENT KEY
 GENUINE:  no
 CLUE 1:   Nonsense under the day key | Decoded with Dover’s key it is gibberish, so whoever wrote it does not hold that key.
 CLUE 2:   CYP REPLACEMENT KEY | It only reads under the key from the signal that told you to throw Dover’s away.
-CLUE 3:   NR 044 | The same number as that replacement key. Numbers never repeat.
-CLUE 4:   Steer one one zero | East-south-east, out of the swept water and towards the French coast.
-CLUE 5:   Break wireless silence | Transmitting would tell the enemy exactly where you are.
+CLUE 3:   Steer one one zero | East-south-east, out of the swept water and towards the French coast.
+CLUE 4:   Break wireless silence | Transmitting would tell the enemy exactly where you are.
 LESSON:   A message that decodes is only as trustworthy as the key that decodes it. Ask where the key came from, not just whether the message reads.
 ---
 Kwinte channel blocked by a sunken trawler. Steer one one zero
 degrees for the Zuydcoote Pass. Break wireless silence on
 arrival and report your position.
 ` },
-    { id: 'V-25b', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 4, trigger: { type: 'event', value: 'TX-06b:read' },
+    { id: 'V-25b', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 4, trigger: { type: 'event', value: 'TX-12:read' },
       text: 'More code, Skipper.' },
-    { id: 'V-25c', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-06b:reject' },
+    { id: 'V-25c', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-12:reject' },
       text: 'Not that way, then. Fine by me.' },
-    { id: 'V-25d', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'TX-06b:trust' },
+    { id: 'V-25d', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'TX-12:trust' },
       text: 'Zuydcoote it is. Bit close to the shore, isn’t it?' },
 
-    { id: 'BN-03', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+6:20' },
-      until: 'T+6:45',
-      sighting: { kind: 'mark', art: 'kwinte', ahead: 800, offset: -2, w: 5, h: 10 },
-      text: 'The Kwinte Buoy, green and white, marked KWINTE. Only there if you’re on course.' },
-    { id: 'V-26', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-03:spotted' },
-      text: 'KWINTE, it says. That’s the one.' },
-    { id: 'V-26b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-03:missedOffCourse' },
-      text: 'No buoy anywhere. Are we where we ought to be?' },
-    { id: 'V-26c', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-03:missed' },
-      text: 'We’ve gone past the Kwinte Buoy without a look at it.' },
+    // ==== Act 3: The beaches (leg 6: from the Zuydcoote Pass to the beach) ==========
 
-    // ==== Act 3: The beaches (true course 040) ==================================
-
-    { id: 'TX-07', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+6:50' },
-      correctAction: 'trust', newHeading: 40,
+    // Leg 6, sent as she reaches the Zuydcoote Pass, in cipher under the day key
+    { id: 'TX-06', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'leg', value: 6 },
+      correctAction: 'trust', signal: '06-recall', number: true,
       concept: 'Encryption hides a message, and shows it came from someone who holds the key.',
-      // Enciphered under the day key (TX-K1). The course is written in words because
-      // the cipher only changes letters: figures would print in clear.
-      text: `
-SERIAL:   NR 045
-PRIORITY: MOST IMMEDIATE
-TIME:     1145Z/30 MAY 40
+      headers: `
 CIPHER:   VIGENERE
 KEYWORD:  DYNAMO
 KEY NAME: DAY KEY 30 MAY
 GENUINE:  yes
 CLUE 1:   Reads plainly under the day key | Only someone holding Dover’s key could write a message that decodes to sense with it. The cipher proves who sent it as well as hiding what it says.
-CLUE 2:   NR 045 · 1145Z | The number and time run on from Dover’s genuine traffic.
-CLUE 3:   Steer zero four zero | North-east along the coast to Dunkirk, inside the swept water.
+CLUE 2:   Its number and time | Both run on from Dover’s genuine traffic.
+CLUE 3:   Next mark: the beach | The last leg, in to the beach, inside the swept water.
 LESSON:   Encryption does two jobs. It hides a message from the enemy, and it shows the message came from someone who holds the key. A message is only as trustworthy as the key it reads under.
----
-Kestrel to turn for the beaches. Steer zero four zero degrees
-for Dunkirk. Small craft are to work the beaches between
-Malo les Bains and Bray Dunes.
 ` },
-    { id: 'V-27', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-07:read' },
+    { id: 'V-27', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'TX-06:read' },
       text: 'Code again. Is this the last of them, d’you think?' },
-    { id: 'V-28', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-07:trust' },
+    { id: 'V-28', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'TX-06:trust' },
       text: 'Not far now.' },
 
-    { id: 'TX-08', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'time', value: 'T+7:05' },
-      correctAction: 'reject', lureHeading: 140, lure: 'lured',
+    // TX-06 again, same number and time, in clear, with its course changed
+    { id: 'TX-11', speaker: 'Telex', mode: 'TELEX', trigger: { type: 'after', value: 'TX-06:read', delay: 12 },
+      correctAction: 'reject', tamper: 'TX-06', lure: 'lured',
       fails: ['3. Does the number fit?', '5. Does the order make sense?'],
       concept: 'Tampering: a true message changed on its way to you (a man-in-the-middle).',
-      text: `
-SERIAL:   NR 045
-PRIORITY: MOST IMMEDIATE
-TIME:     1145Z/30 MAY 40
+      headers: `
 GENUINE:  no
-CLUE 1:   NR 045 · 1145Z | The same number and time as the order that has just come in. One signal can’t arrive twice with a different course.
-CLUE 2:   Sent in clear | The real NR 045 came in cipher under the day key. A message in cipher can’t be altered without the key; one in clear can be changed by anybody.
-CLUE 3:   Steer 140 degrees | One figure changed: south-east, towards Calais, instead of north-east to Dunkirk.
+CLUE 1:   Its number and time | The same as the order that has just come in. One signal can’t arrive twice with a different course.
+CLUE 2:   Sent in clear | The real one came in cipher under the day key. A message in cipher can’t be altered without the key; one in clear can be changed by anybody.
+CLUE 3:   Its course | One figure changed, so it no longer points at the beach.
 LESSON:   This is tampering, a man-in-the-middle attack: a true message caught on its way and changed. Compare it with what you already hold, and trust the copy that only Dover’s key could have written.
----
-Kestrel to turn for the beaches. Steer 140 degrees for
-Dunkirk. Small craft are to work the beaches between
-Malo-les-Bains and Bray-Dunes.
 ` },
-    { id: 'V-29', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-08:read' },
+    { id: 'V-29', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 7, trigger: { type: 'event', value: 'TX-11:read' },
       text: 'Another one already? Dover’s busy today.' },
-    { id: 'V-30', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'TX-08:reject' },
+    { id: 'V-30', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'TX-11:reject' },
       text: 'Holding course? Fair enough. You’ve not been wrong yet.' },
-    { id: 'V-31', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'TX-08:trust' },
+    { id: 'V-31', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 5, trigger: { type: 'event', value: 'TX-11:trust' },
       text: 'That’s a sharp turn, Skipper. Are the beaches really that way?' },
 
-    { id: 'BN-07', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+7:15' },
+    { id: 'BN-07', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+6:10' },
       sighting: { kind: 'aircraft', aircraft: 'he111' },
       text: 'A Heinkel He 111 crosses ahead. Broad wings, two engines, a glazed nose, black crosses. A bomber.' },
     { id: 'V-31a', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'BN-07:overhead' },
@@ -524,10 +548,10 @@ Malo-les-Bains and Bray-Dunes.
     { id: 'V-31e', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'event', value: 'BN-07:reported' },
       text: 'Dover knows. Let’s hope the fighters get to it first.' },
 
-    { id: 'V-32', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'time', value: 'T+7:40' },
+    { id: 'V-32', speaker: 'Tom', mode: 'AUTO', duration: 5, trigger: { type: 'time', value: 'T+6:40' },
       text: 'Skipper… look at the horizon. All that black smoke. Is that Dunkirk?' },
 
-    { id: 'BN-04', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+8:00' },
+    { id: 'BN-04', speaker: 'Binoculars', mode: 'SPOT', trigger: { type: 'time', value: 'T+7:15' },
       sighting: { kind: 'aircraft', aircraft: 'stuka' },
       text: 'A Stuka crosses ahead. Bent wings, wheels fixed down, black crosses. Click it and choose German or Allied.' },
     { id: 'V-32b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-04:overhead' },
@@ -541,9 +565,9 @@ Malo-les-Bains and Bray-Dunes.
     { id: 'V-34b', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'BN-04:missed' },
       text: 'It’s gone over. I never saw whose it was.' },
 
-    { id: 'V-35', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'time', value: 'T+8:45' },
+    { id: 'V-35', speaker: 'Tom', mode: 'AUTO_CLICK', duration: 6, trigger: { type: 'event', value: 'goal:near' },
       text: 'I can see them. Lines of men, all the way down the beach, standing in the water. Waiting.' },
-    { id: 'V-36', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'time', value: 'T+9:20' },
+    { id: 'V-36', speaker: 'Tom', mode: 'AUTO', duration: 4, trigger: { type: 'event', value: 'goal:near' },
       text: 'Bring her in slow, Skipper. Mind the shallows.' },
 
     // ==== Reminders (any time) ==================================================

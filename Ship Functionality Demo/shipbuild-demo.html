@@ -1869,6 +1869,7 @@
     report: document.getElementById('telexReport')
   };
   const signals   = [];
+  let loadingFile = null;      // the signal file loading now, to name what it registers
   let lastSignal  = null;      // so the random pick doesn't repeat itself
   let printed     = '';        // the text on the slip in the machine
   let unread      = false;     // lamp stays on until it's picked up
@@ -2007,6 +2008,8 @@
     // that slip on the desk, so the next one waits until it's off the machine
     if (reading && !readingFrom) { setTimeout(() => incoming(sig), 1000); return sig; }
     current = sig;
+    // Course marks such as {HELM} are worked out now, from where she is (../Telex Machine Demo/course.js)
+    if (window.TELEX_COURSE) TELEX_COURSE.stamp(sig, { x: boatX - origin.x, y: boatY - origin.y, heading });
     if (sig.key && sig.key_name) keysIn.add(sig.key_name.toUpperCase().trim());
     printed = compose(sig);
     const lines = printed.split('\n');
@@ -2290,14 +2293,23 @@
   window.TELEX = {
     // Keys, enciphered and drill signals need the cipher desk, which the
     // helm doesn't have yet; printed here they'd give away the plaintext.
-    signal: text => { const sig = parseSignal(text); signals.push(sig); return sig; },
+    signal: text => {
+      const sig = parseSignal(text);
+      // Named after its file, so the Script can send it by name: '02-route-x'
+      if (!sig.id) sig.id = (loadingFile || 'signal-' + signals.length).replace(/\.js$/, '');
+      signals.push(sig);
+      return sig;
+    },
     load: async names => {
       for (const name of names) {
+        loadingFile = name;
         try { await loadScript(TELEX_DIR + 'signals/' + name); }
         catch (e) { console.error('[telex] could not load ' + e.message); }
+        loadingFile = null;
       }
       expectSignal(SIGNAL_FIRST);
     },
+    get: id => signals.find(s => s.id === id),   // a loaded signal file, as written
     incoming,                                    // bring a signal in now, from code
 
     // What the cipher desk (desk.js) needs from the machine
@@ -2326,6 +2338,7 @@
   window.SHIP = {
     get heading()   { return heading; },
     get position()  { return { x: boatX, y: boatY }; },
+    get start()     { return { x: origin.x, y: origin.y }; },   // (0, 0) on the position indicator
     get glassesUp() { return glassesUp; },
     get reading()   { return reading; },
     get slipWaiting() { return unread; },        // a slip in the machine nobody has read yet
@@ -2396,6 +2409,8 @@
 
   loadScript(TELEX_DIR + 'config.js')
     .catch(() => {})
+    .then(() => loadScript(TELEX_DIR + 'course.js'))
+    .catch(e => console.error('[telex] could not load ' + e.message))
     .then(() => loadScript(TELEX_DIR + 'signals/manifest.js'))
     .catch(e => console.error('[telex] could not load ' + e.message));
 
