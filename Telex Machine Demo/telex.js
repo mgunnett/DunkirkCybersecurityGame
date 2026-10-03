@@ -302,6 +302,9 @@ async function receive() {
   const sig = state.queue.shift() || pickRandom() ||
     fault('NO SIGNAL FILES LOADED.',
           'ADD ONE TO signals/manifest.js AND RELOAD.');
+  /* Course marks such as {HELM} are filled in now, as it prints.
+     There's no ship here, so course.js steers its own pretend boat. */
+  if (window.TELEX_COURSE) TELEX_COURSE.stamp(sig);
   state.alerted = false;
   state.lastId = sig.id || null;
   refresh();
@@ -538,7 +541,7 @@ function buildPanel() {
                              jumping ahead of the random pick. Takes a
                              signal object or raw signal text.
    TELEX.sendId('02-route-x')
-   TELEX.sendFile('06-recall.js')
+   TELEX.sendFile('13-something.js')
                              load an extra file from signals/ and queue
                              it. For signals the players earn.
    TELEX.receive()           print now, without waiting for a click.

@@ -1,19 +1,21 @@
-/* Deliberately not listed in manifest.js. It doesn't exist as far as
-   the machine is concerned until your puzzle code calls
-
-       TELEX.sendFile('06-recall.js')
-
-   at which point it loads, joins the operator panel and the lamp
-   lights. Use this for signals the players have to earn. */
+/* The last leg, in to the beach. The full game sends it once the boat
+   reaches the Zuydcoote Pass, and soon after sends a tampered copy
+   of it: same number, same time, a different course. */
 
 TELEX.signal(`
 SERIAL:   NR 097
 PRIORITY: MOST IMMEDIATE
 TIME:     0902Z/31 MAY 40
 ---
-Dynamo closing. Last lift from the eastern mole at 0300
-tomorrow. All small craft still on the beaches to withdraw
-after this tide whatever their state of loading.
+Dynamo closing. The last lift from the beaches is at 0300
+tomorrow. Small craft still on passage are to make this their
+last run in, then come home with whatever troops they have
+embarked.
 
-Do not wait for stragglers. Do not return.
+Next mark: {MARK}. {WHY}
+
+{HELM}
+
+The mark is {MINUTES} away at your speed. Do not wait for
+stragglers.
 `);
