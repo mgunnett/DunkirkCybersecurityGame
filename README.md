@@ -269,5 +269,4 @@ For a full manual pass, follow the scene-by-scene checklist in
 | [Script/README.md](Script/README.md) | Story flow, judging rules, answer key, script editing guide, test checklist |
 | [Telex Machine Demo/README.md](Telex%20Machine%20Demo/README.md) | Teleprinter, signal file format, route and courses, cipher desk |
 | [Rulebook Demo/README.md](Rulebook%20Demo/README.md) | Rulebook structure and how to write chapters |
-| [Logs & Documentation/](Logs%20%26%20Documentation/) | Architecture decision record (ADR1), burndown chart, AI interaction log |
-| [AILog(Seth).pdf](AILog(Seth).pdf) | AI usage log |
+| [Logs & Documentation/](Logs%20%26%20Documentation/) | Architecture decision record (ADR1), burndown chart
