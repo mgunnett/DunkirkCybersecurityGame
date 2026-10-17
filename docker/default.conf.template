@@ -1,0 +1,32 @@
+# nginx settings for the game. ${PORT} is filled in when the container starts.
+server {
+    listen       ${PORT};
+    listen       [::]:${PORT};
+    server_name  _;
+
+    root  /usr/share/nginx/html;
+    index index.html;
+
+    # The front door: the bare address opens the ship
+    location = / {
+        return 302 /Ship%20Functionality%20Demo/shipbuild-demo.html;
+    }
+
+    # Browsers ask for a tab icon on their own; the game has none
+    location = /favicon.ico {
+        access_log off;
+        log_not_found off;
+        return 204;
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+
+        # Always check for a newer copy, so a redeploy shows up straight away
+        add_header Cache-Control "no-cache";
+    }
+
+    # Smaller downloads for the text files the game is made of
+    gzip on;
+    gzip_types text/css application/javascript text/javascript image/svg+xml;
+}

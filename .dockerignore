@@ -1,0 +1,11 @@
+# Keep the image to what the browser needs
+.git
+.gitignore
+.github
+.vscode
+Logs & Documentation
+tests
+*.pdf
+*.md
+Dockerfile
+.dockerignore
