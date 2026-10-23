@@ -268,19 +268,15 @@ Where: [Getting started](#getting-started), [Script/dialogue.js](Script/dialogue
 ## Known issues
 
 These are the open problems in the current build on `main`. As of
-3 October 2026, 72 of the 77 unit tests pass; the 5 failures are explained
-below.
+23 October 2026, all 77 unit tests pass, and [CI](.github/workflows/ci.yml)
+runs them on every push and pull request.
 
 | # | Issue | Impact | Affects |
 | --- | --- | --- | --- |
-| 1 | **The lure ending fires one second early.** When a player follows a forged course, the 5 seconds it takes to count as "followed" are carried into the 30-second lure timer ([voyage.js:316](Script/voyage.js#L316)), so the game ends after 29 seconds instead of 30. Failing test: *false order: holding its course 30 s ends the game, 29 s does not* ([tests](tests/edge-cases.test.js)). | Low: the ending is one second early. | [AR-07](#endings-and-pausing-ar-07-ar-08) |
-| 2 | **Badly written script times are accepted.** [`Clock.parse`](Script/clock.js#L49) reads `T+3:60` and `T+3:150` without an error, so a typo in [`Script/dialogue.js`](Script/dialogue.js) silently becomes a different time. Failing test: *Clock.parse: seconds must be 00-59 and nothing may trail* ([tests](tests/edge-cases.test.js)). | Low: only affects writers editing the script. | [AR-10](#non-functional-ar-09-ar-10-ar-11) |
-| 3 | **The clock can run backwards on a negative frame.** [`Clock.tick`](Script/clock.js#L30) subtracts time if it is given a negative step. The game never does this in normal play. Failing test: *Clock.tick: a zero or negative frame never runs the clock backwards* ([tests](tests/edge-cases.test.js)). | Very low: defensive check only. | [AR-11](#non-functional-ar-09-ar-10-ar-11) |
-| 4 | **Two aircraft tests are out of date.** The game now says [`:overhead`](Script/voyage.js#L501) as each aircraft comes over, which the tests don't expect. The game behaves correctly; the tests need updating. Failing tests: *aircraft: identified once…* and *aircraft: flying past unidentified…* ([tests](tests/edge-cases.test.js)). | None in play. | [AR-11](#non-functional-ar-09-ar-10-ar-11) |
-| 5 | **Functional Suitability is not yet passing** against the [ADR1](Logs%20%26%20Documentation/ADR1.pdf) build (see [Quality goals](#quality-goals-week-6)). Game mechanics still need polish, and the game cycle needs finishing. | Medium | [AR-01 to AR-07](#acceptance-requirements) |
-| 6 | **The merged build has not had a full manual play-through.** Avery's dynamic route and the cipher-desk story were combined in [pull request #22](https://github.com/mgunnett/DunkirkCybersecurityGame/pull/22). The unit tests and a scripted full-voyage simulation pass (a perfect run wins at 13:13 with 15 of 15 telexes and 7 of 7 sightings), but the [manual checklist](Script/README.md#test-checklist) has not been run in a browser since. | Medium until checked | [All](#acceptance-requirements) |
-| 7 | **`node --test tests/` fails on some setups.** On Node 22 for Windows, passing the folder reports a single failure without running the tests. Name the file instead: `node --test tests/edge-cases.test.js` (see [Testing](#testing)). | Low: tooling only | [AR-11](#non-functional-ar-09-ar-10-ar-11) |
-| 8 | **Debug speed-up only speeds the clock.** At ×5 the boat and the aircraft still move at normal speed, so turns cost more in-game time and an aircraft nobody looks at holds the others back. **Jump** only moves the clock; orders waiting for the boat to reach a mark still wait. Check timings and endings at ×1. ([debug panel](Script/game.js)) | Low: debug only | — |
+| 1 | **Functional Suitability is not yet passing** against the [ADR1](Logs%20%26%20Documentation/ADR1.pdf) build (see [Quality goals](#quality-goals-week-6)). Game mechanics still need polish, and the game cycle needs finishing. | Medium | [AR-01 to AR-07](#acceptance-requirements) |
+| 2 | **The merged build has not had a full manual play-through.** Avery's dynamic route and the cipher-desk story were combined in [pull request #22](https://github.com/mgunnett/DunkirkCybersecurityGame/pull/22). The unit tests and a scripted full-voyage simulation pass (a perfect run wins at 13:13 with 15 of 15 telexes and 7 of 7 sightings), but the [manual checklist](Script/README.md#test-checklist) has not been run in a browser since. | Medium until checked | [All](#acceptance-requirements) |
+| 3 | **`node --test tests/` fails on some setups.** On Node 22 for Windows, passing the folder reports a single failure without running the tests. Name the file instead: `node --test tests/edge-cases.test.js` (see [Testing](#testing)). | Low: tooling only | [AR-11](#non-functional-ar-09-ar-10-ar-11) |
+| 4 | **Debug speed-up only speeds the clock.** At ×5 the boat and the aircraft still move at normal speed, so turns cost more in-game time and an aircraft nobody looks at holds the others back. **Jump** only moves the clock; orders waiting for the boat to reach a mark still wait. Check timings and endings at ×1. ([debug panel](Script/game.js)) | Low: debug only | — |
 
 ---
 

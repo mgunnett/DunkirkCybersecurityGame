@@ -809,7 +809,7 @@ test('aircraft: identified once; reported once; gone after identifying is not "m
   h.emit('aircraftreported', {});
   h.emit('aircraftreported', {});
   h.emit('aircraftgone', {});
-  assert.deepEqual(h.said.filter(e => e.startsWith('A-1')), ['A-1:correct', 'A-1:reported']);
+  assert.deepEqual(h.said.filter(e => e.startsWith('A-1')), ['A-1:overhead', 'A-1:correct', 'A-1:reported']);
 });
 
 test('aircraft: flying past unidentified is missed; a wrong call cannot be reported', () => {
@@ -822,7 +822,7 @@ test('aircraft: flying past unidentified is missed; a wrong call cannot be repor
   w.run(2);
   w.emit('aircraftidentified', { correct: false });
   w.emit('aircraftreported', {});
-  assert.deepEqual(w.said.filter(e => e.startsWith('A-1')), ['A-1:wrong']);
+  assert.deepEqual(w.said.filter(e => e.startsWith('A-1')), ['A-1:overhead', 'A-1:wrong']);
 });
 
 

@@ -289,6 +289,13 @@ Story.Voyage = class {
     const onCourse = course !== null && near(course);
     this.offCourse(onCourse, course !== null, dt, t);
 
+    // Someone who followed a false order and keeps to it. Checked before the
+    // judging below, so the frame that starts the lure isn't counted twice.
+    if (this.lure) {
+      this.lure.secs = this.following(this.lure.rec, near, onCourse) ? this.lure.secs + dt : 0;
+      if (this.lure.secs >= this.cfg.luredAfter) return this.end(this.lure.rec.entry.lure || 'lured');
+    }
+
     // Judging by steering
     for (const rec of this.telexes) {
       if (!rec.delivered || !rec.read) continue;
@@ -309,12 +316,6 @@ Story.Voyage = class {
           this.judge(rec, 'reject');
         }
       }
-    }
-
-    // Someone who followed a false order and keeps to it
-    if (this.lure) {
-      this.lure.secs = this.following(this.lure.rec, near, onCourse) ? this.lure.secs + dt : 0;
-      if (this.lure.secs >= this.cfg.luredAfter) return this.end(this.lure.rec.entry.lure || 'lured');
     }
 
     // A slip left lying in the machine

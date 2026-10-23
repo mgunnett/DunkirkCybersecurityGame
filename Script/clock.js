@@ -27,8 +27,9 @@ Story.Clock = class {
   // Called every frame with the real seconds since the last one.
   // Returns how many voyage seconds passed, so the rest of the game
   // can move by the same amount (that's how the debug speed-up works).
+  // A zero, negative or missing step never moves the clock.
   tick(realDt) {
-    if (!this.running) return 0;
+    if (!this.running || !(realDt > 0)) return 0;
     const step = Math.min(realDt * this.speed, this.length - this.t);
     this.t += step;
     return step;
@@ -46,8 +47,10 @@ Story.Clock = class {
   }
 
   // 'T+3:15' -> 195 (real seconds). Writers use this form in dialogue.js.
+  // Seconds are 00-59 and nothing else may come before or after, so a
+  // typo like 'T+3:150' is caught instead of read as some other time.
   static parse(text) {
-    const m = String(text).match(/T\+(\d+):(\d{2})/);
+    const m = String(text).trim().match(/^T\+(\d+):([0-5]\d)$/);
     if (!m) throw new Error('[story] bad time "' + text + '": write it as T+M:SS');
     return Number(m[1]) * 60 + Number(m[2]);
   }

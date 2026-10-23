@@ -1,0 +1,144 @@
+# Continuous integration for the Dunkirk Cybersecurity Game.
+#
+# Two jobs, both run on every push and every pull request:
+#
+#   test    Syntax-checks every JavaScript file, runs ESLint for common bug
+#           patterns (reported, but never blocks a merge), then runs the
+#           unit tests in tests/ with Node's built-in test runner.
+#
+#   docker  Builds the nginx image from the Dockerfile, starts it, and
+#           checks that the front door redirects to the ship and that every
+#           page, and every file those pages load, is actually served.
+#           This catches a game folder that the Dockerfile forgets to copy.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same pull request replaces the run still going
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Unit tests (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Check JavaScript syntax
+        run: git ls-files -z '*.js' | xargs -0 -n1 node --check
+
+      # Common bug patterns, no config file needed. The game's files are
+      # browser scripts that share globals, so unused top-level names are
+      # left alone. continue-on-error: shows warnings, doesn't block merges.
+      - name: Static analysis
+        continue-on-error: true
+        run: |
+          git ls-files -z '*.js' | xargs -0 npx --yes eslint@10 \
+            --no-config-lookup \
+            --parser-options sourceType:script \
+            --rule 'no-cond-assign: error' \
+            --rule 'no-dupe-else-if: error' \
+            --rule 'no-dupe-keys: error' \
+            --rule 'no-duplicate-case: error' \
+            --rule 'no-fallthrough: error' \
+            --rule 'no-redeclare: error' \
+            --rule 'no-self-assign: error' \
+            --rule 'no-self-compare: error' \
+            --rule 'no-sparse-arrays: error' \
+            --rule 'no-unreachable: error' \
+            --rule 'no-unsafe-negation: error' \
+            --rule 'use-isnan: error' \
+            --rule 'valid-typeof: error' \
+            --rule 'no-unused-vars: [warn, {vars: local, args: none, caughtErrors: none}]'
+
+      # A glob, not the folder: `node --test tests/` fails on Node 22+
+      - name: Run unit tests
+        run: node --test "tests/**/*.test.js"
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build image
+        run: docker build -t dunkirk-game .
+
+      - name: Start container
+        run: |
+          docker run -d --name game -p 8080:8080 dunkirk-game
+          for i in $(seq 1 30); do
+            curl -s -o /dev/null http://localhost:8080/ && exit 0
+            sleep 1
+          done
+          echo "nginx did not start within 30 seconds"
+          exit 1
+
+      - name: Smoke test
+        run: |
+          set -eu
+          base=http://localhost:8080
+
+          # The bare address opens the ship
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$base/")
+          location=$(curl -s -o /dev/null -w '%{redirect_url}' "$base/")
+          echo "$code / -> $location"
+          if [ "$code" != 302 ] || [[ "$location" != */Ship%20Functionality%20Demo/shipbuild-demo.html ]]; then
+            echo "::error::The bare address should redirect to the ship page"
+            exit 1
+          fi
+
+          # Each page, plus the local CSS, JS and frames it loads
+          pages=(
+            "Ship Functionality Demo/shipbuild-demo.html"
+            "Rulebook Demo/index.html"
+            "Telex Machine Demo/index.html"
+            "WEFT Images/BritishPlane.html"
+            "WEFT Images/GermanPlane.html"
+          )
+          files=$(
+            for page in "${pages[@]}"; do
+              echo "$page"
+              grep -oE '(src|href)="[^"]+"' "$page" |
+                sed -E 's/^(src|href)="//; s/"$//; s/[?#].*//' |
+                grep -vE '^$|^[a-z]+:|^//' |
+                while read -r ref; do
+                  realpath -m --relative-to=. "$(dirname "$page")/$ref"
+                done
+            done | sort -u
+          )
+
+          failed=0
+          while read -r file; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$base/${file// /%20}")
+            echo "$code $file"
+            [ "$code" = 200 ] || failed=1
+          done <<< "$files"
+
+          if [ "$failed" = 1 ]; then
+            echo "::error::Some game files are missing from the image. Check the COPY lines in the Dockerfile."
+            exit 1
+          fi
+
+      - name: Show nginx logs
+        if: failure()
+        run: docker logs game || true
