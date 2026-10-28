@@ -1,0 +1,27 @@
+# AWS Amplify Hosting settings for the Dunkirk Cybersecurity Game.
+#
+# There's nothing to build. The game is plain HTML, CSS and JavaScript,
+# so the "build" just copies the folders the browser needs into dist/,
+# the same ones the Dockerfile ships. Logs, tests and documents stay out.
+#
+# The bare address should open the ship. Amplify does that with a
+# redirect rule set on the app (see README, "Deploying to AWS Amplify"):
+#   /  ->  /Ship%20Functionality%20Demo/index.html  (302)
+
+version: 1
+frontend:
+  phases:
+    build:
+      commands:
+        - mkdir -p dist
+        - cp -r "Ship Functionality Demo" "Rulebook Demo" "Telex Machine Demo" "Script" "WEFT Images" dist/
+  artifacts:
+    baseDirectory: dist
+    files:
+      - '**/*'
+  customHeaders:
+    # Always check for a newer copy, so a redeploy shows up straight away
+    - pattern: '**/*'
+      headers:
+        - key: Cache-Control
+          value: no-cache

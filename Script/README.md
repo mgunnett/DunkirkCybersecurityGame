@@ -5,7 +5,7 @@ and the endings. It sits on top of the ship in `Ship Functionality Demo/` and
 drives it from outside. The wheel, compass, telex, binoculars and rulebook
 work exactly as they did.
 
-Open `Ship Functionality Demo/shipbuild-demo.html`. Add `?debug` to the
+Open `Ship Functionality Demo/index.html`. Add `?debug` to the
 address (or press <kbd>`</kbd>) for the debug panel.
 
 ## Files
@@ -22,7 +22,7 @@ game.js              The flow TITLE → INTRO → VOYAGE → ENDING, the screens
 script.css           How the dialogue box, screens and clock plate look.
 ```
 
-They load at the bottom of `shipbuild-demo.html`, in that order. The route
+They load at the bottom of `index.html`, in that order. The route
 itself is in `Telex Machine Demo/course.js`, which the ship loads.
 
 ## How a voyage runs

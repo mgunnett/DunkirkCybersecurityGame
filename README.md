@@ -68,7 +68,7 @@ The current build extends the concept to a 13-minute voyage (05:00 to the
 
 | System | What the player does |
 | --- | --- |
-| [**Helm and compass**](Ship%20Functionality%20Demo/shipbuild-demo.html) | Steers by compass heading. The boat moves at constant speed. |
+| [**Helm and compass**](Ship%20Functionality%20Demo/index.html) | Steers by compass heading. The boat moves at constant speed. |
 | [**Telex**](Telex%20Machine%20Demo/README.md) | Receives 15 scripted signals: 9 genuine and 6 forged. Each genuine course order is worked out live from where the boat is ([courses](Telex%20Machine%20Demo/README.md#courses)). |
 | [**Rulebook**](Rulebook%20Demo/README.md) | Learns the [five checks](Rulebook%20Demo/pages/03-the-five-checks.js) (sender, recipient, number, time, sense of the order), [ciphers](Rulebook%20Demo/pages/04a-signals-in-cipher.js) and [aircraft recognition](Rulebook%20Demo/pages/04c-aircraft-recognition.js). |
 | [**Cipher desk**](Telex%20Machine%20Demo/README.md#the-cipher-desk-and-security-drills) | Files every slip, stores keys, decodes enciphered orders and answers *"Is this signal genuine?"* for a debrief. |
@@ -117,7 +117,7 @@ Which telex teaches which idea: [answer key](Script/README.md#answer-key).
 [Node.js](https://nodejs.org/) 18 or later is needed only to run the tests.
 
 1. Clone the [repository](https://github.com/mgunnett/DunkirkCybersecurityGame).
-2. Open [`Ship Functionality Demo/shipbuild-demo.html`](Ship%20Functionality%20Demo/shipbuild-demo.html) in a browser.
+2. Open [`Ship Functionality Demo/index.html`](Ship%20Functionality%20Demo/index.html) in a browser.
 3. Press **Begin** on the title screen.
 
 Add `?debug` to the address, or press <kbd>`</kbd>, for the
@@ -144,13 +144,33 @@ choose the port themselves work unchanged. The server settings are in
 [`.dockerignore`](.dockerignore) keeps the logs, tests and documents out of
 the image.
 
+### Deploying to AWS Amplify
+
+[`amplify.yml`](amplify.yml) tells [AWS Amplify Hosting](https://aws.amazon.com/amplify/hosting/)
+how to publish the game. Nothing is compiled; the build copies the same
+folders the Dockerfile ships into `dist/`. To set it up:
+
+1. In the [Amplify console](https://console.aws.amazon.com/amplify/), choose
+   **Create new app**, then **GitHub**, and pick this repository and the
+   branch to publish (usually `main`).
+2. Amplify finds `amplify.yml` on its own. Leave the build settings as they
+   are and choose **Save and deploy**.
+3. Under **Hosting > Rewrites and redirects**, add a rule so the bare address
+   opens the ship:
+
+   | Source | Target | Type |
+   | --- | --- | --- |
+   | `/` | `/Ship%20Functionality%20Demo/index.html` | 302 (Redirect - Temporary) |
+
+Each push to that branch then redeploys the game.
+
 ---
 
 ## Project structure
 
 | Folder | What's in it |
 | --- | --- |
-| [Ship Functionality Demo/](Ship%20Functionality%20Demo/) | The helm: wheel, compass, sea, binoculars. Start at [shipbuild-demo.html](Ship%20Functionality%20Demo/shipbuild-demo.html). |
+| [Ship Functionality Demo/](Ship%20Functionality%20Demo/) | The helm: wheel, compass, sea, binoculars. Start at [index.html](Ship%20Functionality%20Demo/index.html). |
 | [Script/](Script/) | Story layer: [dialogue](Script/dialogue.js), [clock](Script/clock.js), [voyage logic](Script/voyage.js), [game flow and endings](Script/game.js) |
 | [Telex Machine Demo/](Telex%20Machine%20Demo/) | Teleprinter ([telex.js](Telex%20Machine%20Demo/telex.js)), route ([course.js](Telex%20Machine%20Demo/course.js)), cipher desk ([decoder.js](Telex%20Machine%20Demo/decoder.js), [desk.js](Telex%20Machine%20Demo/desk.js)), [signal files](Telex%20Machine%20Demo/signals/) |
 | [Rulebook Demo/](Rulebook%20Demo/) | The in-game rulebook, [one file per chapter](Rulebook%20Demo/pages/) |
@@ -241,7 +261,7 @@ Where: [decoder.js](Telex%20Machine%20Demo/decoder.js), [desk.js](Telex%20Machin
 - [ ] The tampered copy of the last order arrives in clear, with the same number and time and a changed course.
 
 ### Navigation and binoculars (AR-04, AR-06)
-Where: [Ship Functionality Demo/shipbuild-demo.html](Ship%20Functionality%20Demo/shipbuild-demo.html), [Script/voyage.js](Script/voyage.js); see [Route](Script/README.md#route) and [Aircraft](Script/README.md#aircraft).
+Where: [Ship Functionality Demo/index.html](Ship%20Functionality%20Demo/index.html), [Script/voyage.js](Script/voyage.js); see [Route](Script/README.md#route) and [Aircraft](Script/README.md#aircraft).
 - [ ] The light vessel and the buoy sit on their route marks and count as spotted after half a second in view.
 - [ ] Five aircraft come over one at a time; each asks *German or Allied?*
 - [ ] A German aircraft identified correctly can be reported on the telex.
@@ -257,7 +277,7 @@ Where: [Script/voyage.js](Script/voyage.js), [Script/game.js](Script/game.js); s
 
 ### Non-functional (AR-09, AR-10, AR-11)
 Where: [Getting started](#getting-started), [Script/dialogue.js](Script/dialogue.js), [tests/](tests/).
-- [ ] Runs by opening an [HTML file](Ship%20Functionality%20Demo/shipbuild-demo.html), with no install, server or network connection.
+- [ ] Runs by opening an [HTML file](Ship%20Functionality%20Demo/index.html), with no install, server or network connection.
 - [ ] A full playthrough fits in a single class period.
 - [ ] Dates, places, vessels and aircraft fit May 1940.
 - [ ] All story text and tuning values live in [`Script/dialogue.js`](Script/dialogue.js), editable without touching game logic ([editing guide](Script/README.md#editing-the-script-dialoguejs)).

@@ -20,7 +20,7 @@ pages/
 ## No web server needed
 
 Each page is a small script, so the book opens straight from disk: just
-double-click `index.html` (or `Ship Functionality Demo/shipbuild-demo.html`).
+double-click `index.html` (or `Ship Functionality Demo/index.html`).
 It works the same hosted online.
 
 ## The shape of a chapter file
