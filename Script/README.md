@@ -1,11 +1,11 @@
 # Script — the story layer
 
 The dialogue, the 13-minute voyage clock, the scripted telexes and sightings,
-and the endings. It sits on top of the ship in `Ship Functionality Demo/` and
+and the endings. It sits on top of the ship in `index.html` and
 drives it from outside. The wheel, compass, telex, binoculars and rulebook
 work exactly as they did.
 
-Open `Ship Functionality Demo/index.html`. Add `?debug` to the
+Open `index.html` at the top of the repository. Add `?debug` to the
 address (or press <kbd>`</kbd>) for the debug panel.
 
 ## Files

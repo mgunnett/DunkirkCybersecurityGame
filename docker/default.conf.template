@@ -7,11 +7,6 @@ server {
     root  /usr/share/nginx/html;
     index index.html;
 
-    # The front door: the bare address opens the ship
-    location = / {
-        return 302 /Ship%20Functionality%20Demo/index.html;
-    }
-
     # Browsers ask for a tab icon on their own; the game has none
     location = /favicon.ico {
         access_log off;

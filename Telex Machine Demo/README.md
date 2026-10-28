@@ -275,7 +275,7 @@ To send a key and its message as a pair, force them from the operator
 panel one after the other. The lamp stays lit until both have printed.
 The panel tags key and cipher signals, but never says which are forged.
 
-The helm in `Ship Functionality Demo` loads `desk.js`, `desk.css`,
+The helm (`index.html` at the top of the repository) loads `desk.js`, `desk.css`,
 `decoder.js` and `decoder.css` from this folder. Once a slip has been
 read and put down, it comes off the teleprinter and goes onto the desk,
 and the player can read it again from there. Every signal in the manifest

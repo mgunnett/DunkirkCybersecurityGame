@@ -20,8 +20,9 @@ ENV PORT=8080
 # environment when the container starts.
 COPY docker/default.conf.template /etc/nginx/templates/default.conf.template
 
-# The game itself. Only the folders the browser needs; .dockerignore
-# keeps out git history, logs, tests and documents.
+# The game itself: the page, and only the folders the browser needs;
+# .dockerignore keeps out git history, logs, tests and documents.
+COPY ["index.html",              "/usr/share/nginx/html/index.html"]
 COPY ["Ship Functionality Demo", "/usr/share/nginx/html/Ship Functionality Demo"]
 COPY ["Rulebook Demo",           "/usr/share/nginx/html/Rulebook Demo"]
 COPY ["Telex Machine Demo",      "/usr/share/nginx/html/Telex Machine Demo"]

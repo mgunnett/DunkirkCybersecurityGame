@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shipbuild Demo</title>
-<link rel="stylesheet" href="shipstyle.css">
-<link rel="stylesheet" href="../Script/script.css">
-<link rel="stylesheet" href="../Telex Machine Demo/desk.css">
-<link rel="stylesheet" href="../Telex Machine Demo/decoder.css">
+<link rel="stylesheet" href="Ship Functionality Demo/shipstyle.css">
+<link rel="stylesheet" href="Script/script.css">
+<link rel="stylesheet" href="Telex Machine Demo/desk.css">
+<link rel="stylesheet" href="Telex Machine Demo/decoder.css">
 </head>
 <body>
 
@@ -288,7 +288,7 @@
   </svg>
 
   <!-- Rulebook, hung on the dash face to starboard of the wheel. Click to open it.
-       The book itself lives in ../Rulebook Demo; its pages are .js files there. -->
+       The book itself lives in Rulebook Demo; its pages are .js files there. -->
   <button class="prop rulebook" id="rulebook" type="button"
           aria-label="Rulebook: open it to read the rules" data-label="Rulebook">
     <svg viewBox="0 0 150 200" aria-hidden="true">
@@ -392,7 +392,7 @@
 </div>
 
 <!-- The cipher desk. Every slip is taken off the teleprinter and filed here once
-     it has been read. The desk itself lives in ../Telex Machine Demo (desk.js);
+     it has been read. The desk itself lives in Telex Machine Demo (desk.js);
      its folder sits beside the teleprinter, on the dash top. -->
 
 <div class="desk" id="desk" role="dialog" aria-modal="true" aria-label="Cipher desk" hidden>
@@ -412,14 +412,14 @@
   </div>
 </div>
 
-<!-- Reading the rulebook. The book stays in its own folder (../Rulebook Demo)
+<!-- Reading the rulebook. The book stays in its own folder (Rulebook Demo)
      and is loaded here the first time it's opened. -->
 <div class="room room--book" id="bookroom" role="dialog" aria-modal="true"
      aria-label="Reading the rulebook" aria-hidden="true">
   <!-- A copy of the slip, shown beside the book when it's opened from the telex -->
   <pre class="signal__sheet room__aside" id="bookSignal" aria-label="Signal"></pre>
   <iframe class="room__frame" id="bookFrame" title="Rulebook"
-          data-src="../Rulebook Demo/index.html"></iframe>
+          data-src="Rulebook Demo/index.html"></iframe>
   <button class="room__back" id="bookBack" type="button">Close the book</button>
 </div>
 
@@ -697,7 +697,7 @@
   const SUN        = { bearing: 128, elev: 26, size: 10 };
 
   // ---- Teleprinter --------------------------------------------------------
-  const TELEX_DIR    = '../Telex Machine Demo/';  // signal files and config.js
+  const TELEX_DIR    = 'Telex Machine Demo/';  // signal files and config.js
   const SIGNAL_FIRST = [8, 20];    // seconds before the first signal comes in
   const SIGNAL_GAP   = [40, 120];  // seconds after one is put down before the next
   const LINE_FEED    = 0.16;       // seconds per line as the slip feeds out
@@ -1858,7 +1858,7 @@
   // The machine never moves. Every so often a signal comes in: the lamp
   // flashes and a slip feeds out, too small to read from the wheel. Click
   // the slip to pick it up; it grows out of the machine to reading size.
-  // Signals are the files in ../Telex Machine Demo/signals, read the same way.
+  // Signals are the files in Telex Machine Demo/signals, read the same way.
   const tx = {
     root:  document.getElementById('telex'),
     slip:  document.getElementById('telexSlip'),
@@ -2008,7 +2008,7 @@
     // that slip on the desk, so the next one waits until it's off the machine
     if (reading && !readingFrom) { setTimeout(() => incoming(sig), 1000); return sig; }
     current = sig;
-    // Course marks such as {HELM} are worked out now, from where she is (../Telex Machine Demo/course.js)
+    // Course marks such as {HELM} are worked out now, from where she is (Telex Machine Demo/course.js)
     if (window.TELEX_COURSE) TELEX_COURSE.stamp(sig, { x: boatX - origin.x, y: boatY - origin.y, heading });
     if (sig.key && sig.key_name) keysIn.add(sig.key_name.toUpperCase().trim());
     printed = compose(sig);
@@ -2185,7 +2185,7 @@
   tx.report.addEventListener('click', sendReport);
 
   // ---- Rulebook -----------------------------------------------------------
-  // The book is its own page in its own folder (../Rulebook Demo), shown in
+  // The book is its own page in its own folder (Rulebook Demo), shown in
   // a frame over the helm. It loads the first time it's opened and is kept,
   // so the reader's place isn't lost. Opened from the telex it's shown with
   // the slip beside it, and from the glasses it shares the screen with them
@@ -2327,7 +2327,7 @@
     }
   };
 
-  // ---- For the Script (../Script) ------------------------------------------
+  // ---- For the Script (Script) ---------------------------------------------
   // Read-only views of the helm, and a few levers for running the story. None
   // of this changes how anything works; left alone, the helm runs as before.
   // Events go out on the props themselves and bubble to document:
@@ -2424,15 +2424,15 @@
   requestAnimationFrame(frame);
 })();
 </script>
-<script src="../Telex Machine Demo/desk.js"></script>
-<script src="../Telex Machine Demo/decoder.js"></script>
+<script src="Telex Machine Demo/desk.js"></script>
+<script src="Telex Machine Demo/decoder.js"></script>
 
-<!-- The story: clock, dialogue, scripted telexes and sightings, endings. See ../Script/README.md -->
-<script src="../Script/dialogue.js"></script>
-<script src="../Script/clock.js"></script>
-<script src="../Script/dialogue-manager.js"></script>
-<script src="../Script/voyage.js"></script>
-<script src="../Script/game.js"></script>
+<!-- The story: clock, dialogue, scripted telexes and sightings, endings. See Script/README.md -->
+<script src="Script/dialogue.js"></script>
+<script src="Script/clock.js"></script>
+<script src="Script/dialogue-manager.js"></script>
+<script src="Script/voyage.js"></script>
+<script src="Script/game.js"></script>
 
 </body>
 </html>
