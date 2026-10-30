@@ -31,18 +31,18 @@ const SIGNAL_DIR = 'signals/';
 
 /* ---------- 2. ELEMENTS AND STATE ------------------------------- */
 
-// const el = {
-//   bay:      document.getElementById('bay'),
-//   idlenote: document.getElementById('idlenote'),
-//   platen:   document.getElementById('platen'),
-//   lamp:     document.getElementById('lampwrap'),
-//   receive:  document.getElementById('receive'),
-//   viewer:   document.getElementById('viewer'),
-//   viewpaper:document.getElementById('viewerpaper'),
-//   closeview:document.getElementById('closeview'),
-//   gm:       document.getElementById('gm'),
-//   gmbody:   document.getElementById('gmbody')
-// };
+const el = {
+  bay:      document.getElementById('bay'),
+  idlenote: document.getElementById('idlenote'),
+  platen:   document.getElementById('platen'),
+  lamp:     document.getElementById('lampwrap'),
+  receive:  document.getElementById('receive'),
+  viewer:   document.getElementById('viewer'),
+  viewpaper:document.getElementById('viewerpaper'),
+  closeview:document.getElementById('closeview'),
+  gm:       document.getElementById('gm'),
+  gmbody:   document.getElementById('gmbody')
+};
 
 const state = {
   signals:   [],     // every signal file that loaded, in manifest order
@@ -333,30 +333,30 @@ function emit(name, payload) {
 
 /* ---------- 7. THE ENLARGED SHEET ------------------------------- */
 
-// function openSlip(slip) {
-//   if (!slip || slip.classList.contains('printing')) return;
-//   el.viewpaper.textContent = '';
-//   /* A plain div, not a clone of the button — nothing inside the
-//      viewer should be clickable except the red X. */
-//   const big = document.createElement('div');
-//   big.className = 'slip';
-//   big.innerHTML = slip._html || slip.innerHTML;    // a stack off the desk reads as one
-//   el.viewpaper.appendChild(big);
-//   el.viewer.classList.add('open');
-//   state.returnTo = slip;
-//   el.closeview.focus();
-//   emit('open', slip._signal || null);
-// }
+function openSlip(slip) {
+  if (!slip || slip.classList.contains('printing')) return;
+  el.viewpaper.textContent = '';
+  /* A plain div, not a clone of the button — nothing inside the
+     viewer should be clickable except the red X. */
+  const big = document.createElement('div');
+  big.className = 'slip';
+  big.innerHTML = slip._html || slip.innerHTML;    // a stack off the desk reads as one
+  el.viewpaper.appendChild(big);
+  el.viewer.classList.add('open');
+  state.returnTo = slip;
+  el.closeview.focus();
+  emit('open', slip._signal || null);
+}
 
-// function closeSlip() {
-//   if (!el.viewer.classList.contains('open')) return;
-//   el.viewer.classList.remove('open');
-//   el.viewpaper.textContent = '';
-//   const sig = state.returnTo ? state.returnTo._signal || null : null;
-//   if (state.returnTo && state.returnTo.isConnected) state.returnTo.focus();
-//   state.returnTo = null;
-//   emit('close', sig);
-// }
+function closeSlip() {
+  if (!el.viewer.classList.contains('open')) return;
+  el.viewer.classList.remove('open');
+  el.viewpaper.textContent = '';
+  const sig = state.returnTo ? state.returnTo._signal || null : null;
+  if (state.returnTo && state.returnTo.isConnected) state.returnTo.focus();
+  state.returnTo = null;
+  emit('close', sig);
+}
 
 /* Lift a read slip out of the bay, for the cipher desk to file.
    Returns the slip, or null if that signal isn't in the bay. */
