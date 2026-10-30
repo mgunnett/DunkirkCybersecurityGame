@@ -31,18 +31,18 @@ const SIGNAL_DIR = 'signals/';
 
 /* ---------- 2. ELEMENTS AND STATE ------------------------------- */
 
-const el = {
-  bay:      document.getElementById('bay'),
-  idlenote: document.getElementById('idlenote'),
-  platen:   document.getElementById('platen'),
-  lamp:     document.getElementById('lampwrap'),
-  receive:  document.getElementById('receive'),
-  viewer:   document.getElementById('viewer'),
-  viewpaper:document.getElementById('viewerpaper'),
-  closeview:document.getElementById('closeview'),
-  gm:       document.getElementById('gm'),
-  gmbody:   document.getElementById('gmbody')
-};
+// const el = {
+//   bay:      document.getElementById('bay'),
+//   idlenote: document.getElementById('idlenote'),
+//   platen:   document.getElementById('platen'),
+//   lamp:     document.getElementById('lampwrap'),
+//   receive:  document.getElementById('receive'),
+//   viewer:   document.getElementById('viewer'),
+//   viewpaper:document.getElementById('viewerpaper'),
+//   closeview:document.getElementById('closeview'),
+//   gm:       document.getElementById('gm'),
+//   gmbody:   document.getElementById('gmbody')
+// };
 
 const state = {
   signals:   [],     // every signal file that loaded, in manifest order
